@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/abort.png</file>
+        <file>icons/clear.png</file>
+        <file>icons/delete.png</file>
+        <file>icons/edit.png</file>
+        <file>icons/goto.png</file>
+        <file>icons/help.png</file>
+        <file>icons/left.png</file>
+        <file>icons/new.png</file>
+        <file>icons/redo.png</file>
+        <file>icons/refresh.png</file>
+        <file>icons/revert.png</file>
+        <file>icons/right.png</file>
+        <file>icons/save.png</file>
+        <file>icons/saveas.png</file>
+        <file>icons/search.png</file>
+        <file>icons/searchall.png</file>
+        <file>icons/shuffle.png</file>
+        <file>icons/sort.png</file>
+        <file>icons/undo.png</file>
+    </qresource>
+</RCC>
