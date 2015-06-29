@@ -4,5 +4,5 @@ external deck manager for ygopro<br>
 run in same directory with ygopro<br>
 ##
 Download executable<br>
-* [°Ù¶ÈÍøÅÌ](http://pan.baidu.com/s/1gd7zMDl)<br>
+* [ç™¾åº¦ç½‘ç›˜](http://pan.baidu.com/s/1gd7zMDl)<br>
 * [Mega](https://mega.nz/#F!2xdQGaBQ!-9rJJyUV-Nf21v-K_nNIrg)<br>
