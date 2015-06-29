@@ -1,6 +1,22 @@
 #include "mainwindow.h"
 #include "config.h"
 #include "iconbutton.h"
+#include "card.h"
+#include "carditem.h"
+#include "cardslist.h"
+#include "decklist.h"
+#include "carddetails.h"
+#include "remote.h"
+#include "locallist.h"
+#include "cardfilter.h"
+#include "replaylist.h"
+#include "scriptview.h"
+#include "packview.h"
+#include "pref.h"
+#include "deckview.h"
+#include <QDebug>
+#include <QSqlQuery>
+#include <QSplitter>
 #include <QTimer>
 #include <functional>
 

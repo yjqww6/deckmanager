@@ -89,7 +89,6 @@ int DeckWidget::itemAt(const QPoint &pos)
         }
     }
     return -1;
-
 }
 
 void DeckWidget::shuffle()
@@ -185,9 +184,6 @@ int DeckWidget::posIndex(const QPoint &pos)
             return i;
         }
     }
-
-
-
 }
 
 void DeckWidget::mousePressEvent(QMouseEvent *event)
@@ -323,7 +319,6 @@ void DeckWidget::dropEvent(QDropEvent *event)
             }
             moved = true;
             update();
-
         }
         event->accept();
     }

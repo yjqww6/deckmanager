@@ -1,15 +1,12 @@
 #include "mainwindow.h"
 #include <QApplication>
-#include <QLabel>
-#include <QDebug>
-#include <QHBoxLayout>
-#include <QScrollArea>
-#include <QScrollBar>
 #include <QFileInfo>
-#include <QFont>
+#include <QDir>
 #include "yrp.h"
 #include "expansions.h"
 #include "limitcards.h"
+#include "config.h"
+#include "card.h"
 
 
 int main(int argc, char *argv[])

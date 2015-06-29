@@ -140,6 +140,5 @@ QSharedPointer<QVector<int> > LimitCards::getCards(int index)
            return it1.value() < it2.value();
         });
     }
-
     return cards;
 }

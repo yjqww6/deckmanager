@@ -139,8 +139,6 @@ CardPool::CardPool()
 
     otherNamesDone = false;
     acc = false;
-
-
 }
 
 QString CardPool::getType(int type)

@@ -144,6 +144,7 @@ private slots:
 
     void help();
     void sort();
+    void home();
 
 private:
     class DeckStatus

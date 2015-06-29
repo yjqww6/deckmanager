@@ -2,6 +2,8 @@
 #include "limitcards.h"
 #include "config.h"
 #include <QDebug>
+#include <QDesktopServices>
+#include <QUrl>
 
 
 class ExtraDeckWidget : public DeckWidget
@@ -118,6 +120,11 @@ DeckView::DeckView(QWidget *parent, bool &moved)
 
     toolbar->addSeparator();
 
+    auto homeAction = new QAction(toolbar);
+    homeAction->setIcon(QIcon(":/icons/home.png"));
+    homeAction->setToolTip(config->getStr("action", "home", "主页"));
+    toolbar->addAction(homeAction);
+
     auto helpAction = new QAction(toolbar);
     helpAction->setIcon(QIcon(":/icons/help.png"));
     helpAction->setToolTip(config->getStr("action", "help", "帮助"));
@@ -197,6 +204,7 @@ DeckView::DeckView(QWidget *parent, bool &moved)
     connect(newAction, SIGNAL(triggered()), this, SLOT(newDeck()));
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteDeck()));
     connect(abortAction, SIGNAL(triggered()), this, SLOT(abort()));
+    connect(homeAction, SIGNAL(triggered()), this, SLOT(home()));
 
     connect(mainDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
     connect(extraDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
@@ -300,6 +308,11 @@ void DeckView::help()
 {
     QString helpStr = config->getHelpStr();
     QMessageBox::information(nullptr, config->getStr("action", "help", "帮助"), helpStr);
+}
+
+void DeckView::home()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/yjqww6/deckmanager"));
 }
 
 void DeckView::makeSnapshot(bool mod)
