@@ -21,5 +21,6 @@
         <file>icons/undo.png</file>
         <file>icons/home.png</file>
         <file>icons/print.png</file>
+        <file>icons/side.png</file>
     </qresource>
 </RCC>

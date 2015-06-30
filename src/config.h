@@ -13,6 +13,7 @@ public:
     bool waitForPass;
     bool convertPass;
     bool autoSwitch;
+    bool bg;
     int limit;
     typedef QHash<QString, QVariant> Map;
     QString getStr(QString group, QString key, QString defaultStr);

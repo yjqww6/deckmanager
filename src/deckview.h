@@ -25,6 +25,25 @@
 typedef QSharedPointer<QList<CardItem> > Dst;
 Q_DECLARE_METATYPE(Dst);
 
+
+class DeckSizeLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    DeckSizeLabel(const QString &_name) : QLabel(), name(_name) {}
+public slots:
+    void changeSize(int size)
+    {
+        setText(name + tr(" : ") + QString::number(size));
+        adjustSize();
+        updateGeometry();
+    }
+
+private:
+    QString name;
+};
+
+
 class DeckView;
 
 class ItemThread : public QThread
@@ -148,6 +167,7 @@ private slots:
     void sort();
     void home();
     void print();
+    void hideSide();
 
 private:
     class DeckStatus
@@ -204,6 +224,7 @@ private:
     DeckWidget *mainDeck;
     DeckWidget *extraDeck;
     DeckWidget *sideDeck;
+    DeckSizeLabel *st;
     QAction *undoAction, *redoAction;
     QAction *abortAction;
     QToolBar *toolbar;
@@ -211,25 +232,9 @@ private:
     QHash<int, int> map;
     Remote remote;
     bool waiting;
+    bool sideHidden;
 };
 
-
-class DeckSizeLabel : public QLabel
-{
-    Q_OBJECT
-public:
-    DeckSizeLabel(const QString &_name) : QLabel(), name(_name) {}
-public slots:
-    void changeSize(int size)
-    {
-        setText(name + tr(" : ") + QString::number(size));
-        adjustSize();
-        updateGeometry();
-    }
-
-private:
-    QString name;
-};
 
 
 class MainDeckLabel : public QLabel

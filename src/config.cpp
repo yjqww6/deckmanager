@@ -1,4 +1,5 @@
 #include "config.h"
+#include <QFileInfo>
 #include <QDebug>
 
 Config *config = nullptr;
@@ -22,6 +23,8 @@ Config::Config(QObject *parent)
     convertPass = getStr("pref", "passconvert", "1").toInt() == 1;
     autoSwitch = getStr("pref", "autoswitch", "0").toInt() == 1;
     limit = getStr("pref", "limit", "0").toInt();
+    QFileInfo info(QFile(getStr("pref", "bg", "")));
+    bg = info.exists();
 }
 
 QString Config::getStr(QString group, QString key, QString defaultStr)

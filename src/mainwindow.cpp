@@ -24,11 +24,26 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), currentId(0)
 {
     setWindowTitle("deckmanager - by qww6");
+    if(config->bg)
+    {
+        QString bg = config->getStr("pref", "bg", "");
+        setStyleSheet("QMainWindow{border-image: url(" + bg + ")}");
+    }
+
     auto sp = new QSplitter(Qt::Horizontal, this);
     sp->setHandleWidth(5);
     auto deckListView = new DeckListView;
     auto deckView = new DeckView(nullptr);
     auto cardListView = new CardsListView(nullptr);
+    if(config->bg)
+    {
+        cardListView->setStyleSheet("color: white; font-size: 15px");
+    }
+    else
+    {
+        cardListView->setStyleSheet("font-size: 15px");
+    }
+
     auto cardDetails = new CardDetails;
     auto localList = new LocalList;
     auto filter = new CardFilter;
@@ -51,9 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
     dialog = new ScriptView(this);
 
     tab = new QTabWidget;
-
-    setFont(QFont(font().family(), 11));
-
+    tab->setStyleSheet("font-size: 14px;");
 
     tab->addTab(localList, config->getStr("tab", "local", "本地"));
     tab->addTab(deckListView, config->getStr("tab", "remote", "远程"));
@@ -62,12 +75,13 @@ MainWindow::MainWindow(QWidget *parent)
     tab->addTab(filter, config->getStr("tab", "search", "卡池"));
     tab->addTab(packView, config->getStr("tab", "pack", "卡包"));
     tab->addTab(pref, config->getStr("tab", "pref", "选项"));
-    tab->setMinimumWidth(250);
 
+    cardDetails->setStyleSheet("font-size: 15px");
 
     sp->addWidget(tab);
     sp->addWidget(deckView);
     sp->addWidget(cardListView);
+    sp->setStretchFactor(1, 1);
 
     connect(cardDetails, SIGNAL(clickId(int)), dialog, SLOT(setId(int)));
     connect(deckView, SIGNAL(clickId(int)), dialog, SLOT(setId(int)));

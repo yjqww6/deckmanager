@@ -84,10 +84,13 @@ void CardsList::paintEvent(QPaintEvent *)
             current = itemAt(mapFromGlobal(QCursor::pos()));
             if(i + pos == current)
             {
-                QBrush brush = painter.brush();
+                QBrush brush = painter.brush(), newBrush(Qt::lightGray);
                 QPen pen = painter.pen();
                 painter.setPen(Qt::transparent);
-                painter.setBrush(Qt::lightGray);
+                QColor color(newBrush.color());
+                color.setAlpha(160);
+                newBrush.setColor(color);
+                painter.setBrush(newBrush);
                 painter.drawRect(QRect(QPoint(0,  y), QSize(width(), cardSize.height())));
                 painter.setBrush(brush);
                 painter.setPen(pen);

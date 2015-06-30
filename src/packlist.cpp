@@ -82,7 +82,7 @@ void PackList::refresh()
 
 void PackList::readPack(QTreeWidgetItem *item, int)
 {
-    if(item->parent() == nullptr)
+    if(!item || item->parent() == nullptr)
     {
         return;
     }
@@ -169,11 +169,11 @@ void PackList::readPack(QTreeWidgetItem *item, int)
     if(edited)
     {
         emit editCards(vec);
+        emit packName(name);
     }
     else
     {
         emit cards(vec);
     }
-    emit packName(name);
 }
 

@@ -6,6 +6,8 @@
 #include <QFileDialog>
 #include <QResizeEvent>
 #include <QUrl>
+#include <QScreen>
+#include <QToolButton>
 
 
 class ExtraDeckWidget : public DeckWidget
@@ -45,9 +47,16 @@ void DeckView::resizeEvent(QResizeEvent *event)
 }
 
 DeckView::DeckView(QWidget *parent)
-    : QWidget(parent), currentLoad(0), waiting(false)
+    : QWidget(parent), currentLoad(0), waiting(false), sideHidden(false)
 {
-
+    if(config->bg)
+    {
+        setStyleSheet("color: white; font-size: 16px");
+    }
+    else
+    {
+        setStyleSheet("font-size: 16px");
+    }
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
     mainDeck = new MainDeckWidget(nullptr);
@@ -57,6 +66,7 @@ DeckView::DeckView(QWidget *parent)
 
 
     toolbar = new QToolBar;
+    toolbar->setStyleSheet("color: black; font-size: 12px");
 
     undoAction = new QAction(toolbar);
     undoAction->setIcon(QIcon(":/icons/undo.png"));
@@ -106,6 +116,16 @@ DeckView::DeckView(QWidget *parent)
     toolbar->addAction(abortAction);
 
     toolbar->addSeparator();
+
+    auto hideButton = new QToolButton;
+    hideButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+
+    auto hideAction = new QAction("Side", hideButton);
+    hideAction->setIcon(QIcon(":/icons/side.png"));
+
+    hideButton->addAction(hideAction);
+    hideButton->setDefaultAction(hideAction);
+    toolbar->addWidget(hideButton);
 
     auto spacer = new QWidget;
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -171,11 +191,11 @@ DeckView::DeckView(QWidget *parent)
             this, SLOT(currentIdChangedTrans(int)));
     vbox->addWidget(extraDeck, 1);
 
-    t = new DeckSizeLabel(config->getStr("label", "side", "副卡组"));
-    vbox->addWidget(t);
+    st = new DeckSizeLabel(config->getStr("label", "side", "副卡组"));
+    vbox->addWidget(st);
     vbox->addWidget(sideDeck, 1);
 
-    connect(sideDeck, SIGNAL(sizeChanged(int)), t, SLOT(changeSize(int)));
+    connect(sideDeck, SIGNAL(sizeChanged(int)), st, SLOT(changeSize(int)));
     connect(sideDeck, SIGNAL(currentIdChanged(int)),
             this, SLOT(currentIdChangedTrans(int)));
 
@@ -217,6 +237,7 @@ DeckView::DeckView(QWidget *parent)
     connect(abortAction, SIGNAL(triggered()), this, SLOT(abort()));
     connect(homeAction, SIGNAL(triggered()), this, SLOT(home()));
     connect(printAction, SIGNAL(triggered()), this, SLOT(print()));
+    connect(hideAction, SIGNAL(triggered()), this, SLOT(hideSide()));
 
     connect(mainDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
     connect(extraDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
@@ -330,7 +351,7 @@ void DeckView::home()
 void DeckView::print()
 {
     int y = toolbar->mapToParent(QPoint(0, toolbar->height())).y();
-    QPixmap pixmap = grab(QRect(QPoint(0, y), QSize(-1, -1)));
+    QPixmap pixmap = QApplication::primaryScreen()->grabWindow(this->winId(), 0, y, width(), height() - y);
     QString filename = QFileDialog::getSaveFileName(this, "Save", "", "*.png");
     if(!filename.isNull())
     {
@@ -339,6 +360,22 @@ void DeckView::print()
             filename += ".png";
         }
         pixmap.save(filename, "png");
+    }
+}
+
+void DeckView::hideSide()
+{
+    if(sideHidden)
+    {
+        st->show();
+        sideDeck->show();
+        sideHidden = false;
+    }
+    else
+    {
+        st->hide();
+        sideDeck->hide();
+        sideHidden = true;
     }
 }
 
