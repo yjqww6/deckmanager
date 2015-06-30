@@ -1,6 +1,7 @@
 #include "cardfilter.h"
 #include "iconbutton.h"
 #include "config.h"
+#include "limitcards.h"
 
 const int CardFilter::cardTypes[] =
 {
@@ -141,6 +142,25 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     y++;
     grid->addWidget(passL, y, 0);
     grid->addWidget(passEdit, y, 1);
+
+    y++;
+    auto hbox1 = new QHBoxLayout;
+    limit = new QComboBox;
+    limit->addItem("N/A", -1);
+    limit->addItem(config->getStr("label", "banned", "禁止"), 0);
+    limit->addItem(config->getStr("label", "limited", "限制"), 1);
+    limit->addItem(config->getStr("label", "semi-limited", "准限制"), 2);
+    limit->addItem(config->getStr("label", "nolimited", "无限制"), 3);
+    hbox1->addWidget(limit);
+
+    ot = new QComboBox;
+    ot->addItem("N/A", 0);
+    ot->addItem("OCG", 1);
+    ot->addItem("TCG", 2);
+    hbox1->addWidget(ot);
+
+    grid->addLayout(hbox1, y, 0, 1, 2);
+
 
     int y1 = y;
     y1++;
@@ -299,6 +319,9 @@ void CardFilter::search(const T &cards)
         }
     }
 
+    int limitC = limit->currentData().toInt();
+    quint32 otC = ot->currentData().toUInt();
+
     if(type == Card::TYPE_SPELL || type == Card::TYPE_TRAP)
     {
         subtype |= type;
@@ -331,6 +354,16 @@ void CardFilter::search(const T &cards)
         }
 
         if(type != ~0U && !(type & card->type))
+        {
+            continue;
+        }
+
+        if(limitC != -1 && LimitCards::getLimit(card->id) != limitC)
+        {
+            continue;
+        }
+
+        if(otC != 0 && (card->ot & 3) != otC)
         {
             continue;
         }

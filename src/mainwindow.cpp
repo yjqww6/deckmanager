@@ -27,8 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
     auto sp = new QSplitter(Qt::Horizontal, this);
     sp->setHandleWidth(5);
     auto deckListView = new DeckListView;
-    auto deckView = new DeckView(nullptr, movedGlobal);
-    auto cardListView = new CardsListView(nullptr, movedGlobal);
+    auto deckView = new DeckView(nullptr);
+    auto cardListView = new CardsListView(nullptr);
     auto cardDetails = new CardDetails;
     auto localList = new LocalList;
     auto filter = new CardFilter;
@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto replayList = new ReplayList;
     auto replayRefresh = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
 
-    auto packView = new PackView(nullptr, movedGlobal);
+    auto packView = new PackView(nullptr);
     auto pref = new Pref;
     auto widget = new QWidget;
     auto vbox = new QVBoxLayout;

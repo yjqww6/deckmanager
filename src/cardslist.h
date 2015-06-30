@@ -25,7 +25,7 @@ class CardsList : public QWidget
 {
     Q_OBJECT
 public:
-    explicit CardsList(QWidget *parent, bool &);
+    explicit CardsList(QWidget *parent);
     ~CardsList();
 
     QVector<int> &getList()
@@ -88,7 +88,6 @@ protected:
     QPoint startPos;
     int cardsPerColumn;
     int currentCardId;
-    bool &moved;
     QScrollBar *sb;
     bool needRefreshId;
     QPoint point;
@@ -99,7 +98,7 @@ class CardsListView : public QWidget
 {
     Q_OBJECT
 public:
-    CardsListView(QWidget *parent, bool &);
+    CardsListView(QWidget *parent);
     QVector<int> &getList()
     {
         return cl->getList();

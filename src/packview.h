@@ -11,7 +11,7 @@ class PackView : public QWidget
 {
     Q_OBJECT
 public:
-    explicit PackView(QWidget *parent, bool&);
+    explicit PackView(QWidget *parent);
     void refresh()
     {
         packList->refresh();

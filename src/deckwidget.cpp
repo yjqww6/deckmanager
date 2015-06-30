@@ -1,11 +1,12 @@
 #include "deckwidget.h"
+#include "draghelper.h"
 #include <ctime>
 #include <random>
 #include <QDebug>
 
-DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, bool &_moved, bool &_isUs)
+DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
     : QWidget(parent), row(_row), column(_column), currentCardId(0),
-      deckSize(-1), current(-1), isUs(_isUs), moved(_moved)
+      deckSize(-1), current(-1)
 {
     offset = QSize(2, 2);
     spacing = QSize(3, 3);
@@ -21,6 +22,21 @@ DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, bool &_moved, boo
     setMinimumSize(min);
 
     setAcceptDrops(true);
+}
+
+void DeckWidget::resizeEvent(QResizeEvent *event)
+{
+    double cardHeight = (height() - offset.height() * 2.0) / row - spacing.height();
+    double cardWidth = (width() - offset.width() * 2.0) / column - spacing.width();
+    double timesH = cardHeight / 254, timesW = cardWidth / 177;
+    double times = std::min(timesH, timesW);
+    cardSize = QSize(177 * times, 254 * times);
+    QWidget::resizeEvent(event);
+//    int newHeight = (cardSize.height() + spacing.height()) * row + offset.height() * 2;
+//    if(height() != newHeight)
+//    {
+//        resize(width(), newHeight);
+//    }
 }
 
 void DeckWidget::paintEvent(QPaintEvent *)
@@ -250,7 +266,7 @@ void DeckWidget::startDrag(int index)
                             drag->pixmap().height() / 2));
     makeSnapShot();
     bool copy = true;
-    isUs = true;
+    dragHelper.atomic = true;
     if((QApplication::keyboardModifiers() & Qt::ControlModifier) == 0)
     {
         deck.removeAt(index);
@@ -259,13 +275,13 @@ void DeckWidget::startDrag(int index)
     emit sizeChanged(deck.size());
     emit deckChanged(deck);
     update();
-    moved = false;
+    dragHelper.moved = false;
     drag->exec(Qt::MoveAction);
-    if(!moved && !copy)
+    if(!dragHelper.moved && !copy)
     {
         deck.append(card);
     }
-    isUs = false;
+    dragHelper.atomic = false;
     update();
 }
 
@@ -304,7 +320,7 @@ void DeckWidget::dropEvent(QDropEvent *event)
         int id = event->mimeData()->text().toInt();
         if(filter(id) && extFilter(id))
         {
-            if(!isUs)
+            if(!dragHelper.atomic)
             {
                 makeSnapShot();
             }
@@ -317,7 +333,7 @@ void DeckWidget::dropEvent(QDropEvent *event)
             {
                 insertCard(index, id);
             }
-            moved = true;
+            dragHelper.moved = true;
             update();
         }
         event->accept();

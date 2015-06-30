@@ -1,10 +1,11 @@
 #include "cardslist.h"
 #include "limitcards.h"
+#include "draghelper.h"
 #include <QDebug>
 
-CardsList::CardsList(QWidget *parent, bool &_moved)
+CardsList::CardsList(QWidget *parent)
     : QWidget(parent), pos(0), cardSize(177 / 3.5, 254 / 3.5), cardsPerColumn(0),
-      moved(_moved), sb(nullptr), needRefreshId(false), current(-1)
+      sb(nullptr), needRefreshId(false), current(-1)
 {
     setMouseTracking(true);
     setAcceptDrops(true);
@@ -250,7 +251,7 @@ void CardsList::startDrag(int index)
     drag->setPixmap(item.getPixmap()->scaled(cardSize));
     drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
                             drag->pixmap().height() / 2));
-    moved = false;
+    dragHelper.moved = false;
     drag->exec(Qt::MoveAction);
 }
 
@@ -275,7 +276,7 @@ void CardsList::dragMoveEvent(QDragMoveEvent *event)
 
 void CardsList::dropEvent(QDropEvent *event)
 {
-    moved = true;
+    dragHelper.moved = true;
     event->accept();
 }
 
@@ -324,11 +325,11 @@ CardsList::~CardsList()
 
 }
 
-CardsListView::CardsListView(QWidget *parent, bool &moved)
+CardsListView::CardsListView(QWidget *parent)
     : QWidget(parent)
 {
 
-    cl = new CardsList(nullptr, moved);
+    cl = new CardsList(nullptr);
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;
     hbox->addWidget(cl);

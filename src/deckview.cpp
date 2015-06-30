@@ -3,14 +3,15 @@
 #include "config.h"
 #include <QDebug>
 #include <QDesktopServices>
+#include <QResizeEvent>
 #include <QUrl>
 
 
 class ExtraDeckWidget : public DeckWidget
 {
 public:
-    ExtraDeckWidget(QWidget *parent, bool &moved, bool &isUs)
-        : DeckWidget(parent, 1, 10, moved, isUs)
+    ExtraDeckWidget(QWidget *parent)
+        : DeckWidget(parent, 1, 10)
     {
 
     }
@@ -25,8 +26,8 @@ public:
 class MainDeckWidget : public DeckWidget
 {
 public:
-    MainDeckWidget(QWidget *parent, bool &moved, bool &isUs)
-        : DeckWidget(parent, 4, 10, moved, isUs)
+    MainDeckWidget(QWidget *parent)
+        : DeckWidget(parent, 4, 10)
     {
 
     }
@@ -37,14 +38,18 @@ public:
     }
 };
 
+void DeckView::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+}
 
-DeckView::DeckView(QWidget *parent, bool &moved)
-    : QWidget(parent), isUs(false), currentLoad(0), waiting(false)
+DeckView::DeckView(QWidget *parent)
+    : QWidget(parent), currentLoad(0), waiting(false)
 {
 
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
-    mainDeck = new MainDeckWidget(nullptr, moved, isUs);
+    mainDeck = new MainDeckWidget(nullptr);
 
     auto t = new DeckSizeLabel(config->getStr("label", "main", "主卡组"));
     auto mt = new MainDeckLabel;
@@ -136,7 +141,7 @@ DeckView::DeckView(QWidget *parent, bool &moved)
     hbox->addWidget(t);
     hbox->addWidget(mt);
     vbox->addLayout(hbox);
-    vbox->addWidget(mainDeck);
+    vbox->addWidget(mainDeck, 4);
 
     connect(mainDeck, SIGNAL(sizeChanged(int)), t, SLOT(changeSize(int)));
     connect(mainDeck, SIGNAL(deckChanged(QList<CardItem>&)),
@@ -144,8 +149,8 @@ DeckView::DeckView(QWidget *parent, bool &moved)
     connect(mainDeck, SIGNAL(currentIdChanged(int)),
             this, SLOT(currentIdChangedTrans(int)));
 
-    extraDeck = new ExtraDeckWidget(nullptr, moved, isUs);
-    sideDeck = new DeckWidget(nullptr, 1, 10, moved, isUs);
+    extraDeck = new ExtraDeckWidget(nullptr);
+    sideDeck = new DeckWidget(nullptr, 1, 10);
 
     t = new DeckSizeLabel(config->getStr("label", "extra", "额外卡组"));
     auto et = new ExtraDeckLabel;
@@ -158,11 +163,11 @@ DeckView::DeckView(QWidget *parent, bool &moved)
             et, SLOT(deckChanged(QList<CardItem>&)));
     connect(extraDeck, SIGNAL(currentIdChanged(int)),
             this, SLOT(currentIdChangedTrans(int)));
-    vbox->addWidget(extraDeck);
+    vbox->addWidget(extraDeck, 1);
 
     t = new DeckSizeLabel(config->getStr("label", "side", "副卡组"));
     vbox->addWidget(t);
-    vbox->addWidget(sideDeck);
+    vbox->addWidget(sideDeck, 1);
 
     connect(sideDeck, SIGNAL(sizeChanged(int)), t, SLOT(changeSize(int)));
     connect(sideDeck, SIGNAL(currentIdChanged(int)),

@@ -53,7 +53,7 @@ class DeckView : public QWidget
 public:
     friend class ItemThread;
 
-    DeckView(QWidget *parent, bool &);
+    DeckView(QWidget *parent);
     DeckWidget *getMain()
     {
         return mainDeck;
@@ -68,6 +68,8 @@ public:
     {
         return sideDeck;
     }
+
+    void resizeEvent(QResizeEvent *event);
 signals:
     void currentIdChanged(int);
     void clickId(int);
@@ -203,7 +205,6 @@ private:
     DeckWidget *sideDeck;
     QAction *undoAction, *redoAction;
     QAction *abortAction;
-    bool isUs;
     int currentLoad;
     QHash<int, int> map;
     Remote remote;

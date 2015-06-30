@@ -1,12 +1,12 @@
 #include "packview.h"
 #include "iconbutton.h"
 
-PackView::PackView(QWidget *parent, bool&moved)
+PackView::PackView(QWidget *parent)
     : QWidget(parent)
 {
     tab = new QTabWidget(this);
     packList = new PackList;
-    auto packEdit = new PackEditView(nullptr, moved);
+    auto packEdit = new PackEditView(nullptr);
 
     auto widget = new QWidget;
     auto vbox = new QVBoxLayout;

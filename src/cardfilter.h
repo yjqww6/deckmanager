@@ -48,6 +48,8 @@ private:
     QComboBox *cardType;
     QComboBox *cardTypeSub;
 
+    QComboBox *limit, *ot;
+
     QLineEdit *passEdit;
 
     QComboBox *cardRace;

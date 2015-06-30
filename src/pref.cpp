@@ -50,7 +50,7 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
 
 void Pref::setLflist(int index)
 {
-    config->setLimit(index);
+    config->setLimit(lfcombo->itemData(index).toInt());
     emit lflistChanged();
 }
 

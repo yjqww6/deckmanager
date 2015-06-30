@@ -11,6 +11,7 @@
 #include <QDragMoveEvent>
 #include <QMimeData>
 #include <QSharedPointer>
+#include <QResizeEvent>
 #include <algorithm>
 #include <functional>
 #include "carditem.h"
@@ -21,7 +22,7 @@ class DeckWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit DeckWidget(QWidget *parent, int _row, int _column, bool &, bool &);
+    explicit DeckWidget(QWidget *parent, int _row, int _column);
     ~DeckWidget();
     void paintEvent(QPaintEvent *event);
 
@@ -67,6 +68,8 @@ public:
     void dragMoveEvent(QDragMoveEvent *event);
     void dropEvent(QDropEvent *event);
 
+    void resizeEvent(QResizeEvent *);
+
     void mouseDoubleClickEvent(QMouseEvent *event)
     {
         if(event->buttons() & Qt::LeftButton)
@@ -100,7 +103,7 @@ public slots:
     void shuffle();
     void sort();
     void checkLeave();
-private:
+protected:
     int itemAt(const QPoint &pos);
     int posIndex(const QPoint &pos);
 
@@ -117,8 +120,6 @@ private:
 
     int deckSize;
     int current;
-    bool &isUs;
-    bool &moved;
 };
 
 #endif // DECKWIDGET_H

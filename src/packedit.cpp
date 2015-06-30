@@ -1,8 +1,9 @@
 #include "packedit.h"
 #include "iconbutton.h"
+#include "draghelper.h"
 
-PackEdit::PackEdit(QWidget *parent, bool &_moved)
-    : CardsList(parent, _moved)
+PackEdit::PackEdit(QWidget *parent)
+    : CardsList(parent)
 {
 
 }
@@ -101,9 +102,9 @@ void PackEdit::startDrag(int index)
     }
     current = -1;
     update();
-    moved = false;
+    dragHelper.moved = false;
     drag->exec(Qt::MoveAction);
-    if(!moved && !copy)
+    if(!dragHelper.moved && !copy)
     {
         ls.append(id);
     }
@@ -146,7 +147,7 @@ void PackEdit::dropEvent(QDropEvent *event)
             {
                 ls.insert(index, id);
             }
-            moved = true;
+            dragHelper.moved = true;
             update();
         }
         event->accept();
@@ -170,11 +171,11 @@ void PackEdit::saveList(QString name)
     }
 }
 
-PackEditView::PackEditView(QWidget *parent, bool &moved)
+PackEditView::PackEditView(QWidget *parent)
     : QWidget(parent)
 {
 
-    pe = new PackEdit(nullptr, moved);
+    pe = new PackEdit(nullptr);
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;
     hbox->addWidget(pe);

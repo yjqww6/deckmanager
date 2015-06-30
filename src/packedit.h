@@ -10,7 +10,7 @@ class PackEdit : public CardsList
 {
     Q_OBJECT
 public:
-    PackEdit(QWidget *parent, bool &);
+    PackEdit(QWidget *parent);
     void mousePressEvent(QMouseEvent *);
     void dropEvent(QDropEvent *);
     void dragEnterEvent(QDragEnterEvent *);
@@ -38,7 +38,7 @@ class PackEditView : public QWidget
 {
     Q_OBJECT
 public:
-    PackEditView(QWidget *parent, bool &);
+    PackEditView(QWidget *parent);
     QVector<int> &getList()
     {
         return pe->getList();
