@@ -32,11 +32,6 @@ void DeckWidget::resizeEvent(QResizeEvent *event)
     double times = std::min(timesH, timesW);
     cardSize = QSize(177 * times, 254 * times);
     QWidget::resizeEvent(event);
-//    int newHeight = (cardSize.height() + spacing.height()) * row + offset.height() * 2;
-//    if(height() != newHeight)
-//    {
-//        resize(width(), newHeight);
-//    }
 }
 
 void DeckWidget::paintEvent(QPaintEvent *)

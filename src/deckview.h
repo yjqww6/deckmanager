@@ -147,6 +147,7 @@ private slots:
     void help();
     void sort();
     void home();
+    void print();
 
 private:
     class DeckStatus
@@ -205,6 +206,7 @@ private:
     DeckWidget *sideDeck;
     QAction *undoAction, *redoAction;
     QAction *abortAction;
+    QToolBar *toolbar;
     int currentLoad;
     QHash<int, int> map;
     Remote remote;

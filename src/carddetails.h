@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QGridLayout>
-#include <QLabel>
+#include <QPlainTextEdit>
 #include <QFont>
 #include <QResizeEvent>
 #include "cardpicture.h"
@@ -25,11 +25,7 @@ public slots:
 
 private:
     CardPicture *cp;
-    QLabel *name;
-    QLabel *type;
-    QLabel *set;
-    QLabel *ad;
-    QLabel *effect;
+    QPlainTextEdit *effect;
     int offset;
     int currentId;
 };

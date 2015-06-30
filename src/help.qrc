@@ -20,5 +20,6 @@
         <file>icons/sort.png</file>
         <file>icons/undo.png</file>
         <file>icons/home.png</file>
+        <file>icons/print.png</file>
     </qresource>
 </RCC>

@@ -3,6 +3,7 @@
 #include "config.h"
 #include <QDebug>
 #include <QDesktopServices>
+#include <QFileDialog>
 #include <QResizeEvent>
 #include <QUrl>
 
@@ -55,7 +56,7 @@ DeckView::DeckView(QWidget *parent)
     auto mt = new MainDeckLabel;
 
 
-    auto toolbar = new QToolBar;
+    toolbar = new QToolBar;
 
     undoAction = new QAction(toolbar);
     undoAction->setIcon(QIcon(":/icons/undo.png"));
@@ -83,6 +84,11 @@ DeckView::DeckView(QWidget *parent)
     saveAsAction->setIcon(QIcon(":/icons/saveas.png"));
     saveAsAction->setToolTip(config->getStr("action", "saveas", "另存为"));
     toolbar->addAction(saveAsAction);
+
+    auto printAction = new QAction(toolbar);
+    printAction->setIcon(QIcon(":/icons/print.png"));
+    printAction->setToolTip(config->getStr("action", "print", "截图"));
+    toolbar->addAction(printAction);
 
     toolbar->addSeparator();
 
@@ -210,6 +216,7 @@ DeckView::DeckView(QWidget *parent)
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteDeck()));
     connect(abortAction, SIGNAL(triggered()), this, SLOT(abort()));
     connect(homeAction, SIGNAL(triggered()), this, SLOT(home()));
+    connect(printAction, SIGNAL(triggered()), this, SLOT(print()));
 
     connect(mainDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
     connect(extraDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
@@ -318,6 +325,21 @@ void DeckView::help()
 void DeckView::home()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/yjqww6/deckmanager"));
+}
+
+void DeckView::print()
+{
+    int y = toolbar->mapToParent(QPoint(0, toolbar->height())).y();
+    QPixmap pixmap = grab(QRect(QPoint(0, y), QSize(-1, -1)));
+    QString filename = QFileDialog::getSaveFileName(this, "Save", "", "*.png");
+    if(!filename.isNull())
+    {
+        if(!filename.endsWith(".png", Qt::CaseInsensitive))
+        {
+            filename += ".png";
+        }
+        pixmap.save(filename, "png");
+    }
 }
 
 void DeckView::makeSnapshot(bool mod)

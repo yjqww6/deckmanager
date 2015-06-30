@@ -5,38 +5,10 @@ CardDetails::CardDetails(QWidget *parent)
     : QWidget(parent), offset(3), currentId(0)
 {
     setMinimumWidth(180);
-    int fmHeight = fontMetrics().height() + 3;
-    int w = width()  - offset * 2;
-    int y = 0;
 
     cp = new CardPicture(this);
-
-    name = new QLabel(this);
-    type = new QLabel(this);
-    set = new QLabel(this);
-    ad = new QLabel(this);
-    effect = new QLabel(this);
-    effect->setWordWrap(true);
-    effect->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    cp->setGeometry(1 + (width() - 177) / 2, 0, width(), 254);
-
-    y += 260;
-
-    name->setGeometry(offset, y, w, fmHeight);
-
-    y += fmHeight;
-    type->setGeometry(offset, y, w, fmHeight);
-
-    y += fmHeight;
-    set->setGeometry(offset, y, w, fmHeight);
-
-    y += fmHeight;
-    ad->setGeometry(offset, y, w, fmHeight);
-
-
-    y += fmHeight + 5;
-    effect->setGeometry(offset, y, w, height() - y);
-
+    effect = new QPlainTextEdit(this);
+    effect->setReadOnly(true);
 }
 
 void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
@@ -45,38 +17,26 @@ void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
     QWidget::mouseDoubleClickEvent(event);
 }
 
-void CardDetails::resizeEvent(QResizeEvent *)
+void CardDetails::resizeEvent(QResizeEvent *event)
 {
-
-    int fmHeight = fontMetrics().height() + 3;
+    QWidget::resizeEvent(event);
     int w = width()  - offset * 2;
 
     int y = 0;
-    cp->setGeometry(1 + (width() - 177) / 2, 0, width(), 254);
+    QSize cpSize = cp->calcSize(QSize(width(), width() * 254 / 177));
 
-    y += 260;
+    cp->setGeometry(0, 0, width(), cpSize.height());
+    y += cpSize.height() + 4;
 
-    name->setGeometry(offset, y, w, fmHeight);
-
-    y += fmHeight;
-    type->setGeometry(offset, y, w, fmHeight);
-
-    y += fmHeight;
-    set->setGeometry(offset, y, w, fmHeight);
-
-    y += fmHeight;
-    ad->setGeometry(offset, y, w, fmHeight);
-
-
-    y += fmHeight + 5;
     effect->setGeometry(offset, y, w, height() - y);
 }
 
 
 void CardDetails::setId(int id)
 {
+    QStringList str;
     QSharedPointer<Card> card = CardPool::getCard(id);
-    name->setText(card->name + "[" + QString::number(id) + "]");
+    str << card->name + "[" + QString::number(id) + "]";
     currentId = id;
 
     QString ot;
@@ -91,16 +51,16 @@ void CardDetails::setId(int id)
 
     if(card->type & Card::TYPE_MONSTER)
     {
-        type->setText("[" + card->cardType() + "]"
+        str << ("[" + card->cardType() + "]"
                       + card->cardRace() + "/" + card->cardAttr());
         QString level = (card->type & Card::TYPE_XYZ) ? tr("R") : tr("L");
         level = "[" + level + QString::number(card->level) + "]";
-        ad->setText(level + card->cardAD() + ot);
+        str << (level + card->cardAD() + ot);
     }
     else
     {
-        type->setText("[" + card->cardType() + "]");
-        ad->setText(ot);
+        str << ("[" + card->cardType() + "]");
+        str << (ot);
     }
 
     quint64 setcode = card->setcode;
@@ -112,10 +72,12 @@ void CardDetails::setId(int id)
         setcodeStr << cur;
         setcode = setcode >> 16;
     }
-    set->setText(config->getStr("label", "setcode", "系列") + ":[" + setcodeStr.join(tr("|")) + "]");
-
-    effect->setText(card->effect);
+    str << (config->getStr("label", "setcode", "系列") + ":[" + setcodeStr.join(tr("|")) + "]");
+    str << card->effect;
+    effect->clear();
+    effect->insertPlainText(str.join('\n'));
     cp->setId(id);
+    updateGeometry();
 }
 
 CardDetails::~CardDetails()

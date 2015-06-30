@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QPainter>
+#include <QResizeEvent>
 #include "carditem.h"
 
 class CardPicture : public QWidget
@@ -11,8 +12,10 @@ class CardPicture : public QWidget
 public:
     explicit CardPicture(QWidget *parent = 0);
     ~CardPicture();
-
+    void resizeEvent(QResizeEvent *);
     void paintEvent(QPaintEvent *);
+    QSize calcSize(QSize);
+    QSize cardSize;
 signals:
 
 public slots:
