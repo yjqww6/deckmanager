@@ -163,18 +163,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::toDetails(int)
 {
     static int prev = tab->currentIndex();
-    static bool switched = false;
 
-    if(switched)
+    if(tab->currentIndex() == 3)
     {
         tab->setCurrentIndex(prev);
-        switched = false;
     }
     else
     {
         prev = tab->currentIndex();
         tab->setCurrentIndex(3);
-        switched = true;
     }
 }
 
