@@ -279,28 +279,6 @@ void DeckView::sort()
     sideDeck->sort();
 }
 
-QSharedPointer<Card> DeckView::loadNewCard(int id)
-{
-    auto it = map.find(id);
-    if(it != map.end())
-    {
-        return CardPool::getCard(it.value());
-    }
-    QEventLoop loop;
-    QString name;
-    loop.connect(&remote, &Remote::cardName, [&](QString text) {
-        name = text;
-    });
-    loop.connect(&remote, static_cast<void (Remote::*)()>(&Remote::finished), &loop, &QEventLoop::quit);
-    remote.getName(id);
-    loop.exec();
-    auto card = CardPool::getNewCard(name, config->waitForPass);
-    if(card)
-    {
-        map.insert(id, card->id);
-    }
-    return card;
-}
 
 void DeckView::saveDeck(QString path)
 {
@@ -559,6 +537,31 @@ void DeckView::loadFinished(int load, Dst ms, Dst es, Dst ss)
     }
 }
 
+
+QSharedPointer<Card> ItemThread::loadNewCard(int id)
+{
+    auto it = parent->map.find(id);
+    if(it != parent->map.end())
+    {
+        return CardPool::getCard(it.value());
+    }
+    QEventLoop loop;
+    QString name;
+    Remote remote;
+    loop.connect(&remote, &Remote::cardName, [&](QString text) {
+        name = text;
+    });
+    loop.connect(&remote, static_cast<void (Remote::*)()>(&Remote::finished), &loop, &QEventLoop::quit);
+    remote.getName(id);
+    loop.exec();
+    auto card = CardPool::getNewCard(name, config->waitForPass);
+    if(card)
+    {
+        parent->map.insert(id, card->id);
+    }
+    return card;
+}
+
 void ItemThread::run()
 {
     QTextStream in(&lines);
@@ -592,7 +595,7 @@ void ItemThread::run()
                     card = CardPool::getCard(id);
                     if(!card && config->convertPass && id >= 10000)
                     {
-                        card = parent->loadNewCard(id);
+                        card = loadNewCard(id);
                     }
                 }
                 else

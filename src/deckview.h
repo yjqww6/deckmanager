@@ -61,6 +61,7 @@ public:
     Dst ms, es, ss;
     QString lines;
     DeckView *parent;
+    QSharedPointer<Card> loadNewCard(int id);
 signals:
     void finishLoad(int, Dst, Dst, Dst);
 };
@@ -215,7 +216,6 @@ private:
     SnapShot currentSnapshot();
     void restoreSnapshot(SnapShot&);
 
-    QSharedPointer<Card> loadNewCard(int id);
     DeckWidget *mainDeck;
     DeckWidget *extraDeck;
     DeckWidget *sideDeck;
@@ -225,7 +225,6 @@ private:
     QToolBar *toolbar;
     int currentLoad;
     QHash<int, int> map;
-    Remote remote;
     bool waiting;
     bool sideHidden;
 };
