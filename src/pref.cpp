@@ -23,8 +23,9 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
         }
         lfcombo->addItem(config->getStr("label", "noupperbound", "无上限"), -1);
     }
-    connect(lfcombo, SIGNAL(currentIndexChanged(int)), this, SLOT(setLflist(int)));
-    connect(getButton, SIGNAL(clicked()), this, SLOT(openLfList()));
+    connect(lfcombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &Pref::setLflist);
+    connect(getButton, &IconButton::clicked, this, &Pref::openLfList);
 
     lfbox->addWidget(lf);
     lfbox->addWidget(lfcombo);
@@ -38,9 +39,10 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
     waitC->setChecked(config->waitForPass);
     convertC->setChecked(config->convertPass);
     lfcombo->setCurrentIndex(lfcombo->count() >= config->limit ? config->limit : 0);
+    config->setLimit(lfcombo->currentData().toInt());
 
-    connect(waitC, SIGNAL(toggled(bool)), config, SLOT(setWaitForPass(bool)));
-    connect(convertC, SIGNAL(toggled(bool)), config, SLOT(setConvertPass(bool)));
+    connect(waitC, &QCheckBox::toggled, config, &Config::setWaitForPass);
+    connect(convertC, &QCheckBox::toggled, config, &Config::setConvertPass);
 
     vbox->addWidget(waitC);
     vbox->addWidget(convertC);

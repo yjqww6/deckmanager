@@ -22,12 +22,10 @@ LocalList::LocalList(QWidget *parent)
     vbox->addWidget(buttonRefresh);
     setLayout(vbox);
 
-    connect(buttonRefresh, SIGNAL(clicked()), this, SLOT(refresh()));
-    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)),
-            this, SLOT(deckStreamTrans(QListWidgetItem*)));
-    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)),
-            this, SLOT(itemName(QListWidgetItem*)));
-    connect(buttonSave, SIGNAL(clicked()), this, SLOT(saveDeckTrans()));
+    connect(buttonRefresh, &IconButton::clicked, this, &LocalList::refresh);
+    connect(listWidget, QListWidget::itemClicked, this, &LocalList::deckStreamTrans);
+    connect(listWidget, QListWidget::itemClicked, this, &LocalList::itemName);
+    connect(buttonSave, &IconButton::clicked, this, &LocalList::saveDeckTrans);
 }
 
 void LocalList::refresh()

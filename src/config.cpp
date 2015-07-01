@@ -5,11 +5,11 @@
 Config *config = nullptr;
 
 Config::Config(QObject *parent)
-    : QObject(parent)
+    : QObject(parent), remote(0)
 {
     QSettings settings("dmconfig.ini", QSettings::IniFormat);
     settings.setIniCodec("utf8");
-
+    QStringList groups = settings.value("remote/groups", QStringList()).toStringList();
     foreach(auto group, settings.childGroups())
     {
         settings.beginGroup(group);
@@ -25,6 +25,90 @@ Config::Config(QObject *parent)
     limit = getStr("pref", "limit", "0").toInt();
     QFileInfo info(QFile(getStr("pref", "bg", "")));
     bg = info.exists();
+
+    foreach(auto group, groups)
+    {
+        QString parent = getStr(group, "parent", "");
+        if(parent.isEmpty())
+        {
+            remoteConfigs.append(RemoteConfig(mappings, group, nullptr));
+        }
+        else
+        {
+            RemoteConfig rc(parent);
+            auto it = qFind(remoteConfigs.begin(), remoteConfigs.end(), rc);
+            if(it != remoteConfigs.end())
+            {
+                remoteConfigs.append(RemoteConfig(mappings, group, &(*it)));
+            }
+        }
+    }
+}
+
+RemoteConfig::RemoteConfig(QString group)
+{
+    id = group;
+}
+
+RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
+{
+    auto finder = [&](QString key) -> QString {
+        QString ckey = group + "/" + key;
+        auto it = mappings.find(ckey);
+        if(it != mappings.end())
+        {
+            return it.value().toString();
+        }
+        else
+        {
+            return QString("");
+        }
+    };
+
+#define FILL(field) \
+    do {\
+        QString found = finder(#field);\
+        if(found.isNull() || found.isEmpty())\
+        {\
+            if(parent)\
+            {\
+                field = parent->field;\
+            }\
+        }\
+        else\
+        {\
+            field = found;\
+        }\
+    } while(false)
+
+    id = group;
+    FILL(str);
+    FILL(codec);
+    FILL(getlist);
+    FILL(finishlist);
+    FILL(deckname);
+    FILL(deckid);
+    FILL(getdeck);
+    FILL(finishdeck);
+    FILL(deck);
+    FILL(getname);
+    FILL(finishname);
+    FILL(name);
+    FILL(openurl);
+}
+
+RemoteConfig bad("bad");
+
+RemoteConfig& Config::getCurrentRemote()
+{
+    if(remote >= 0 && remote < remoteConfigs.size())
+    {
+        return remoteConfigs[remote];
+    }
+    else
+    {
+        return bad;
+    }
 }
 
 QString Config::getStr(QString group, QString key, QString defaultStr)
@@ -65,6 +149,11 @@ void Config::setConvertPass(bool t)
 void Config::setLimit(int i)
 {
     limit = i;
+}
+
+void Config::setRemote(int i)
+{
+    remote = i;
 }
 
 void Config::setAutoSwitch(bool t)

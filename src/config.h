@@ -4,6 +4,34 @@
 #include <QObject>
 #include <QSettings>
 
+
+typedef QHash<QString, QVariant> Map;
+
+class RemoteConfig
+{
+public:
+    RemoteConfig(Map&, QString, RemoteConfig *);
+    RemoteConfig(QString);
+    QString id;
+    QString str;
+    QString codec;
+    QString getlist;
+    QString finishlist;
+    QString deckname;
+    QString deckid;
+    QString getdeck;
+    QString finishdeck;
+    QString deck;
+    QString getname;
+    QString finishname;
+    QString name;
+    QString openurl;
+    bool operator ==(const RemoteConfig &other)
+    {
+        return id == other.id;
+    }
+};
+
 class Config : public QObject
 {
     Q_OBJECT
@@ -15,13 +43,12 @@ public:
     bool autoSwitch;
     bool bg;
     int limit;
-    typedef QHash<QString, QVariant> Map;
     QString getStr(QString group, QString key, QString defaultStr);
     QString getHelpStr();
-
+    RemoteConfig& getCurrentRemote();
+    QList<RemoteConfig> remoteConfigs;
+    int remote;
     Map mappings;
-
-
 signals:
 
 public slots:
@@ -29,6 +56,7 @@ public slots:
     void setConvertPass(bool);
     void setLimit(int);
     void setAutoSwitch(bool);
+    void setRemote(int);
 };
 
 extern Config *config;

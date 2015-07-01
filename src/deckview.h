@@ -17,7 +17,6 @@
 #include <QToolBar>
 
 #include "deckwidget.h"
-#include "stringrecv.h"
 #include "card.h"
 #include "config.h"
 
@@ -148,10 +147,6 @@ public slots:
     }
 
 private slots:
-    void currentIdChangedTrans(int id)
-    {
-        emit currentIdChanged(id);
-    }
 
     void loadOtherNames()
     {

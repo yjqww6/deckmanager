@@ -42,8 +42,6 @@ public slots:
     void getList(int page = 1);
     void getName(int);
     void abort();
-
-private slots:
     void finished(QNetworkReply *);
     void error(QNetworkReply::NetworkError);
 private:

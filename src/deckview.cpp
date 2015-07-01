@@ -169,11 +169,9 @@ DeckView::DeckView(QWidget *parent)
     vbox->addLayout(hbox);
     vbox->addWidget(mainDeck, 4);
 
-    connect(mainDeck, SIGNAL(sizeChanged(int)), t, SLOT(changeSize(int)));
-    connect(mainDeck, SIGNAL(deckChanged(QList<CardItem>&)),
-            mt, SLOT(deckChanged(QList<CardItem>&)));
-    connect(mainDeck, SIGNAL(currentIdChanged(int)),
-            this, SLOT(currentIdChangedTrans(int)));
+    connect(mainDeck, &DeckWidget::sizeChanged, t, &DeckSizeLabel::changeSize);
+    connect(mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
+    connect(mainDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
     extraDeck = new ExtraDeckWidget(nullptr);
     sideDeck = new DeckWidget(nullptr, 1, 10);
@@ -184,20 +182,17 @@ DeckView::DeckView(QWidget *parent)
     hbox->addWidget(t);
     hbox->addWidget(et);
     vbox->addLayout(hbox);
-    connect(extraDeck, SIGNAL(sizeChanged(int)), t, SLOT(changeSize(int)));
-    connect(extraDeck, SIGNAL(deckChanged(QList<CardItem>&)),
-            et, SLOT(deckChanged(QList<CardItem>&)));
-    connect(extraDeck, SIGNAL(currentIdChanged(int)),
-            this, SLOT(currentIdChangedTrans(int)));
+    connect(extraDeck, &DeckWidget::sizeChanged, t, &DeckSizeLabel::changeSize);
+    connect(extraDeck, &DeckWidget::deckChanged, et, &ExtraDeckLabel::deckChanged);
+    connect(extraDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
     vbox->addWidget(extraDeck, 1);
 
     st = new DeckSizeLabel(config->getStr("label", "side", "副卡组"));
     vbox->addWidget(st);
     vbox->addWidget(sideDeck, 1);
 
-    connect(sideDeck, SIGNAL(sizeChanged(int)), st, SLOT(changeSize(int)));
-    connect(sideDeck, SIGNAL(currentIdChanged(int)),
-            this, SLOT(currentIdChangedTrans(int)));
+    connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
+    connect(sideDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
     auto extFilter = [&](int id) {
         int sum = 0;
@@ -219,29 +214,29 @@ DeckView::DeckView(QWidget *parent)
     extraDeck->makeSnapShot = snapshotMaker;
     sideDeck->makeSnapShot = snapshotMaker;
 
-    connect(sortAction, SIGNAL(triggered()), this, SLOT(sort()));
-    connect(clearAction, SIGNAL(triggered()), this, SLOT(clearDeck()));
-    connect(helpAction, SIGNAL(triggered()), this, SLOT(help()));
-    connect(mainDeck, SIGNAL(clickId(int)), this, SLOT(idClicked(int)));
-    connect(extraDeck, SIGNAL(clickId(int)), this, SLOT(idClicked(int)));
-    connect(sideDeck, SIGNAL(clickId(int)), this, SLOT(idClicked(int)));
+    connect(sortAction, &QAction::triggered, this, &DeckView::sort);
+    connect(clearAction, &QAction::triggered, this, &DeckView::clearDeck);
+    connect(helpAction, &QAction::triggered, this, &DeckView::help);
+    connect(mainDeck, &DeckWidget::clickId, this, &DeckView::idClicked);
+    connect(extraDeck, &DeckWidget::clickId, this, &DeckView::idClicked);
+    connect(sideDeck, &DeckWidget::clickId, this, &DeckView::idClicked);
 
-    connect(shuffleAction, SIGNAL(triggered()), mainDeck, SLOT(shuffle()));
+    connect(shuffleAction, &QAction::triggered, mainDeck, &DeckWidget::shuffle);
 
-    connect(undoAction, SIGNAL(triggered()), this, SLOT(undo()));
-    connect(redoAction, SIGNAL(triggered()), this, SLOT(redo()));
-    connect(saveAction, SIGNAL(triggered()), this, SLOT(saveSlot()));
-    connect(saveAsAction, SIGNAL(triggered()), this, SIGNAL(save()));
-    connect(newAction, SIGNAL(triggered()), this, SLOT(newDeck()));
-    connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteDeck()));
-    connect(abortAction, SIGNAL(triggered()), this, SLOT(abort()));
-    connect(homeAction, SIGNAL(triggered()), this, SLOT(home()));
-    connect(printAction, SIGNAL(triggered()), this, SLOT(print()));
-    connect(hideAction, SIGNAL(triggered()), this, SLOT(hideSide()));
+    connect(undoAction, &QAction::triggered, this, &DeckView::undo);
+    connect(redoAction, &QAction::triggered, this, &DeckView::redo);
+    connect(saveAction, &QAction::triggered, this, &DeckView::saveSlot);
+    connect(saveAsAction, &QAction::triggered, this, &DeckView::save);
+    connect(newAction, &QAction::triggered, this, &DeckView::newDeck);
+    connect(deleteAction, &QAction::triggered, this, &DeckView::deleteDeck);
+    connect(abortAction, &QAction::triggered, this, &DeckView::abort);
+    connect(homeAction, &QAction::triggered, this, &DeckView::home);
+    connect(printAction, &QAction::triggered, this, &DeckView::print);
+    connect(hideAction, &QAction::triggered, this, &DeckView::hideSide);
 
-    connect(mainDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
-    connect(extraDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
-    connect(sideDeck, SIGNAL(details(int)), this, SIGNAL(details(int)));
+    connect(mainDeck, &DeckWidget::details, this, &DeckView::details);
+    connect(extraDeck, &DeckWidget::details, this, &DeckView::details);
+    connect(sideDeck, &DeckWidget::details, this, &DeckView::details);
 
     qRegisterMetaType<Dst>();
 
@@ -270,10 +265,9 @@ void DeckView::loadDeck(QString lines, QString _name, bool local)
     waiting = true;
     setReady(false);
     auto thread = new ItemThread(load, lines, this);
-    connect(thread, SIGNAL(finishLoad(int,Dst,Dst,Dst)),
-            this, SLOT(loadFinished(int,Dst,Dst,Dst)));
-    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-    connect(this, SIGNAL(destroyed()), thread, SLOT(quit()));
+    connect(thread, &ItemThread::finishLoad, this, &DeckView::loadFinished);
+    connect(thread, &ItemThread::finished, thread, &ItemThread::deleteLater);
+    connect(this, &DeckView::destroyed, thread, &ItemThread::quit);
     thread->start();
 }
 
@@ -293,14 +287,14 @@ QSharedPointer<Card> DeckView::loadNewCard(int id)
         return CardPool::getCard(it.value());
     }
     QEventLoop loop;
-    StringRecv name;
-    loop.connect(&remote, SIGNAL(cardName(QString)),
-                 &name, SLOT(setText(QString)));
-    loop.connect(&remote, SIGNAL(finished()),
-                 &loop, SLOT(quit()));
+    QString name;
+    loop.connect(&remote, &Remote::cardName, [&](QString text) {
+        name = text;
+    });
+    loop.connect(&remote, static_cast<void (Remote::*)()>(&Remote::finished), &loop, &QEventLoop::quit);
     remote.getName(id);
     loop.exec();
-    auto card = CardPool::getNewCard(name.text, config->waitForPass);
+    auto card = CardPool::getNewCard(name, config->waitForPass);
     if(card)
     {
         map.insert(id, card->id);

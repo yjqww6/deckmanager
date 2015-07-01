@@ -11,8 +11,7 @@ PackList::PackList(QWidget *parent) : QTreeWidget(parent), myPack(nullptr)
     setColumnHidden(1, true);
     setHeaderHidden(true);
     encoding = config->getStr("pack", "zipencoding", "gbk");
-    connect(this, SIGNAL(itemClicked(QTreeWidgetItem*,int)),
-            this, SLOT(readPackClk(QTreeWidgetItem*,int)));
+    connect(this, &PackList::itemClicked, this, &PackList::readPackClk);
 }
 
 void PackList::refresh()

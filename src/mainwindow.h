@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QTabWidget>
+#include "mtabwidget.h"
+#include "scriptview.h"
 
 class MainWindow : public QMainWindow
 {
@@ -20,9 +22,9 @@ private slots:
     void toDetails(int);
     void save();
 private:
-    QTabWidget *tab;
+    MTabWidget *tab;
     bool movedGlobal;
-    QDialog *dialog;
+    ScriptView *dialog;
     int currentId;
 };
 

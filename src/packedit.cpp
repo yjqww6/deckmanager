@@ -179,7 +179,7 @@ PackEditView::PackEditView(QWidget *parent)
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;
     hbox->addWidget(pe);
-    connect(pe, SIGNAL(currentIdChanged(int)), this, SLOT(changeId(int)));
+    connect(pe, &PackEdit::currentIdChanged, this, &PackEditView::changeId);
     auto sb = new QScrollBar;
     hbox->addWidget(sb);
 
@@ -211,13 +211,13 @@ PackEditView::PackEditView(QWidget *parent)
     hbox->addWidget(clearButton);
     vbox->addLayout(hbox);
 
-    connect(pe, SIGNAL(sizeChanged(int)), label, SLOT(changeSize(int)));
-    connect(pe, SIGNAL(clickId(int)), this, SLOT(idClicked(int)));
-    connect(saveButton, SIGNAL(clicked()), this, SLOT(saveList()));
-    connect(clearButton, SIGNAL(clicked()), pe, SLOT(clearList()));
-    connect(sortButton, SIGNAL(clicked()), pe, SLOT(sort()));
-    connect(pe, SIGNAL(saved()), this, SIGNAL(saved()));
-    connect(pe, SIGNAL(details(int)), this, SIGNAL(details(int)));
+    connect(pe, &PackEdit::sizeChanged, label, &DeckSizeLabel::changeSize);
+    connect(pe, &PackEdit::clickId, this, &PackEditView::idClicked);
+    connect(saveButton, &IconButton::clicked, this, &PackEditView::saveList);
+    connect(clearButton, &IconButton::clicked, pe, &PackEdit::clearList);
+    connect(sortButton, &IconButton::clicked, pe, &PackEdit::sort);
+    connect(pe, &PackEdit::saved, this, &PackEditView::saved);
+    connect(pe, &PackEdit::details, this, &PackEditView::details);
     setLayout(vbox);
 }
 void PackEdit::sort()

@@ -2,14 +2,13 @@
 #include "iconbutton.h"
 #include "config.h"
 #include <QDebug>
+#include <QComboBox>
 
 DeckList::DeckList(QWidget *parent)
     : QListWidget(parent)
 {
-    connect(this, SIGNAL(itemClicked(QListWidgetItem*)),
-            this, SLOT(onItem(QListWidgetItem*)));
-    connect(this, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
-            this, SLOT(openURL(QListWidgetItem*)));
+    connect(this, &DeckList::itemClicked, this, &DeckList::onItem);
+    connect(this, &DeckList::itemDoubleClicked, this, &DeckList::openURL);
 }
 
 DeckList::~DeckList()
@@ -43,7 +42,7 @@ void DeckList::onItem(QListWidgetItem *item)
 void DeckList::openURL(QListWidgetItem* item)
 {
     QString id = item->data(Qt::UserRole).toString();
-    QUrl url(config->getStr("remote", "openurl", "").replace("~0", id));
+    QUrl url(config->getCurrentRemote().openurl.replace("~0", id));
     QDesktopServices::openUrl(url);
 }
 
@@ -54,6 +53,19 @@ DeckListView::DeckListView(QWidget *parent)
     decklist = new DeckList;
 
     vbox->addWidget(decklist);
+
+    auto cata = new QComboBox;
+    int index = 0;
+    foreach(auto remoteConfig, config->remoteConfigs)
+    {
+        cata->addItem(remoteConfig.str, index++);
+    }
+    if(cata->count() > 0) {
+        cata->setCurrentIndex(0);
+    }
+    connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            config, &Config::setRemote);
+    vbox->addWidget(cata);
 
     auto buttom = new QWidget;
     auto hbox = new QHBoxLayout;
@@ -75,7 +87,7 @@ DeckListView::DeckListView(QWidget *parent)
 
     vbox->addWidget(buttom);
     auto refreshButton = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
-    connect(refreshButton, SIGNAL(clicked()), this, SLOT(getList()));
+    connect(refreshButton, &IconButton::clicked, this, &DeckListView::getList);
 
     hbox = new QHBoxLayout;
     hbox->addWidget(refreshButton);
@@ -84,18 +96,16 @@ DeckListView::DeckListView(QWidget *parent)
 
     setLayout(vbox);
 
-    connect(nextButton, SIGNAL(clicked()), this, SLOT(nextPage()));
-    connect(prevButton, SIGNAL(clicked()), this, SLOT(prevPage()));
-    connect(goButton, SIGNAL(clicked()), this, SLOT(goPage()));
+    connect(nextButton, &IconButton::clicked, this, &DeckListView::nextPage);
+    connect(prevButton, &IconButton::clicked, this, &DeckListView::prevPage);
+    connect(goButton, &IconButton::clicked, this, &DeckListView::goPage);
 
-    connect(decklist, SIGNAL(selectDeck(QString, QString)), &remote, SLOT(getDeck(QString, QString)));
-    connect(&remote, SIGNAL(deckStream(QString, QString, bool)),
-            this, SIGNAL(deckStream(QString,QString,bool)));
+    connect(decklist, &DeckList::selectDeck, &remote, &Remote::getDeck);
+    connect(&remote, &Remote::deckStream, this, &DeckListView::deckStream);
 
-    connect(&remote, SIGNAL(list(QSharedPointer<QList<QPair<QString, QString> > >)),
-            decklist, SLOT(setList(QSharedPointer<QList<QPair<QString, QString> > >)));
-    connect(&remote, SIGNAL(ready(bool)), abortButton, SLOT(setDisabled(bool)));
-    connect(abortButton, SIGNAL(clicked()), &remote, SLOT(abort()));
+    connect(&remote, &Remote::list, decklist, &DeckList::setList);
+    connect(&remote, &Remote::ready, abortButton, &IconButton::setDisabled);
+    connect(abortButton, &IconButton::clicked, &remote, &Remote::abort);
 }
 
 void DeckListView::setList(QSharedPointer<QList<QPair<QString, QString> > > ls)

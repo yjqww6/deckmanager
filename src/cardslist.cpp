@@ -39,7 +39,7 @@ void CardsList::setScrollBar(QScrollBar *_sb)
 {
     sb = _sb;
     sb->setMaximum(ls.size());
-    connect(sb, SIGNAL(valueChanged(int)), this, SLOT(setPos(int)));
+    connect(sb, &QScrollBar::valueChanged, this, &CardsList::setPos);
 }
 
 QString CardsList::adToString(int ad)
@@ -336,7 +336,7 @@ CardsListView::CardsListView(QWidget *parent)
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;
     hbox->addWidget(cl);
-    connect(cl, SIGNAL(currentIdChanged(int)), this, SLOT(changeId(int)));
+    connect(cl, &CardsList::currentIdChanged, this, &CardsListView::changeId);
     auto sb = new QScrollBar;
     hbox->addWidget(sb);
 
@@ -347,9 +347,9 @@ CardsListView::CardsListView(QWidget *parent)
     cl->setScrollBar(sb);
 
     vbox->addLayout(hbox, 1);
-    connect(cl, SIGNAL(sizeChanged(int)), label, SLOT(changeSize(int)));
-    connect(cl, SIGNAL(clickId(int)), this, SLOT(idClicked(int)));
-    connect(cl, SIGNAL(details(int)), this, SIGNAL(details(int)));
+    connect(cl, &CardsList::sizeChanged, label, &DeckSizeLabel::changeSize);
+    connect(cl, &CardsList::clickId, this, &CardsListView::idClicked);
+    connect(cl, &CardsList::details, this, &CardsListView::details);
     setLayout(vbox);
 }
 

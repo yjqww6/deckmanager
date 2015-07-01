@@ -6,8 +6,7 @@ ReplayList::ReplayList(QWidget *parent)
     setColumnCount(2);
     setColumnHidden(1, true);
     setHeaderHidden(true);
-    connect(this, SIGNAL(itemClicked(QTreeWidgetItem*,int)),
-            this, SLOT(readYrp(QTreeWidgetItem*,int)));
+    connect(this, &ReplayList::itemClicked, this, &ReplayList::readYrp);
 }
 
 

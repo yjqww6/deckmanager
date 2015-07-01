@@ -104,8 +104,8 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     grid->addWidget(cardType, y, 0);
     grid->addWidget(cardTypeSub, y, 1);
 
-    connect(cardType, SIGNAL(currentIndexChanged(int)),
-            this, SLOT(setCardTypeSub(int)));
+    connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &CardFilter::setCardTypeSub);
 
     auto tab = new QTabWidget;
     auto gridM = new QGridLayout;
@@ -214,13 +214,13 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     grid->addWidget(nameEdit, y, 1);
 
     auto searchButton = new IconButton(":/icons/searchall.png", config->getStr("action", "searchall", "搜索"));
-    connect(searchButton, SIGNAL(clicked()), this, SLOT(searchAll()));
+    connect(searchButton, &QPushButton::clicked, this, &CardFilter::searchAll);
 
     auto searchThisButton = new IconButton(":/icons/search.png", config->getStr("action", "search", "在结果中搜索"));
-    connect(searchThisButton, SIGNAL(clicked()), this, SLOT(searchThis()));
+    connect(searchThisButton, &QPushButton::clicked, this, &CardFilter::searchThis);
 
     auto revertButton = new IconButton(":/icons/revert.png", config->getStr("action", "revert", "复位"));
-    connect(revertButton, SIGNAL(clicked()), this, SLOT(revert()));
+    connect(revertButton, &QPushButton::clicked, this, &CardFilter::revert);
 
     y++;
     grid->addWidget(searchButton, y, 0, 1, 2);

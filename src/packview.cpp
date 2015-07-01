@@ -20,17 +20,15 @@ PackView::PackView(QWidget *parent)
     vbox->addLayout(hbox);
     widget->setLayout(vbox);
 
-    connect(packList, SIGNAL(editCards(QSharedPointer<QVector<int> >)),
-            packEdit, SLOT(setCards(QSharedPointer<QVector<int> >)));
-    connect(packList, SIGNAL(cards(QSharedPointer<QVector<int> >)),
-            this, SIGNAL(cards(QSharedPointer<QVector<int> >)));
-    connect(packList, SIGNAL(readPackOk()), this, SLOT(changeTab()));
-    connect(packList, SIGNAL(packName(QString)), packEdit, SLOT(setName(QString)));
-    connect(packEdit, SIGNAL(saved()), packList, SLOT(refresh()));
-    connect(refreshButton, SIGNAL(clicked()), packList, SLOT(refresh()));
-    connect(editButton, SIGNAL(clicked()), packList, SLOT(readPackEdit()));
-    connect(packEdit, SIGNAL(details(int)), this, SIGNAL(details(int)));
-    connect(this, SIGNAL(checkingLeave()), packEdit, SLOT(checkLeave()));
+    connect(packList, &PackList::editCards, packEdit, &PackEditView::setCards);
+    connect(packList, &PackList::cards, this, &PackView::cards);
+    connect(packList, &PackList::readPackOk, this, &PackView::changeTab);
+    connect(packList, &PackList::packName, packEdit, &PackEditView::setName);
+    connect(packEdit, &PackEditView::saved, packList, &PackList::refresh);
+    connect(refreshButton, &IconButton::clicked, packList, &PackList::refresh);
+    connect(editButton, &IconButton::clicked, packList, &PackList::readPackEdit);
+    connect(packEdit, &PackEditView::details, this, &PackView::details);
+    connect(this, &PackView::checkingLeave, packEdit, &PackEditView::checkLeave);
     tab->addTab(widget, config->getStr("tab", "list", "列表"));
     tab->addTab(packEdit, config->getStr("tab", "edit", "编辑"));
     vbox = new QVBoxLayout;

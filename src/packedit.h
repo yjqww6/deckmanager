@@ -71,6 +71,11 @@ public slots:
         pe->checkLeave();
     }
 
+
+    void setName(QString name)
+    {
+        nameEdit->setText(name);
+    }
 private slots:
     void changeId(int id)
     {
@@ -86,11 +91,6 @@ private slots:
     {
         pe->saveList(nameEdit->text());
         emit refreshPack();
-    }
-
-    void setName(QString name)
-    {
-        nameEdit->setText(name);
     }
 
 private:

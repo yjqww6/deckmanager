@@ -10,7 +10,6 @@
 #include "locallist.h"
 #include "cardfilter.h"
 #include "replaylist.h"
-#include "scriptview.h"
 #include "packview.h"
 #include "pref.h"
 #include "deckview.h"
@@ -65,16 +64,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     dialog = new ScriptView(this);
 
-    tab = new QTabWidget;
+    tab = new MTabWidget;
     tab->setStyleSheet("font-size: 14px;");
 
-    tab->addTab(localList, config->getStr("tab", "local", "本地"));
-    tab->addTab(deckListView, config->getStr("tab", "remote", "远程"));
-    tab->addTab(widget, config->getStr("tab", "replay", "录像"));
-    tab->addTab(cardDetails, config->getStr("tab", "card", "卡"));
-    tab->addTab(filter, config->getStr("tab", "search", "卡池"));
-    tab->addTab(packView, config->getStr("tab", "pack", "卡包"));
-    tab->addTab(pref, config->getStr("tab", "pref", "选项"));
+    tab->addTabBar();
+    tab->addTabBar();
+    tab->addWidget(1, localList, config->getStr("tab", "local", "本地"));
+    tab->addWidget(1, deckListView, config->getStr("tab", "remote", "远程"));
+    tab->addWidget(1, widget, config->getStr("tab", "replay", "录像"));
+    tab->addWidget(0, cardDetails, config->getStr("tab", "card", "卡"));
+    tab->addWidget(0, filter, config->getStr("tab", "search", "卡池"));
+    tab->addWidget(0, packView, config->getStr("tab", "pack", "卡包"));
+    tab->addWidget(0, pref, config->getStr("tab", "pref", "选项"));
+    tab->setCurrentIndex(1, 0);
 
     cardDetails->setStyleSheet("font-size: 15px");
 
@@ -83,59 +85,52 @@ MainWindow::MainWindow(QWidget *parent)
     sp->addWidget(cardListView);
     sp->setStretchFactor(1, 1);
 
-    connect(cardDetails, SIGNAL(clickId(int)), dialog, SLOT(setId(int)));
-    connect(deckView, SIGNAL(clickId(int)), dialog, SLOT(setId(int)));
-    connect(cardListView, SIGNAL(clickId(int)), dialog, SLOT(setId(int)));
+    connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
+    connect(deckView, &DeckView::clickId, dialog, &ScriptView::setId);
+    connect(cardListView, &CardsListView::clickId, dialog, &ScriptView::setId);
 
-    connect(replayRefresh, SIGNAL(clicked()), replayList, SLOT(refresh()));
+    connect(replayRefresh, &IconButton::clicked, replayList, &ReplayList::refresh);
 
-    connect(deckView, SIGNAL(currentIdChanged(int)), this, SLOT(changeId(int)));
-    connect(cardListView, SIGNAL(currentIdChanged(int)), this, SLOT(changeId(int)));
+    connect(deckView, &DeckView::currentIdChanged, this, &MainWindow::changeId);
+    connect(cardListView, &CardsListView::currentIdChanged, this, &MainWindow::changeId);
 
-    connect(this, SIGNAL(currentIdChanged(int)), cardDetails, SLOT(setId(int)));
-    connect(this, SIGNAL(currentIdChanged(int)), deckView, SLOT(setCurrentCardId(int)));
-    connect(this, SIGNAL(currentIdChanged(int)), cardListView, SLOT(setCurrentCardId(int)));
+    connect(this, &MainWindow::currentIdChanged, cardDetails, &CardDetails::setId);
+    connect(this, &MainWindow::currentIdChanged, deckView, &DeckView::setCurrentCardId);
+    connect(this, &MainWindow::currentIdChanged, cardListView, &CardsListView::setCurrentCardId);
 
     setCentralWidget(sp);
 
-    connect(deckListView, SIGNAL(deckStream(QString, QString, bool)),
-                     deckView, SLOT(loadDeck(QString, QString, bool)));
+    connect(deckListView, &DeckListView::deckStream, deckView, &DeckView::loadDeck);
+    connect(localList, &LocalList::deckStream, deckView, &DeckView::loadDeck);
+    connect(localList, &LocalList::saveDeck, deckView, &DeckView::saveDeck);
+    connect(filter, &CardFilter::result, cardListView, &CardsListView::setCards);
 
-    connect(localList, SIGNAL(deckStream(QString, QString, bool)),
-                     deckView, SLOT(loadDeck(QString, QString, bool)));
+    connect(replayList, &ReplayList::deckStream,deckView, &DeckView::loadDeck);
+    connect(packView, &PackView::cards, cardListView, &CardsListView::setCards);
 
-    connect(localList, SIGNAL(saveDeck(QString)), deckView, SLOT(saveDeck(QString)));
+    connect(pref, &Pref::lflistChanged, [=]() {
+        deckView->update();
+        cardListView->update();
+        packView->update();
+    });
+    connect(pref, &Pref::lfList, cardListView, &CardsListView::setCards);
 
-    connect(filter, SIGNAL(result(QSharedPointer<QVector<int> >)),
-            cardListView, SLOT(setCards(QSharedPointer<QVector<int> >)));
+    connect(cardListView, &CardsListView::details, this, &MainWindow::toDetails);
+    connect(packView, &PackView::details, this, &MainWindow::toDetails);
+    connect(deckView, &DeckView::details, this, &MainWindow::toDetails);
 
-    connect(replayList, SIGNAL(deckStream(QString, QString, bool)),
-                               deckView, SLOT(loadDeck(QString, QString, bool)));
-    connect(packView, SIGNAL(cards(QSharedPointer<QVector<int> >)),
-            cardListView, SLOT(setCards(QSharedPointer<QVector<int> >)));
+    connect(deckView, &DeckView::save, this, &MainWindow::save);
+    connect(deckView, &DeckView::save, localList, &LocalList::setPathFocus);
 
-    connect(pref, SIGNAL(lflistChanged()), deckView, SLOT(update()));
-    connect(pref, SIGNAL(lflistChanged()), cardListView, SLOT(update()));
-    connect(pref, SIGNAL(lflistChanged()), packView, SLOT(update()));
-    connect(pref, SIGNAL(lfList(QSharedPointer<QVector<int> >)),
-            cardListView, SLOT(setCards(QSharedPointer<QVector<int> >)));
+    connect(deckView, &DeckView::statusChanged, this, &MainWindow::setWindowTitle);
+    connect(deckView, &DeckView::refreshLocals, localList, &LocalList::refresh);
 
-    connect(cardListView, SIGNAL(details(int)), this, SLOT(toDetails(int)));
-    connect(packView, SIGNAL(details(int)), this, SLOT(toDetails(int)));
-    connect(deckView, SIGNAL(details(int)), this, SLOT(toDetails(int)));
-
-    connect(deckView, SIGNAL(save()), this, SLOT(save()));
-    connect(deckView, SIGNAL(save()), localList, SLOT(setPathFocus()));
-
-    connect(deckView, SIGNAL(statusChanged(QString)), this, SLOT(setWindowTitle(QString)));
-    connect(deckView, SIGNAL(refreshLocals()), localList, SLOT(refresh()));
-
-    connect(this, SIGNAL(destroyed()), CardPool::getThread(), SLOT(terminate()));
+    connect(this, &MainWindow::destroyed, CardPool::getThread(), &LoadThread::terminate);
 
     auto timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), deckView, SLOT(checkLeave()));
-    connect(timer, SIGNAL(timeout()), cardListView, SLOT(checkLeave()));
-    connect(timer, SIGNAL(timeout()), packView, SIGNAL(checkingLeave()));
+    connect(timer, &QTimer::timeout, deckView, &DeckView::checkLeave);
+    connect(timer, &QTimer::timeout, cardListView, &CardsListView::checkLeave);
+    connect(timer, &QTimer::timeout, packView, &PackView::checkingLeave);
     timer->start(200);
 
     deckView->setStatus();
@@ -153,7 +148,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         config->autoSwitch = !config->autoSwitch;
         if(config->autoSwitch)
         {
-            tab->setCurrentIndex(3);
+            tab->setCurrentIndex(0, 0);
         }
     }
 
@@ -162,22 +157,22 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::toDetails(int)
 {
-    static int prev = tab->currentIndex();
+    static QPair<int, int> prev = tab->currentIndex();
 
-    if(tab->currentIndex() == 3)
+    if(tab->currentIndex() == qMakePair(0, 0))
     {
         tab->setCurrentIndex(prev);
     }
     else
     {
         prev = tab->currentIndex();
-        tab->setCurrentIndex(3);
+        tab->setCurrentIndex(0, 0);
     }
 }
 
 void MainWindow::save()
 {
-    tab->setCurrentIndex(0);
+    tab->setCurrentIndex(1, 0);
 }
 
 void MainWindow::changeId(int id)
@@ -192,7 +187,7 @@ void MainWindow::changeId(int id)
     emit currentIdChanged(id);
     if(config->autoSwitch)
     {
-        tab->setCurrentIndex(3);
+        tab->setCurrentIndex(0, 0);
     }
 }
 

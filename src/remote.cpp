@@ -6,9 +6,9 @@ Remote::Remote()
     : QObject(nullptr), reply(nullptr), waiting(false), waitingFor(0)
 {
     manager = new QNetworkAccessManager(this);
-    connect(manager, SIGNAL(finished(QNetworkReply*)),
-            this, SLOT(finished(QNetworkReply*)));
-    theCodec = config->getStr("remote", "codec", "utf8");
+    connect(manager, static_cast<void (QNetworkAccessManager::*)(QNetworkReply*)>(&QNetworkAccessManager::finished),
+            this, static_cast<void (Remote::*)(QNetworkReply*)>(&Remote::finished));
+    theCodec = config->getCurrentRemote().codec;
 }
 
 static QString arg(QString str, const QStringList &ls)
@@ -34,7 +34,7 @@ void Remote::getDeck(QString id, QString _name)
         return;
     }
     waiting = true;
-    currentUrl = arg(config->getStr("remote", "getdeck", ""), id);
+    currentUrl = arg(config->getCurrentRemote().getdeck, id);
     waitingFor = 0;
     name = _name;
     get();
@@ -60,7 +60,7 @@ void Remote::getList(int page)
         return;
     }
     waiting = true;
-    currentUrl = arg(config->getStr("remote", "getlist", ""), QString::number(page));
+    currentUrl = arg(config->getCurrentRemote().getlist, QString::number(page));
     waitingFor = 1;
     get();
 }
@@ -72,7 +72,7 @@ void Remote::getName(int id)
         return;
     }
     waiting = true;
-    currentUrl = arg(config->getStr("remote", "getname", ""), QString::number(id));
+    currentUrl = arg(config->getCurrentRemote().getname, QString::number(id));
     waitingFor = 2;
     get();
 }
@@ -89,11 +89,15 @@ void Remote::listFinished(QNetworkReply *reply)
     else
     {
         QTextCodec *codec = QTextCodec::codecForName(theCodec.toLatin1().data());
+        if(!codec)
+        {
+            codec = QTextCodec::codecForName("utf8");
+        }
         QString page = codec->toUnicode(reply->readAll());
-        QRegExp regexp(config->getStr("remote", "finishlist", ""));
+        QRegExp regexp(config->getCurrentRemote().finishlist);
 
-        QString idI = config->getStr("remote", "deckid", "");
-        QString nameI = config->getStr("remote", "deckname", "");
+        QString idI = config->getCurrentRemote().deckid;
+        QString nameI = config->getCurrentRemote().deckname;
 
         regexp.setMinimal(true);
         int pos = 0, prevPos = -1;
@@ -132,9 +136,13 @@ void Remote::deckFinished(QNetworkReply *reply)
     else
     {
         QTextCodec *codec = QTextCodec::codecForName(theCodec.toLatin1().data());
+        if(!codec)
+        {
+            codec = QTextCodec::codecForName("utf8");
+        }
         QString page = codec->toUnicode(reply->readAll());
-        QRegExp regexp(config->getStr("remote", "finishdeck", ""));
-        QString deckI = config->getStr("remote", "deck", "");
+        QRegExp regexp(config->getCurrentRemote().finishdeck);
+        QString deckI = config->getCurrentRemote().deck;
         regexp.setMinimal(true);
 
         regexp.indexIn(page);
@@ -159,12 +167,16 @@ void Remote::nameFinished(QNetworkReply *reply)
     else
     {
         QTextCodec *codec = QTextCodec::codecForName(theCodec.toLatin1().data());
+        if(!codec)
+        {
+            codec = QTextCodec::codecForName("utf8");
+        }
         QString page = codec->toUnicode(reply->readAll());
-        QRegExp regexp(config->getStr("remote", "finishname", ""));
+        QRegExp regexp(config->getCurrentRemote().finishname);
         regexp.setMinimal(true);
         regexp.indexIn(page);
 
-        QString nameI = config->getStr("remote", "name", "");
+        QString nameI = config->getCurrentRemote().name;
 
         QString name = arg(nameI, regexp.capturedTexts());
         emit cardName(name);
@@ -214,8 +226,8 @@ void Remote::get()
         }
     }
     reply = manager->get(QNetworkRequest(currentUrl));
-    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
-            this, SLOT(error(QNetworkReply::NetworkError)));
+    connect(reply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
+            this, &Remote::error);
 }
 
 void Remote::abort()
