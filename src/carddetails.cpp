@@ -1,14 +1,19 @@
 #include "carddetails.h"
 #include "config.h"
+#include <QVBoxLayout>
 
 CardDetails::CardDetails(QWidget *parent)
     : QWidget(parent), offset(3), currentId(0)
 {
     setMinimumWidth(180);
+    vbox = new QVBoxLayout;
 
-    cp = new CardPicture(this);
-    effect = new QPlainTextEdit(this);
+    cp = new CardPicture;
+    effect = new QPlainTextEdit;
+    vbox->addWidget(cp);
+    vbox->addWidget(effect, 1);
     effect->setReadOnly(true);
+    setLayout(vbox);
 }
 
 void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
@@ -16,21 +21,6 @@ void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
     emit clickId(currentId);
     QWidget::mouseDoubleClickEvent(event);
 }
-
-void CardDetails::resizeEvent(QResizeEvent *event)
-{
-    QWidget::resizeEvent(event);
-    int w = width()  - offset * 2;
-
-    int y = 0;
-    QSize cpSize = cp->calcSize(QSize(width(), width() * 254 / 177));
-
-    cp->setGeometry(0, 0, width(), cpSize.height());
-    y += cpSize.height() + 4;
-
-    effect->setGeometry(offset, y, w, height() - y);
-}
-
 
 void CardDetails::setId(int id)
 {
@@ -77,6 +67,8 @@ void CardDetails::setId(int id)
     effect->clear();
     effect->insertPlainText(str.join('\n'));
     cp->setId(id);
+    vbox->removeWidget(effect);
+    vbox->addWidget(effect, 1);
     updateGeometry();
 }
 

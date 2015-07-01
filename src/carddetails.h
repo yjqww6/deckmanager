@@ -16,7 +16,6 @@ class CardDetails : public QWidget
 public:
     explicit CardDetails(QWidget *parent = 0);
     ~CardDetails();
-    void resizeEvent(QResizeEvent *);
     void mouseDoubleClickEvent(QMouseEvent *);
 signals:
     void clickId(int);
@@ -26,6 +25,7 @@ public slots:
 private:
     CardPicture *cp;
     QPlainTextEdit *effect;
+    QVBoxLayout *vbox;
     int offset;
     int currentId;
 };

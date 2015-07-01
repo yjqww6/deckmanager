@@ -23,7 +23,9 @@ void MTabWidget::addTabBar()
     tabs.append(tab);
     tabs.back()->setCurrentIndex(-1);
     tab->setExpanding(false);
-    tab->setStyleSheet("QTabBar::tab:first{max-width:0px; border-width:0px}");
+    tab->setStyleSheet("QTabBar::tab:first{max-width:0px; border-width:0px}"
+                       "QTabBar{background: rgba(255, 255, 255, 200)}");
+    tab->setDrawBase(false);
     tab->addTab("");
     connect(tab, &QTabBar::tabBarClicked, [=](int index) {
         setCurrentIndexInner(tabIndex, index);

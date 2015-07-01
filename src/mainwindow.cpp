@@ -65,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
     dialog = new ScriptView(this);
 
     tab = new MTabWidget;
-    tab->setStyleSheet("font-size: 14px;");
+    tab->setStyleSheet("font-size: 13px;");
 
     tab->addTabBar();
     tab->addTabBar();
@@ -84,6 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
     sp->addWidget(deckView);
     sp->addWidget(cardListView);
     sp->setStretchFactor(1, 1);
+    sp->setStyleSheet("QSplitter:handle{background:transparent}");
 
     connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
     connect(deckView, &DeckView::clickId, dialog, &ScriptView::setId);
