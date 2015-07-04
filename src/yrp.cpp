@@ -1,4 +1,5 @@
 #include "yrp.h"
+#include "range.h"
 
 static void *myAlloc(void *p, std::size_t size)
 {
@@ -55,8 +56,9 @@ Yrp::Yrp(const QString &path)
 static QString readPlayer(quint8 *data, std::size_t p)
 {
     QString name;
-    for(int i = 0; i < 40; i++, p += 2)
+    for(int i : range(40))
     {
+        Q_UNUSED(i);
         qint16 c = 0;
         c = *(reinterpret_cast<qint16*>(data + p));
         if(c == 0)
@@ -64,6 +66,7 @@ static QString readPlayer(quint8 *data, std::size_t p)
             break;
         }
         name.append(c);
+        p += 2;
     }
     return name;
 }
@@ -78,8 +81,9 @@ static std::size_t readDeck(quint8 *_data, std::size_t _p, Yrp::Deck &deck)
 
     deck.reserve(mainSize + 15);
 
-    for(qint32 i = 0; i < mainSize; i++)
+    for(qint32 i : range(mainSize))
     {
+        Q_UNUSED(i);
         deck.append(data[p]);
         p++;
     }
@@ -87,8 +91,9 @@ static std::size_t readDeck(quint8 *_data, std::size_t _p, Yrp::Deck &deck)
     qint32 extraSize = data[p];
     p++;
 
-    for(qint32 i = 0; i < extraSize; i++)
+    for(qint32 i : range(extraSize))
     {
+        Q_UNUSED(i);
         deck.append(data[p]);
         p++;
     }
@@ -100,15 +105,16 @@ void Yrp::loadDecks(quint8 *data)
     std::size_t p = 0;
     int players = header.flag & 2 ? 4 : 2;
 
-    for(int i = 0; i < players; i++)
+    for(int i : range(players))
     {
+        Q_UNUSED(i);
         decks.append(qMakePair(readPlayer(data, p), Deck()));
         p += 40;
     }
 
     p += 4 * sizeof(qint32);
 
-    for(int i = 0; i < players; i++)
+    for(int i : range(players))
     {
         p += readDeck(data, p, decks[i].second);
     }

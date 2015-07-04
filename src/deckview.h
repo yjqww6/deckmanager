@@ -21,10 +21,6 @@
 #include "config.h"
 
 
-typedef QSharedPointer<QList<CardItem> > Dst;
-Q_DECLARE_METATYPE(Dst);
-
-
 class DeckSizeLabel : public QLabel
 {
     Q_OBJECT
@@ -49,22 +45,19 @@ class ItemThread : public QThread
 {
     Q_OBJECT
 public:
-    ItemThread(int _load, QString _lines, DeckView *parent)
-        : QThread(), load(_load), lines(_lines), parent(parent)
-    {
-        ms = Dst::create();
-        es = Dst::create();
-        ss = Dst::create();
-    }
+    typedef QSharedPointer<QList<QList<CardItem> > > Deck;
+    ItemThread(int _load, QString _lines, DeckView *parent);
     void run();
     int load;
-    Dst ms, es, ss;
+    Deck::value_type deck;
     QString lines;
     DeckView *parent;
     QSharedPointer<Card> loadNewCard(int id);
 signals:
-    void finishLoad(int, Dst, Dst, Dst);
+    void finishLoad(int, ItemThread::Deck);
 };
+
+Q_DECLARE_METATYPE(ItemThread::Deck)
 
 class DeckView : public QWidget
 {
@@ -125,7 +118,7 @@ public slots:
 
     void setStatus()
     {
-        QString stat = "deckmanager - by qww6 ";;
+        QString stat = "deckmanager - by qww6 ";
         stat += "[" + (deckStatus.isLocal ? config->getStr("label", "local", "本地")
                                           : config->getStr("label", "temp", "临时")) + "]";
         stat += deckStatus.name;
@@ -133,7 +126,7 @@ public slots:
         emit statusChanged(stat);
     }
 
-    void loadFinished(int load, Dst ms, Dst es, Dst ss);
+    void loadFinished(int load, ItemThread::Deck);
     void abort()
     {
         waiting = false;

@@ -1,6 +1,7 @@
 #include "deckview.h"
 #include "limitcards.h"
 #include "config.h"
+#include "range.h"
 #include <QDebug>
 #include <QDesktopServices>
 #include <QFileDialog>
@@ -194,7 +195,7 @@ DeckView::DeckView(QWidget *parent)
     connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
     connect(sideDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
-    auto extFilter = [&](int id) {
+    auto extFilter = [this](int id) {
         int sum = 0;
         sum += mainDeck->countCard(id);
         sum += extraDeck->countCard(id);
@@ -206,7 +207,7 @@ DeckView::DeckView(QWidget *parent)
     extraDeck->extFilter = extFilter;
     sideDeck->extFilter = extFilter;
 
-    auto snapshotMaker = [&]() {
+    auto snapshotMaker = [this]() {
         makeSnapshot();
     };
 
@@ -238,7 +239,6 @@ DeckView::DeckView(QWidget *parent)
     connect(extraDeck, &DeckWidget::details, this, &DeckView::details);
     connect(sideDeck, &DeckWidget::details, this, &DeckView::details);
 
-    qRegisterMetaType<Dst>();
 
     setLayout(vbox);
     updateButtons();
@@ -431,7 +431,7 @@ void DeckView::clearDeck()
     setStatus();
 }
 
-static void toCards( QList<CardItem>& items, QVector<int> &shot)
+static void toCards(QList<CardItem>& items, QVector<int> &shot)
 {
     QList<CardItem> temp;
     temp.reserve(shot.size());
@@ -461,22 +461,8 @@ static void toShot(QVector<int> &shot, QList<CardItem>& items)
 
 void DeckView::updateButtons()
 {
-    if(snapshots.size() > 0)
-    {
-        undoAction->setEnabled(true);
-    }
-    else
-    {
-        undoAction->setEnabled(false);
-    }
-    if(redoSnapshots.size() > 0)
-    {
-        redoAction->setEnabled(true);
-    }
-    else
-    {
-        redoAction->setEnabled(false);
-    }
+    undoAction->setEnabled(snapshots.size() > 0);
+    redoAction->setEnabled(redoSnapshots.size() > 0);
 }
 
 void DeckView::saveSlot()
@@ -520,14 +506,14 @@ DeckView::SnapShot DeckView::currentSnapshot()
     return std::move(snap);
 }
 
-void DeckView::loadFinished(int load, Dst ms, Dst es, Dst ss)
+void DeckView::loadFinished(int load, ItemThread::Deck deck)
 {
     waiting = false;
     if(load == currentLoad)
     {
-        mainDeck->getDeck().swap(*ms.data());
-        extraDeck->getDeck().swap(*es.data());
-        sideDeck->getDeck().swap(*ss.data());
+        mainDeck->getDeck().swap((*deck)[0]);
+        extraDeck->getDeck().swap((*deck)[1]);
+        sideDeck->getDeck().swap((*deck)[2]);
 
         setStatus();
         mainDeck->update();
@@ -537,6 +523,12 @@ void DeckView::loadFinished(int load, Dst ms, Dst es, Dst ss)
     }
 }
 
+ItemThread::ItemThread(int _load, QString _lines, DeckView *parent)
+    : QThread(), load(_load), lines(_lines), parent(parent)
+{
+    static auto t = qRegisterMetaType<ItemThread::Deck>();
+    Q_UNUSED(t);
+}
 
 QSharedPointer<Card> ItemThread::loadNewCard(int id)
 {
@@ -566,6 +558,13 @@ void ItemThread::run()
 {
     QTextStream in(&lines);
     bool side = false;
+
+    for(auto i: range(3))
+    {
+        Q_UNUSED(i);
+        decltype(deck)::value_type temp;
+        deck.append(std::move(temp));
+    }
 
     for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
     {
@@ -617,22 +616,24 @@ void ItemThread::run()
                     id = card->id;
                     if(side)
                     {
-                        ss->append(CardItem(id));
+                        deck[2].append(CardItem(id));
                     }
                     else
                     {
                         if(card->inExtra())
                         {
-                            es->append(CardItem(id));
+                            deck[1].append(CardItem(id));
                         }
                         else
                         {
-                            ms->append(CardItem(id));
+                            deck[0].append(CardItem(id));
                         }
                     }
                 }
             }
         }
     }
-    emit finishLoad(load, ms, es, ss);
+    auto ptr = Deck::create();
+    ptr->swap(deck);
+    emit finishLoad(load, ptr);
 }

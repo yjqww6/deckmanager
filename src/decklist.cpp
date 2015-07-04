@@ -19,11 +19,11 @@ DeckList::~DeckList()
 void DeckList::setList(QSharedPointer<QList<QPair<QString, QString> > > ls)
 {
     clear();
-    for(auto it = ls->begin(); it != ls->end(); ++it)
+    foreach(auto &it, *ls)
     {
         auto item = new QListWidgetItem;
-        item->setText(it->first);
-        item->setData(Qt::UserRole, it->second);
+        item->setText(it.first);
+        item->setData(Qt::UserRole, it.second);
         addItem(item);
     }
 }
@@ -56,7 +56,7 @@ DeckListView::DeckListView(QWidget *parent)
 
     auto cata = new QComboBox;
     int index = 0;
-    foreach(auto remoteConfig, config->remoteConfigs)
+    foreach(auto &remoteConfig, config->remoteConfigs)
     {
         cata->addItem(remoteConfig.str, index++);
     }

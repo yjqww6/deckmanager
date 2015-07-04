@@ -1,6 +1,7 @@
 #include "cardslist.h"
 #include "limitcards.h"
 #include "draghelper.h"
+#include "range.h"
 #include <QDebug>
 
 CardsList::CardsList(QWidget *parent)
@@ -64,13 +65,12 @@ void CardsList::paintEvent(QPaintEvent *)
                 cardWidth = cardSize.width();
 
         cardsPerColumn = h / cardHeight;
-        int lsSize = static_cast<std::size_t>(ls.size());
 
         QHash<int, CardItem> newItems;
 
         double varHeight = h - cardHeight * 1.0;
 
-        for(int i = 0; i < cardsPerColumn && i + pos < lsSize; i++)
+        for(int i : range(std::min(cardsPerColumn, ls.size() - pos)))
         {
             int id = ls[i + pos];
 
@@ -120,6 +120,8 @@ void CardsList::paintEvent(QPaintEvent *)
 
             painter.drawText(cardWidth + 5, y + fmHeight, card->name);
             QString ot;
+            QString level = (card->type & Card::TYPE_XYZ) ? tr("R") : tr("L");
+            level = "[" + level + QString::number(card->level) + "]";
             if((card->ot & 0x3) == 1)
             {
                 ot = tr("[OCG]");
@@ -132,7 +134,7 @@ void CardsList::paintEvent(QPaintEvent *)
             if(card->type & Card::TYPE_MONSTER)
             {
                 painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
-                                 card->cardRace() + tr("/") + card->cardAttr());
+                                 card->cardRace() + tr("/") + card->cardAttr() + level);
 
                 painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3,
                                  adToString(card->atk) + tr("/") +
@@ -174,7 +176,7 @@ void CardsList::mousePressEvent(QMouseEvent *event)
 
 int CardsList::itemAt(const QPoint &_pos)
 {
-    for(int i = 0; i < cardsPerColumn; i++)
+    for(int i: range(cardsPerColumn))
     {
         if(i + pos >= ls.size())
         {

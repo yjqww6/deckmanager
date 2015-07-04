@@ -185,10 +185,13 @@ void MainWindow::changeId(int id)
 
     currentId = id;
 
-    emit currentIdChanged(id);
-    if(config->autoSwitch)
+    if(!(QApplication::keyboardModifiers() & Qt::ShiftModifier))
     {
-        tab->setCurrentIndex(0, 0);
+        emit currentIdChanged(id);
+        if(config->autoSwitch)
+        {
+            tab->setCurrentIndex(0, 0);
+        }
     }
 }
 

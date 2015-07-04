@@ -7,6 +7,7 @@
 #include "limitcards.h"
 #include "config.h"
 #include "card.h"
+#include "carditem.h"
 
 
 int main(int argc, char *argv[])

@@ -1,6 +1,7 @@
 #include "card.h"
 #include "expansions.h"
 #include "config.h"
+#include "range.h"
 #include <QDebug>
 
 QScopedPointer<CardPool> CardPool::thePool;
@@ -147,7 +148,7 @@ QString CardPool::getType(int type)
     QStringList str;
 
     auto types = CardPool::getTypes();
-    for(auto it = types.begin(); it != types.end(); it++)
+    for(auto it = types.begin(); it != types.end(); ++it)
     {
         if(type & it.key())
         {
@@ -172,7 +173,7 @@ QString CardPool::getType(int type)
 QString CardPool::getRace(int race)
 {
     auto races = CardPool::getRaces();
-    for(auto it = races.begin(); it != races.end(); it++)
+    for(auto it = races.begin(); it != races.end(); ++it)
     {
         if(race & it.key())
         {
@@ -187,7 +188,7 @@ static QString nameConv(QString name)
 {
     QString conv;
     conv.reserve(name.length());
-    for(int i = 0; i < name.length(); i++)
+    for(int i : range(name.length()))
     {
         ushort unicode = name[i].unicode();
         if(unicode >= 65296 && unicode <= 65305)
@@ -224,7 +225,7 @@ void CardPool::Load(const QStringList &paths)
     thePool->cdbPath = paths;
     thePool->newPool.reserve(10000);
     thePool->loadThread = QSharedPointer<LoadThread>::create(nullptr, thePool.data());
-    foreach(auto path, paths)
+    foreach(auto &path, paths)
     {
         QSqlDatabase db;
         if(QSqlDatabase::contains("qt_sql_default_connection"))
@@ -264,7 +265,7 @@ void CardPool::loadOtherNames()
 QString CardPool::getAttr(int attribute)
 {
     auto attrs = CardPool::getAttrs();
-    for(auto it = attrs.begin(); it != attrs.end(); it++)
+    for(auto it = attrs.begin(); it != attrs.end(); ++it)
     {
         if(attribute & it.key())
         {
@@ -321,7 +322,7 @@ LoadThread::LoadThread(QObject *parent, CardPool *_thePool)
 void LoadThread::run()
 {
     sleep(3);
-    foreach(auto path, thePool->cdbPath)
+    foreach(auto &path, thePool->cdbPath)
     {
         QSqlDatabase db;
         if(QSqlDatabase::contains("qt_sql_default_connection"))

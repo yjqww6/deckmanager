@@ -48,23 +48,14 @@ int PackEdit::posIndex(QPoint point)
 
 bool PackEdit::filter(int id)
 {
-    auto it = ls.begin();
-    for(; it != ls.end(); ++it)
+    foreach(int it, ls)
     {
-        if(*it == id)
+        if(it == id)
         {
-            break;
+            return false;
         }
     }
-
-    if(it == ls.end())
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return true;
 }
 
 void PackEdit::mousePressEvent(QMouseEvent *event)

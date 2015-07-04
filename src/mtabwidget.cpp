@@ -1,4 +1,5 @@
 #include "mtabwidget.h"
+#include "range.h"
 #include <QVariant>
 #include <QDebug>
 #include <QPalette>
@@ -46,7 +47,7 @@ void MTabWidget::setCurrentIndexInner(int tab, int column)
     int s = tabs[tab]->tabData(column).toInt();
     stack->setCurrentIndex(s);
     current = qMakePair(tab, column - 1);
-    for(int i = 0; i < tabs.size(); i++)
+    for(int i: range(tabs.size()))
     {
         if(i == tab)
         {

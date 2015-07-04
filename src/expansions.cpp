@@ -12,7 +12,7 @@ QByteArray Expansions::open(QString path)
 {
     bool found = false;
     QByteArray arr;
-    foreach(auto zipFile, zips)
+    foreach(auto &zipFile, zips)
     {
         if(found)
         {

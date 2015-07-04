@@ -2,6 +2,7 @@
 #include "iconbutton.h"
 #include "config.h"
 #include "limitcards.h"
+#include "range.h"
 
 const int CardFilter::cardTypes[] =
 {
@@ -192,7 +193,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     tab->addTab(wM, config->getStr("label", "attribute", "属性"));
 
     auto gridE = new QGridLayout;
-    for(int i = 0; i < 32; i++)
+    for(int i : range(32))
     {
         effects[i] = new QCheckBox;
         effects[i]->setText(config->getStr("effect", QString::number(i), ""));
@@ -311,12 +312,13 @@ void CardFilter::search(const T &cards)
     quint32 category = 0;
 
     quint32 unit = 1;
-    for(int i = 0; i < 32; i++, unit = unit << 1)
+    for(int i : range(32))
     {
         if(effects[i]->isChecked())
         {
             category |= unit;
         }
+        unit = unit << 1;
     }
 
     int limitC = limit->currentData().toInt();
@@ -344,9 +346,9 @@ void CardFilter::search(const T &cards)
     getRange(atkEdit);
     ls->reserve(cards.size());
 
-    for(auto it = cards.begin(); it != cards.end(); it++)
+    foreach(auto it, cards)
     {
-        auto card = CardPool::getCard(*it);
+        auto card = CardPool::getCard(it);
 
         if(card->type & Card::TYPE_TOKEN)
         {

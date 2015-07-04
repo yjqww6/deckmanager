@@ -121,9 +121,13 @@ void PackList::readPack(QTreeWidgetItem *item, int)
     QTextStream stream(&data);
     auto vec = QSharedPointer<QVector<int> >::create();
 
-    for(QString line = stream.readLine(); !line.isNull() && line.length() > 1;
+    for(QString line = stream.readLine(); !line.isNull();
         line = stream.readLine())
     {
+        if(line.length() <= 1)
+        {
+            continue;
+        }
         int pos = line.indexOf('-');
         if(pos > 0)
         {

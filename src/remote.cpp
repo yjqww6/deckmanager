@@ -1,6 +1,7 @@
 #include "remote.h"
 #include <QTextDocument>
 #include "config.h"
+#include "range.h"
 
 Remote::Remote()
     : QObject(nullptr), reply(nullptr), waiting(false), waitingFor(0)
@@ -13,7 +14,7 @@ Remote::Remote()
 
 static QString arg(QString str, const QStringList &ls)
 {
-    for(int i = 0; i < ls.size(); i++)
+    for(int i : range(ls.size()))
     {
         QString before = "~" + QString::number(i);
         str = str.replace(before, ls[i]);
