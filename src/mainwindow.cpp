@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto pref = new Pref;
     auto widget = new QWidget;
     auto vbox = new QVBoxLayout;
-    auto getter = [=]() -> QVector<int>& {
+    auto getter = [=]() -> QVector<quint32>& {
         return cardListView->getList();
     };
     filter->getCurrent = getter;
@@ -95,9 +95,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(deckView, &DeckView::currentIdChanged, this, &MainWindow::changeId);
     connect(cardListView, &CardsListView::currentIdChanged, this, &MainWindow::changeId);
 
-    connect(this, &MainWindow::currentIdChanged, cardDetails, &CardDetails::setId);
-    connect(this, &MainWindow::currentIdChanged, deckView, &DeckView::setCurrentCardId);
-    connect(this, &MainWindow::currentIdChanged, cardListView, &CardsListView::setCurrentCardId);
+    connect(this, &MainWindow::currentIdChanged, [=](quint32 id) {
+        cardDetails->setId(id);
+        deckView->setCurrentCardId(id);
+        cardListView->setCurrentCardId(id);
+    });
 
     setCentralWidget(sp);
 
@@ -120,8 +122,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(packView, &PackView::details, this, &MainWindow::toDetails);
     connect(deckView, &DeckView::details, this, &MainWindow::toDetails);
 
-    connect(deckView, &DeckView::save, this, &MainWindow::save);
-    connect(deckView, &DeckView::save, localList, &LocalList::setPathFocus);
+    connect(deckView, &DeckView::save, [=](){
+        tab->setCurrentIndex(1, 0);
+        localList->setPathFocus();
+    });
 
     connect(deckView, &DeckView::statusChanged, this, &MainWindow::setWindowTitle);
     connect(deckView, &DeckView::refreshLocals, localList, &LocalList::refresh);
@@ -129,9 +133,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::destroyed, CardPool::getThread(), &LoadThread::terminate);
 
     auto timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, deckView, &DeckView::checkLeave);
-    connect(timer, &QTimer::timeout, cardListView, &CardsListView::checkLeave);
-    connect(timer, &QTimer::timeout, packView, &PackView::checkingLeave);
+    connect(timer, &QTimer::timeout, [=]() {
+       deckView->checkLeave();
+       cardListView->checkLeave();
+       packView->checkLeave();
+    });
     timer->start(200);
 
     deckView->setStatus();
@@ -156,7 +162,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     QMainWindow::keyPressEvent(event);
 }
 
-void MainWindow::toDetails(int)
+void MainWindow::toDetails(quint32)
 {
     static QPair<int, int> prev = tab->currentIndex();
 
@@ -171,12 +177,7 @@ void MainWindow::toDetails(int)
     }
 }
 
-void MainWindow::save()
-{
-    tab->setCurrentIndex(1, 0);
-}
-
-void MainWindow::changeId(int id)
+void MainWindow::changeId(quint32 id)
 {
     if(id == currentId)
     {

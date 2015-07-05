@@ -19,10 +19,10 @@ static QSharedPointer<QPixmap> readPic(QString path)
     return p;
 }
 
-CardItem::CardItem(int _id, bool small)
+CardItem::CardItem(quint32 _id, bool small)
     : id(_id)
 {
-    QHash<int, QWeakPointer<QPixmap> > &thePool = small ? spool : pool;
+    auto &thePool = small ? spool : pool;
     auto it = thePool.find(id);
     if(it == thePool.end() || it.value().isNull())
     {

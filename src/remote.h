@@ -40,7 +40,7 @@ public slots:
 
     void getDeck(QString, QString);
     void getList(int page = 1);
-    void getName(int);
+    void getName(quint32);
     void abort();
     void finished(QNetworkReply *);
     void error(QNetworkReply::NetworkError);

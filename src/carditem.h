@@ -10,13 +10,13 @@
 class CardItem
 {
 public:
-    CardItem(int _id, bool small = false);
+    CardItem(quint32 _id, bool small = false);
 
     CardItem() : id(0), pixmap(nullptr) {}
 
     CardItem(const CardItem &item) : id(item.getId()), pixmap(item.getPixmap()) {}
 
-    int getId() const
+    quint32 getId() const
     {
         return id;
     }
@@ -37,7 +37,7 @@ public:
     }
 
 private:
-    class Pool : public QHash<int, QWeakPointer<QPixmap>>
+    class Pool : public QHash<quint32, QWeakPointer<QPixmap>>
     {
     public:
         Pool()
@@ -51,7 +51,7 @@ private:
     static QString smallPics;
     static QString unknown;
 
-    int id;
+    quint32 id;
     QPoint pos;
     QSharedPointer<QPixmap> pixmap;
 };

@@ -17,7 +17,7 @@ public:
 signals:
 
 public slots:
-    void setId(int);
+    void setId(quint32);
 
 private:
     CardItem item;

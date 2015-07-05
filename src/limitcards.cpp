@@ -29,7 +29,7 @@ LimitCards::LimitCards()
     {
         QTextStream in(&lflist);
         QString name("N/A");
-        QScopedPointer<Table> table(new Table());
+        Table table;
 
         for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
         {
@@ -43,26 +43,22 @@ LimitCards::LimitCards()
             }
             if(line[0] == '!')
             {
-                tables.append(qMakePair(name, QSharedPointer<Table>(table.take())));
+                Table newTable;
+                newTable.swap(table);
+                tables.append(std::move(qMakePair(name, std::move(newTable))));
                 name = line.mid(1);
                 name.trimmed();
-                table.reset(new Table());
-                table->reserve(150);
-                continue;
-            }
-
-            if(!table)
-            {
+                table.reserve(150);
                 continue;
             }
 
             int pos = line.indexOf(QChar(' '));
             if(pos > 0)
             {
-                int id = line.left(pos).toInt();
+                quint32 id = line.left(pos).toUInt();
                 int numPos = line.indexOf(QChar(' '), pos + 1);
                 int lim = line.mid(pos + 1, numPos - pos - 1).toInt();
-                table->insert(id, lim);
+                table.insert(id, lim);
             }
         }
     }
@@ -83,7 +79,7 @@ QSharedPointer<QPixmap> LimitCards::getPixmap(int i)
     return QSharedPointer<QPixmap>(nullptr);
 }
 
-int LimitCards::getLimit(int id)
+int LimitCards::getLimit(quint32 id)
 {
     if(config->limit < 0)
     {
@@ -93,7 +89,7 @@ int LimitCards::getLimit(int id)
     {
         return 3;
     }
-    auto table = lim->tables[config->limit].second;
+    auto &table = lim->tables[config->limit].second;
 
     auto card = CardPool::getCard(id);
     if(card->alias != 0)
@@ -101,8 +97,8 @@ int LimitCards::getLimit(int id)
         id = card->alias;
     }
 
-    auto it = table->find(id);
-    if(it == table->end())
+    auto it = table.find(id);
+    if(it == table.end())
     {
         return 3;
     }
@@ -112,22 +108,22 @@ int LimitCards::getLimit(int id)
     }
 }
 
-QSharedPointer<QVector<int> > LimitCards::getCards(int index)
+Type::DeckP LimitCards::getCards(int index)
 {
-    auto cards = QSharedPointer<QVector<int> >::create();
+    auto cards = Type::DeckP::create();
     if(index >= 0 && index < lim->tables.size())
     {
-        auto table = lim->tables[index].second;
-        cards->reserve(table->size());
+        auto &table = lim->tables[index].second;
+        cards->reserve(table.size());
 
-        for(auto it = table->begin(); it != table->end(); ++it)
+        for(auto it = table.begin(); it != table.end(); ++it)
         {
             cards->append(it.key());
         }
 
-        qSort(cards->begin(), cards->end(), [&] (int id1, int id2) {
-           auto it1 = table->find(id1);
-           auto it2 = table->find(id2);
+        qSort(cards->begin(), cards->end(), [&] (quint32 id1, quint32 id2) {
+           auto it1 = table.find(id1);
+           auto it2 = table.find(id2);
 
            if(it1.value() == it2.value())
            {

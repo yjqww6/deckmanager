@@ -7,6 +7,7 @@
 #include <QPair>
 #include <QScopedArrayPointer>
 #include "lzma/LzmaDec.h"
+#include "typing.h"
 
 struct ReplayHeader
 {
@@ -24,8 +25,7 @@ class Yrp
 public:
     Yrp(const QString&);
     ~Yrp();
-    typedef QVector<int> Deck;
-    typedef QPair<QString, Deck> Item;
+    typedef QPair<QString, Type::Deck> Item;
 
     QList<Item> decks;
 

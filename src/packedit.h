@@ -30,7 +30,7 @@ public slots:
 
 private:
     int itemAt2(const QPoint);
-    bool filter(int id);
+    bool filter(quint32 id);
     int posIndex(QPoint);
 };
 
@@ -39,7 +39,7 @@ class PackEditView : public QWidget
     Q_OBJECT
 public:
     PackEditView(QWidget *parent);
-    QVector<int> &getList()
+    QVector<quint32> &getList()
     {
         return pe->getList();
     }
@@ -49,19 +49,19 @@ public:
         pe->refresh();
     }
 signals:
-    void currentIdChanged(int id);
-    void clickId(int);
+    void currentIdChanged(quint32 id);
+    void clickId(quint32);
     void refreshPack();
     void saved();
-    void details(int);
+    void details(quint32);
 public slots:
 
-    void setCards(QSharedPointer<QVector<int> > cards)
+    void setCards(Type::DeckP cards)
     {
         pe->setCards(cards);
     }
 
-    void setCurrentCardId(int id)
+    void setCurrentCardId(quint32 id)
     {
         pe->setCurrentCardId(id);
     }
@@ -77,12 +77,12 @@ public slots:
         nameEdit->setText(name);
     }
 private slots:
-    void changeId(int id)
+    void changeId(quint32 id)
     {
         emit currentIdChanged(id);
     }
 
-    void idClicked(int id)
+    void idClicked(quint32 id)
     {
         emit clickId(id);
     }

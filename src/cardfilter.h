@@ -13,6 +13,7 @@
 #include <QVector>
 #include "card.h"
 #include <functional>
+#include "typing.h"
 
 class CardFilter : public QWidget
 {
@@ -21,9 +22,9 @@ public:
     explicit CardFilter(QWidget *parent = 0);
     ~CardFilter();
 
-    std::function<QVector<int>&()> getCurrent;
+    std::function<Type::Deck&()> getCurrent;
 signals:
-    void result(QSharedPointer<QVector<int> >);
+    void result(Type::DeckP);
 public slots:
     void revert();
 private slots:
@@ -36,12 +37,12 @@ private:
     template<typename T>
     void search(const T&);
 
-    static const int cardTypes[];
-    static const int monsterTypes[];
-    static const int spellTypes[];
-    static const int trapTypes[];
-    static const int monsterRaces[];
-    static const int monsterAttrs[];
+    static const quint32 cardTypes[];
+    static const quint32 monsterTypes[];
+    static const quint32 spellTypes[];
+    static const quint32 trapTypes[];
+    static const quint32 monsterRaces[];
+    static const quint32 monsterAttrs[];
 
     QPair<int, int> getRange(QLineEdit*);
     bool matchRange(QPair<int, int>, int);

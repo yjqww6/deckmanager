@@ -18,9 +18,9 @@ public:
     ~CardDetails();
     void mouseDoubleClickEvent(QMouseEvent *);
 signals:
-    void clickId(int);
+    void clickId(quint32);
 public slots:
-    void setId(int);
+    void setId(quint32);
 
 private:
     CardPicture *cp;

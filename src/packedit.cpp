@@ -46,9 +46,9 @@ int PackEdit::posIndex(QPoint point)
     return index;
 }
 
-bool PackEdit::filter(int id)
+bool PackEdit::filter(quint32 id)
 {
-    foreach(int it, ls)
+    foreach(auto it, ls)
     {
         if(it == id)
         {
@@ -76,7 +76,7 @@ void PackEdit::startDrag(int index)
         return;
     }
     QMimeData *mimedata = new QMimeData;
-    int id = ls[index];
+    quint32 id = ls[index];
     mimedata->setText(QString::number(id));
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimedata);
@@ -109,7 +109,7 @@ void PackEdit::dragEnterEvent(QDragEnterEvent *event)
 
     if(src)
     {
-        int id = event->mimeData()->text().toInt();
+        quint32 id = event->mimeData()->text().toUInt();
         if(filter(id))
         {
           event->accept();
@@ -126,7 +126,7 @@ void PackEdit::dropEvent(QDropEvent *event)
     auto src = event->source();
     if(src)
     {
-        int id = event->mimeData()->text().toInt();
+        quint32 id = event->mimeData()->text().toUInt();
         if(filter(id))
         {
             int index = posIndex(event->pos());
@@ -154,7 +154,7 @@ void PackEdit::saveList(QString name)
     if(file.open(QFile::WriteOnly | QFile::Text))
     {
         QTextStream out(&file);
-        foreach(int id, ls)
+        foreach(auto id, ls)
         {
             out << id << '\n';
         }

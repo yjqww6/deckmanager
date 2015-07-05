@@ -9,6 +9,7 @@
 #include <QSharedPointer>
 #include <QTextStream>
 #include "yrp.h"
+#include "typing.h"
 
 class ReplayList : public QTreeWidget
 {
@@ -24,7 +25,7 @@ private slots:
     void readYrp(QTreeWidgetItem*, int);
 
 private:
-    QList<QVector<int> > decks;
+    QList<Type::Deck> decks;
 };
 
 #endif // REPLAYLIST_H

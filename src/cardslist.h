@@ -20,6 +20,7 @@
 #include "card.h"
 #include "carditem.h"
 #include "deckview.h"
+#include "typing.h"
 
 class CardsList : public QWidget
 {
@@ -28,7 +29,7 @@ public:
     explicit CardsList(QWidget *parent);
     ~CardsList();
 
-    QVector<int> &getList()
+    Type::Deck &getList()
     {
         return ls;
     }
@@ -45,7 +46,7 @@ public:
     void dropEvent(QDropEvent *event);
 
     void setScrollBar(QScrollBar *);
-    void setCurrentCardId(int id)
+    void setCurrentCardId(quint32 id)
     {
         currentCardId = id;
     }
@@ -63,11 +64,11 @@ public:
 
 signals:
     void sizeChanged(int);
-    void currentIdChanged(int id);
-    void clickId(int);
-    void details(int);
+    void currentIdChanged(quint32 id);
+    void clickId(quint32);
+    void details(quint32);
 public slots:
-    void setCards(QSharedPointer<QVector<int> >);
+    void setCards(Type::DeckP);
     void checkLeave();
 
 private slots:
@@ -80,14 +81,14 @@ protected:
     QString adToString(int);
     virtual void startDrag(int);
 
-    QVector<int> ls;
-    QHash<int, CardItem> items;
+    Type::Deck ls;
+    QHash<quint32, CardItem> items;
 
     int pos;
     QSize cardSize;
     QPoint startPos;
     int cardsPerColumn;
-    int currentCardId;
+    quint32 currentCardId;
     QScrollBar *sb;
     bool needRefreshId;
     QPoint point;
@@ -99,7 +100,7 @@ class CardsListView : public QWidget
     Q_OBJECT
 public:
     CardsListView(QWidget *parent);
-    QVector<int> &getList()
+    QVector<quint32> &getList()
     {
         return cl->getList();
     }
@@ -110,17 +111,17 @@ public:
     }
 
 signals:
-    void currentIdChanged(int id);
-    void clickId(int);
-    void details(int);
+    void currentIdChanged(quint32 id);
+    void clickId(quint32);
+    void details(quint32);
 public slots:
 
-    void setCards(QSharedPointer<QVector<int> > cards)
+    void setCards(Type::DeckP cards)
     {
         cl->setCards(cards);
     }
 
-    void setCurrentCardId(int id)
+    void setCurrentCardId(quint32 id)
     {
         cl->setCurrentCardId(id);
     }
@@ -131,12 +132,12 @@ public slots:
     }
 
 private slots:
-    void changeId(int id)
+    void changeId(quint32 id)
     {
         emit currentIdChanged(id);
     }
 
-    void idClicked(int id)
+    void idClicked(quint32 id)
     {
         emit clickId(id);
     }

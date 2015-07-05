@@ -71,7 +71,7 @@ static QString readPlayer(quint8 *data, std::size_t p)
     return name;
 }
 
-static std::size_t readDeck(quint8 *_data, std::size_t _p, Yrp::Deck &deck)
+static std::size_t readDeck(quint8 *_data, std::size_t _p, Type::Deck &deck)
 {
     qint32 *data = reinterpret_cast<qint32*>(_data + _p);
     std::size_t p = 0;
@@ -108,7 +108,7 @@ void Yrp::loadDecks(quint8 *data)
     for(int i : range(players))
     {
         Q_UNUSED(i);
-        decks.append(qMakePair(readPlayer(data, p), Deck()));
+        decks.append(qMakePair(readPlayer(data, p), Type::Deck()));
         p += 40;
     }
 

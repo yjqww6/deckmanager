@@ -28,7 +28,7 @@ PackView::PackView(QWidget *parent)
     connect(refreshButton, &IconButton::clicked, packList, &PackList::refresh);
     connect(editButton, &IconButton::clicked, packList, &PackList::readPackEdit);
     connect(packEdit, &PackEditView::details, this, &PackView::details);
-    connect(this, &PackView::checkingLeave, packEdit, &PackEditView::checkLeave);
+    connect(this, &PackView::checkLeave, packEdit, &PackEditView::checkLeave);
     tab->addTab(widget, config->getStr("tab", "list", "列表"));
     tab->addTab(packEdit, config->getStr("tab", "edit", "编辑"));
     vbox = new QVBoxLayout;

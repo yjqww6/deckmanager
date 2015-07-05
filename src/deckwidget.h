@@ -21,13 +21,30 @@
 class DeckWidget : public QWidget
 {
     Q_OBJECT
+protected:
+    int itemAt(const QPoint &pos);
+    int posIndex(const QPoint &pos);
+
+    void startDrag(int);
+
+    QList<CardItem> deck;
+    QPoint startPos;
+    QSize cardSize;
+    int row;
+    int column;
+    QSize offset;
+    QSize spacing;
+    quint32 currentCardId;
+
+    int deckSize;
+    int current;
 public:
     explicit DeckWidget(QWidget *parent, int _row, int _column);
     ~DeckWidget();
     void paintEvent(QPaintEvent *event);
 
 
-    QList<CardItem>& getDeck()
+    auto getDeck() -> decltype((deck))
     {
         return deck;
     }
@@ -42,12 +59,12 @@ public:
         cardSize = _size;
     }
 
-    void addCard(int id)
+    void addCard(quint32 id)
     {
         deck.append(std::move(CardItem(id)));
     }
 
-    void insertCard(int index, int id)
+    void insertCard(int index, quint32 id)
     {
         deck.insert(index, std::move(CardItem(id)));
     }
@@ -57,7 +74,7 @@ public:
         deck.clear();
     }
 
-    int countCard(int id);
+    int countCard(quint32 id);
 
     void deleteCard(QPoint);
 
@@ -79,47 +96,30 @@ public:
         QWidget::mouseDoubleClickEvent(event);
     }
 
-    virtual bool filter(int id)
+    virtual bool filter(quint32 id)
     {
         auto card = CardPool::getCard(id);
         return card;
     }
 
-    void setCurrentCardId(int id)
+    void setCurrentCardId(quint32 id)
     {
         currentCardId = id;
     }
 
 
-    std::function<bool(int)> extFilter;
+    std::function<bool(quint32)> extFilter;
     std::function<void()> makeSnapShot;
 signals:
-    void currentIdChanged(int id);
+    void currentIdChanged(quint32 id);
     void sizeChanged(int size);
     void deckChanged(QList<CardItem> &);
-    void clickId(int);
-    void details(int);
+    void clickId(quint32);
+    void details(quint32);
 public slots:
     void shuffle();
     void sort();
     void checkLeave();
-protected:
-    int itemAt(const QPoint &pos);
-    int posIndex(const QPoint &pos);
-
-    void startDrag(int);
-
-    QList<CardItem> deck;
-    QPoint startPos;
-    QSize cardSize;
-    int row;
-    int column;
-    QSize offset;
-    QSize spacing;
-    int currentCardId;
-
-    int deckSize;
-    int current;
 };
 
 #endif // DECKWIDGET_H

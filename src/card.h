@@ -143,7 +143,7 @@ class CardPool
 {
 public:
     friend class LoadThread;
-    static QSharedPointer<Card> getCard(int id)
+    static QSharedPointer<Card> getCard(quint32 id)
     {
         return thePool->findCard(id);
     }
@@ -177,19 +177,19 @@ public:
         return thePool->loadThread.data();
     }
 
-    static QString getType(int);
-    static QString getRace(int);
-    static QString getAttr(int);
+    static QString getType(quint32);
+    static QString getRace(quint32);
+    static QString getAttr(quint32);
 private:
 
-    void loadCard(int id);
-    QSharedPointer<Card> findCard(int id);
+    void loadCard(quint32 id);
+    QSharedPointer<Card> findCard(quint32 id);
 
     static QScopedPointer<CardPool> thePool;
 
     CardPool();
     QStringList cdbPath;
-    QSharedPointer<Card> make_card(int id);
+    QSharedPointer<Card> make_card(quint32 id);
     QHash<int, QSharedPointer<Card> > pool;
     QHash<QString, int> newPool;
     QHash<int, QString> races;

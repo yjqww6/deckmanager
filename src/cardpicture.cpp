@@ -16,7 +16,7 @@ void CardPicture::paintEvent(QPaintEvent *)
     }
 }
 
-void CardPicture::setId(int id)
+void CardPicture::setId(quint32 id)
 {
     item = CardItem(id);
     if(item.getPixmap() && item.getPixmap()->height() > 0)

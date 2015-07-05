@@ -16,16 +16,15 @@ public:
     void keyPressEvent(QKeyEvent *);
 
 signals:
-    void currentIdChanged(int);
+    void currentIdChanged(quint32);
 private slots:
-    void changeId(int);
-    void toDetails(int);
-    void save();
+    void changeId(quint32);
+    void toDetails(quint32);
 private:
     MTabWidget *tab;
     bool movedGlobal;
     ScriptView *dialog;
-    int currentId;
+    quint32 currentId;
 };
 
 #endif // MAINWINDOW_H

@@ -9,6 +9,7 @@ DeckList::DeckList(QWidget *parent)
 {
     connect(this, &DeckList::itemClicked, this, &DeckList::onItem);
     connect(this, &DeckList::itemDoubleClicked, this, &DeckList::openURL);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
 DeckList::~DeckList()

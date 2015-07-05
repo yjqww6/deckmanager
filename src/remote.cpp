@@ -66,7 +66,7 @@ void Remote::getList(int page)
     get();
 }
 
-void Remote::getName(int id)
+void Remote::getName(quint32 id)
 {
     if(waiting)
     {

@@ -14,7 +14,7 @@ ScriptView::ScriptView(QWidget *parent)
     resize(640, 480);
 }
 
-void ScriptView::setId(int id)
+void ScriptView::setId(quint32 id)
 {
     setWindowTitle(CardPool::getCard(id)->name);
     QFile file("script/c" + QString::number(id) + ".lua");

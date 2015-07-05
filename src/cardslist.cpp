@@ -66,13 +66,13 @@ void CardsList::paintEvent(QPaintEvent *)
 
         cardsPerColumn = h / cardHeight;
 
-        QHash<int, CardItem> newItems;
+        decltype(items) newItems;
 
         double varHeight = h - cardHeight * 1.0;
 
         for(int i : range(std::min(cardsPerColumn, ls.size() - pos)))
         {
-            int id = ls[i + pos];
+            quint32 id = ls[i + pos];
 
             auto it = newItems.insert(i + pos, CardItem(id));
 
@@ -201,7 +201,7 @@ void CardsList::refreshCurrentId()
     int index = itemAt(point);
     if(index != -1)
     {
-        int id = ls[index];
+        quint32 id = ls[index];
         if(currentCardId != id)
         {
             currentCardId = id;
@@ -215,7 +215,7 @@ void CardsList::mouseMoveEvent(QMouseEvent *event)
     int index = itemAt(event->pos());
     if(index != -1)
     {
-        int id = ls[index];
+        quint32 id = ls[index];
         if(currentCardId != id)
         {
             currentCardId = id;
@@ -248,7 +248,7 @@ void CardsList::startDrag(int index)
         return;
     }
     QMimeData *mimedata = new QMimeData;
-    int id = ls[index];
+    quint32 id = ls[index];
     mimedata->setText(QString::number(id));
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimedata);
@@ -304,7 +304,7 @@ void CardsList::setPos(int _pos)
     }
 }
 
-void CardsList::setCards(QSharedPointer<QVector<int> > cards)
+void CardsList::setCards(Type::DeckP cards)
 {
     ls.swap(*cards.data());
     ls.squeeze();

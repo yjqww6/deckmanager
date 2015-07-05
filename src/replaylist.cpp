@@ -56,7 +56,7 @@ void ReplayList::readYrp(QTreeWidgetItem *item, int)
         int index = item->data(0, Qt::UserRole).toInt();
         auto &deck = decks[index];
         QStringList ls;
-        foreach(int id, deck)
+        foreach(quint32 id, deck)
         {
             ls << QString::number(id);
         }

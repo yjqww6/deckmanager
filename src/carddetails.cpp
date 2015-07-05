@@ -22,7 +22,7 @@ void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
     QWidget::mouseDoubleClickEvent(event);
 }
 
-void CardDetails::setId(int id)
+void CardDetails::setId(quint32 id)
 {
     QStringList str;
     QSharedPointer<Card> card = CardPool::getCard(id);

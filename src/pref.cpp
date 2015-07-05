@@ -15,9 +15,9 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
     auto tables = LimitCards::getTables();
 
     {
-        auto it = tables.get().begin();
+        auto it = tables.begin();
         int index = 0;
-        for(; it != tables.get().end(); ++it, ++index)
+        for(; it != tables.end(); ++it, ++index)
         {
             lfcombo->addItem(it->first, index);
         }

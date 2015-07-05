@@ -212,7 +212,7 @@ void DeckWidget::mousePressEvent(QMouseEvent *event)
         int index = itemAt(event->pos());
         if(index >= 0)
         {
-            int id = deck[index].getId();
+            quint32 id = deck[index].getId();
             emit details(id);
         }
     }
@@ -224,7 +224,7 @@ void DeckWidget::mouseMoveEvent(QMouseEvent *event)
     int index = itemAt(event->pos());
     if(index != -1)
     {
-        int id = deck[index].getId();
+        quint32 id = deck[index].getId();
         if(currentCardId != id)
         {
             currentCardId = id;
@@ -286,7 +286,7 @@ void DeckWidget::dragEnterEvent(QDragEnterEvent *event)
 
     if(src)
     {
-        int id = event->mimeData()->text().toInt();
+        quint32 id = event->mimeData()->text().toUInt();
         if(filter(id) && extFilter(id))
         {
           event->accept();
@@ -312,7 +312,7 @@ void DeckWidget::dropEvent(QDropEvent *event)
     auto src = event->source();
     if(src)
     {
-        int id = event->mimeData()->text().toInt();
+        quint32 id = event->mimeData()->text().toUInt();
         if(filter(id) && extFilter(id))
         {
             if(!dragHelper.atomic)
@@ -343,18 +343,18 @@ void DeckWidget::deleteCard(QPoint _pos)
     update();
 }
 
-int DeckWidget::countCard(int id)
+int DeckWidget::countCard(quint32 id)
 {
     auto card = CardPool::getCard(id);
     int sum = 0;
     foreach(const CardItem &item, deck)
     {
         auto card2 = CardPool::getCard(item.getId());
-        if(static_cast<quint32>(id) == card2->id)
+        if(id == card2->id)
         {
             sum += 1;
         }
-        else if(static_cast<quint32>(id) == card2->alias)
+        else if(id == card2->alias)
         {
             sum += 1;
         }

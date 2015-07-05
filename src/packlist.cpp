@@ -120,7 +120,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
     }
 
     QTextStream stream(&data);
-    auto vec = QSharedPointer<QVector<int> >::create();
+    auto vec = Type::DeckP::create();
 
     for(QString line = stream.readLine(); !line.isNull();
         line = stream.readLine())
@@ -132,7 +132,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         int pos = line.indexOf('-');
         if(pos > 0)
         {
-            int id = line.left(pos).toInt();
+            quint32 id = line.left(pos).toUInt();
             auto card = CardPool::getCard(id);
             if(card)
             {
@@ -151,7 +151,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         }
         else if(pos < 0)
         {
-            int id = line.toInt();
+            quint32 id = line.toUInt();
             auto card = CardPool::getCard(id);
             if(card)
             {

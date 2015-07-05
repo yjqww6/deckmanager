@@ -52,7 +52,7 @@ public:
     Deck::value_type deck;
     QString lines;
     DeckView *parent;
-    QSharedPointer<Card> loadNewCard(int id);
+    QSharedPointer<Card> loadNewCard(quint32 id);
 signals:
     void finishLoad(int, ItemThread::Deck);
 };
@@ -98,14 +98,14 @@ public slots:
 
     void clearDeck();
 
-    void setCurrentCardId(int id)
+    void setCurrentCardId(quint32 id)
     {
         mainDeck->setCurrentCardId(id);
         extraDeck->setCurrentCardId(id);
         sideDeck->setCurrentCardId(id);
     }
 
-    void idClicked(int id)
+    void idClicked(quint32 id)
     {
         emit clickId(id);
     }
@@ -199,7 +199,7 @@ private:
             return *this;
         }
 
-        QVector<int> shot[3];
+        Type::Deck shot[3];
         DeckStatus deckStatus;
     };
 
@@ -217,7 +217,7 @@ private:
     QAction *abortAction;
     QToolBar *toolbar;
     int currentLoad;
-    QHash<int, int> map;
+    QHash<quint32, quint32> map;
     bool waiting;
     bool sideHidden;
 };

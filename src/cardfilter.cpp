@@ -4,14 +4,14 @@
 #include "limitcards.h"
 #include "range.h"
 
-const int CardFilter::cardTypes[] =
+const quint32 CardFilter::cardTypes[] =
 {
     Card::TYPE_MONSTER,
     Card::TYPE_SPELL,
     Card::TYPE_TRAP
 };
 
-const int CardFilter::monsterTypes[] =
+const quint32 CardFilter::monsterTypes[] =
 {
     Card::TYPE_NORMAL,
     Card::TYPE_EFFECT,
@@ -30,7 +30,7 @@ const int CardFilter::monsterTypes[] =
     Card::TYPE_NORMAL | Card::TYPE_TUNER
 };
 
-const int CardFilter::spellTypes[] =
+const quint32 CardFilter::spellTypes[] =
 {
     Card::TYPE_QUICKPLAY,
     Card::TYPE_CONTINUOUS,
@@ -39,13 +39,13 @@ const int CardFilter::spellTypes[] =
     Card::TYPE_RITUAL
 };
 
-const int CardFilter::trapTypes[] =
+const quint32 CardFilter::trapTypes[] =
 {
     Card::TYPE_CONTINUOUS,
     Card::TYPE_COUNTER
 };
 
-const int CardFilter::monsterRaces[] =
+const quint32 CardFilter::monsterRaces[] =
 {
     Card::RACE_WARRIOR,
     Card::RACE_SPELLCASTER,
@@ -72,7 +72,7 @@ const int CardFilter::monsterRaces[] =
     Card::RACE_CREATORGOD,
     Card::RACE_PHANTOMDRAGON
 };
-const int CardFilter::monsterAttrs[] =
+const quint32 CardFilter::monsterAttrs[] =
 {
     Card::ATTRIBUTE_DARK,
     Card::ATTRIBUTE_LIGHT,
@@ -289,7 +289,7 @@ void CardFilter::searchAll()
 
 void CardFilter::searchThis()
 {
-    QVector<int> &t = getCurrent();
+    auto &t = getCurrent();
     search(t);
 }
 
@@ -297,7 +297,7 @@ template<typename T>
 
 void CardFilter::search(const T &cards)
 {
-    auto ls = QSharedPointer<QVector<int> >::create();
+    auto ls = Type::DeckP::create();
     quint32 type = cardType->currentData().toUInt();
     quint32 subtype = cardTypeSub->currentData().toUInt();
     quint32 race = cardRace->currentData().toUInt();

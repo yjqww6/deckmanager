@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include "packlist.h"
 #include "packedit.h"
+#include "typing.h"
 
 class PackView : public QWidget
 {
@@ -18,10 +19,10 @@ public:
     }
 
 signals:
-    void cards(QSharedPointer<QVector<int> >);
-    void details(int);
+    void cards(Type::DeckP);
+    void details(quint32);
 
-    void checkingLeave();
+    void checkLeave();
 public slots:
     void changeTab()
     {

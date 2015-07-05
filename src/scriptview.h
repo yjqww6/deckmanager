@@ -20,7 +20,7 @@ public:
     }
 
 public slots:
-    void setId(int id);
+    void setId(quint32 id);
 private:
     QPlainTextEdit *textEdit;
 };

@@ -20,7 +20,7 @@ public:
 
     }
 
-    virtual bool filter(int id)
+    virtual bool filter(quint32 id)
     {
         auto card = CardPool::getCard(id);
         return card && card->inExtra();
@@ -35,7 +35,7 @@ public:
     {
 
     }
-    virtual bool filter(int id)
+    virtual bool filter(quint32 id)
     {
         auto card = CardPool::getCard(id);
         return card && !card->inExtra();
@@ -195,7 +195,7 @@ DeckView::DeckView(QWidget *parent)
     connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
     connect(sideDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
-    auto extFilter = [this](int id) {
+    auto extFilter = [this](quint32 id) {
         int sum = 0;
         sum += mainDeck->countCard(id);
         sum += extraDeck->countCard(id);
@@ -431,11 +431,11 @@ void DeckView::clearDeck()
     setStatus();
 }
 
-static void toCards(QList<CardItem>& items, QVector<int> &shot)
+static void toCards(QList<CardItem>& items, Type::Deck &shot)
 {
     QList<CardItem> temp;
     temp.reserve(shot.size());
-    foreach(int id, shot)
+    foreach(auto id, shot)
     {
         temp.append(CardItem(id));
     }
@@ -450,7 +450,7 @@ void DeckView::restoreSnapshot(SnapShot &snap)
     deckStatus = snap.deckStatus;
 }
 
-static void toShot(QVector<int> &shot, QList<CardItem>& items)
+static void toShot(Type::Deck &shot, QList<CardItem>& items)
 {
     shot.reserve(items.size());
     foreach(auto &item, items)
@@ -530,7 +530,7 @@ ItemThread::ItemThread(int _load, QString _lines, DeckView *parent)
     Q_UNUSED(t);
 }
 
-QSharedPointer<Card> ItemThread::loadNewCard(int id)
+QSharedPointer<Card> ItemThread::loadNewCard(quint32 id)
 {
     auto it = parent->map.find(id);
     if(it != parent->map.end())
@@ -586,7 +586,7 @@ void ItemThread::run()
             else
             {
                 bool ok = true;
-                int id = line.toInt(&ok);
+                quint32 id = line.toUInt(&ok);
 
                 QSharedPointer<Card> card;
                 if(ok)

@@ -5,6 +5,7 @@
 #include <QTreeWidget>
 #include <QDir>
 #include "card.h"
+#include "typing.h"
 
 class PackList : public QTreeWidget
 {
@@ -12,8 +13,8 @@ class PackList : public QTreeWidget
 public:
     explicit PackList(QWidget *parent = 0);
 signals:
-    void cards(QSharedPointer<QVector<int> >);
-    void editCards(QSharedPointer<QVector<int> >);
+    void cards(Type::DeckP);
+    void editCards(Type::DeckP);
     void readPackOk();
     void packName(QString);
 public slots:

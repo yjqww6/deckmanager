@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include "typing.h"
 
 class Pref : public QWidget
 {
@@ -15,7 +16,7 @@ public:
 
 signals:
     void lflistChanged();
-    void lfList(QSharedPointer<QVector<int> >);
+    void lfList(Type::DeckP);
 public slots:
     void setLflist(int index);
     void openLfList();

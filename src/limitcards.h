@@ -10,26 +10,27 @@
 #include <QScopedPointer>
 #include <QSharedPointer>
 #include <functional>
+#include "typing.h"
 
 class LimitCards{
 public:
     LimitCards();
     QSharedPointer<QPixmap> limits[3];
 
-    typedef QHash<int, int> Table;
-    QList<QPair<QString, QSharedPointer<Table> > > tables;
+    typedef QHash<quint32, int> Table;
+    QList<QPair<QString, Table> > tables;
 
     static void load();
     static QSharedPointer<QPixmap> getPixmap(int);
 
-    static auto getTables() -> decltype(std::ref(tables))
+    static auto getTables() -> decltype((tables))
     {
         return lim->tables;
     }
 
-    static int getLimit(int id);
+    static int getLimit(quint32 id);
 
-    static QSharedPointer<QVector<int> > getCards(int);
+    static Type::DeckP getCards(int);
 private:
     static QScopedPointer<LimitCards> lim;
 };

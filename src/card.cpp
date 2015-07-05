@@ -6,7 +6,7 @@
 
 QScopedPointer<CardPool> CardPool::thePool;
 
-void CardPool::loadCard(int id)
+void CardPool::loadCard(quint32 id)
 {
     auto it = pool.find(id);
     if(it == pool.end() || it->isNull())
@@ -21,7 +21,7 @@ void CardPool::loadCard(int id)
     return;
 }
 
-QSharedPointer<Card> CardPool::findCard(int id)
+QSharedPointer<Card> CardPool::findCard(quint32 id)
 {
     auto it = pool.find(id);
     if(it == pool.end())
@@ -31,7 +31,7 @@ QSharedPointer<Card> CardPool::findCard(int id)
     return it.value();
 }
 
-QSharedPointer<Card> CardPool::make_card(int id)
+QSharedPointer<Card> CardPool::make_card(quint32 id)
 {
     auto card = QSharedPointer<Card>(new Card);
     QSqlQuery query;
@@ -142,7 +142,7 @@ CardPool::CardPool()
     acc = false;
 }
 
-QString CardPool::getType(int type)
+QString CardPool::getType(quint32 type)
 {
     QList<QPair<int, QString> > ls;
     QStringList str;
@@ -170,7 +170,7 @@ QString CardPool::getType(int type)
     return str.join('|');
 }
 
-QString CardPool::getRace(int race)
+QString CardPool::getRace(quint32 race)
 {
     auto races = CardPool::getRaces();
     for(auto it = races.begin(); it != races.end(); ++it)
@@ -262,7 +262,7 @@ void CardPool::loadOtherNames()
     }
 }
 
-QString CardPool::getAttr(int attribute)
+QString CardPool::getAttr(quint32 attribute)
 {
     auto attrs = CardPool::getAttrs();
     for(auto it = attrs.begin(); it != attrs.end(); ++it)
@@ -346,7 +346,7 @@ void LoadThread::run()
                 {
                     msleep(10);
                 }
-                int id = query.value(0).toInt();
+                quint32 id = query.value(0).toUInt();
                 QFile file("script/c" + QString::number(id) + ".lua");
                 if(file.open(QFile::ReadOnly | QFile::Text))
                 {
