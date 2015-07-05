@@ -59,10 +59,11 @@ void PackList::refresh()
             }
         }
     }
+    zip.close();
+
     qSort(items.begin(), items.end(), [&](QTreeWidgetItem *a, QTreeWidgetItem *b) {
         return a->text(0) < b->text(0);
     });
-    zip.close();
 
     QDir dir("pack/" + config->getStr("pack", "mypackpath", "__我的卡包") + "/");
     myPack = new QTreeWidgetItem;

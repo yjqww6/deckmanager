@@ -23,8 +23,8 @@ LocalList::LocalList(QWidget *parent)
     setLayout(vbox);
 
     connect(buttonRefresh, &IconButton::clicked, this, &LocalList::refresh);
-    connect(listWidget, QListWidget::itemClicked, this, &LocalList::deckStreamTrans);
-    connect(listWidget, QListWidget::itemClicked, this, &LocalList::itemName);
+    connect(listWidget, &QListWidget::itemClicked, this, &LocalList::deckStreamTrans);
+    connect(listWidget, &QListWidget::itemClicked, this, &LocalList::itemName);
     connect(buttonSave, &IconButton::clicked, this, &LocalList::saveDeckTrans);
 }
 
