@@ -21,10 +21,20 @@ void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
     QWidget::mouseDoubleClickEvent(event);
 }
 
+void CardDetails::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    setId(currentId);
+}
+
 void CardDetails::setId(quint32 id)
 {
     QStringList str;
     QSharedPointer<Card> card = cardPool->getCard(id);
+    if(!card)
+    {
+        return;
+    }
     str << card->name + "[" + QString::number(id) + "]";
     currentId = id;
 
@@ -65,7 +75,7 @@ void CardDetails::setId(quint32 id)
     str << card->effect;
     effect->clear();
     effect->insertPlainText(str.join('\n'));
-    cp->setId(id);
+    cp->setId(id, effect->width());
     vbox->removeWidget(effect);
     vbox->addWidget(effect, 1);
     updateGeometry();

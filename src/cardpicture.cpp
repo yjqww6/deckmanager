@@ -16,13 +16,22 @@ void CardPicture::paintEvent(QPaintEvent *)
     }
 }
 
-void CardPicture::setId(quint32 id)
+void CardPicture::setId(quint32 id, int maxWidth)
 {
     item = CardItem(id);
     if(item.getPixmap() && item.getPixmap()->height() > 0)
     {
-        setFixedSize(item.getPixmap()->size());
-        cardSize = item.getPixmap()->size();
+        if(item.getPixmap()->width() > maxWidth)
+        {
+            QSize size(maxWidth, maxWidth * 254 / 177);
+            setFixedSize(size);
+            cardSize = size;
+        }
+        else
+        {
+            setFixedSize(item.getPixmap()->size());
+            cardSize = item.getPixmap()->size();
+        }
     }
     update();
 }

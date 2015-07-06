@@ -17,6 +17,7 @@ public:
     explicit CardDetails(QWidget *parent = 0);
     ~CardDetails();
     void mouseDoubleClickEvent(QMouseEvent *);
+    void resizeEvent(QResizeEvent *);
 signals:
     void clickId(quint32);
 public slots:
