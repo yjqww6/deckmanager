@@ -4,24 +4,9 @@
 #include "range.h"
 #include <QDebug>
 
-QScopedPointer<CardPool> CardPool::thePool;
+CardPool *cardPool = nullptr;
 
-void CardPool::loadCard(quint32 id)
-{
-    auto it = pool.find(id);
-    if(it == pool.end() || it->isNull())
-    {
-        auto card = make_card(id);
-        if(card)
-        {
-            pool.insert(id, card);
-        }
-        return;
-    }
-    return;
-}
-
-QSharedPointer<Card> CardPool::findCard(quint32 id)
+QSharedPointer<Card> CardPool::getCard(quint32 id)
 {
     auto it = pool.find(id);
     if(it == pool.end())
@@ -31,18 +16,9 @@ QSharedPointer<Card> CardPool::findCard(quint32 id)
     return it.value();
 }
 
-QSharedPointer<Card> CardPool::make_card(quint32 id)
+void CardPool::loadCard(QSqlQuery &query)
 {
     auto card = QSharedPointer<Card>(new Card);
-    QSqlQuery query;
-    query.prepare("select * from datas where id = :id");
-    query.bindValue(":id", id);
-    query.exec();
-
-    if(!query.first())
-    {
-        return QSharedPointer<Card>(nullptr);
-    }
 
 #define ASSIGN(field, index) card->field = query.value(index).toUInt();
     ASSIGN(id, 0);
@@ -58,27 +34,19 @@ QSharedPointer<Card> CardPool::make_card(quint32 id)
     ASSIGN(category, 10);
     card->scale = (card->level & 0xff0000) >> 16;
     card->level = card->level & 0xffff;
+    card->name = query.value(11).toString();
+    card->effect = query.value(12).toString();
 
-    query.prepare("select * from texts where id = :id");
-    query.bindValue(":id", id);
-    query.exec();
-
-    if(!query.first())
-    {
-        return card;
-    }
-    card->name = query.value(1).toString();
-    card->effect = query.value(2).toString();
-    return card;
+    pool.insert(card->id, card);
 }
 
-CardPool::CardPool()
+CardPool::CardPool(QStringList paths)
 {
 #define INSERT(container, field, str) \
     do { \
         auto &cont = container;\
         auto name = config->getStr("string", #field, str);\
-        cont.insert(Card::field, name);\
+        cont.insert(Const::field, name);\
     } while(false)
 
     INSERT(types, TYPE_MONSTER, "怪兽");
@@ -140,6 +108,38 @@ CardPool::CardPool()
 
     otherNamesDone = false;
     acc = false;
+
+
+    cdbPath = paths;
+    newPool.reserve(10000);
+    loadThread = QSharedPointer<LoadThread>::create(nullptr, this);
+    foreach(auto &path, cdbPath)
+    {
+        QSqlDatabase db;
+        if(QSqlDatabase::contains("qt_sql_default_connection"))
+        {
+            db = QSqlDatabase::database("qt_sql_default_connection");
+        }
+        else
+        {
+            db = QSqlDatabase::addDatabase("QSQLITE");
+        }
+
+        db.setDatabaseName(path);
+        db.open();
+
+        QSqlQuery query;
+        query.exec("select datas.* , texts.name, texts.desc from datas left join texts on datas.id = texts.id");
+        if(query.first())
+        {
+            do
+            {
+                loadCard(query);
+            } while(query.next());
+        }
+
+        db.close();
+    }
 }
 
 QString CardPool::getType(quint32 type)
@@ -147,7 +147,7 @@ QString CardPool::getType(quint32 type)
     QList<QPair<int, QString> > ls;
     QStringList str;
 
-    auto types = CardPool::getTypes();
+    auto types = getTypes();
     for(auto it = types.begin(); it != types.end(); ++it)
     {
         if(type & it.key())
@@ -172,7 +172,7 @@ QString CardPool::getType(quint32 type)
 
 QString CardPool::getRace(quint32 race)
 {
-    auto races = CardPool::getRaces();
+    auto races = getRaces();
     for(auto it = races.begin(); it != races.end(); ++it)
     {
         if(race & it.key())
@@ -219,49 +219,6 @@ static QString nameConv(QString name)
     return conv;
 }
 
-void CardPool::Load(const QStringList &paths)
-{
-    thePool.reset(new CardPool());
-    thePool->cdbPath = paths;
-    thePool->newPool.reserve(10000);
-    thePool->loadThread = QSharedPointer<LoadThread>::create(nullptr, thePool.data());
-    foreach(auto &path, paths)
-    {
-        QSqlDatabase db;
-        if(QSqlDatabase::contains("qt_sql_default_connection"))
-        {
-            db = QSqlDatabase::database("qt_sql_default_connection");
-        }
-        else
-        {
-            db = QSqlDatabase::addDatabase("QSQLITE");
-        }
-
-        db.setDatabaseName(path);
-        db.open();
-
-        QSqlQuery query;
-        query.exec("select id from datas");
-        if(query.first())
-        {
-            do
-            {
-                thePool->loadCard(query.value(0).toInt());
-            } while(query.next());
-        }
-
-        db.close();
-    }
-}
-
-void CardPool::loadOtherNames()
-{
-    if(thePool->otherNamesDone)
-    {
-        return;
-    }
-}
-
 QString CardPool::getAttr(quint32 attribute)
 {
     auto attrs = CardPool::getAttrs();
@@ -279,42 +236,42 @@ QString CardPool::getAttr(quint32 attribute)
 QSharedPointer<Card> CardPool::getNewCard(QString name, bool wait)
 {
     name = nameConv(name);
-    auto it = thePool->newPool.find(name);
-    if(it == thePool->newPool.end() && thePool->loadThread && !thePool->otherNamesDone && wait)
+    auto it = newPool.find(name);
+    if(it == newPool.end() && loadThread && !otherNamesDone && wait)
     {
-        thePool->acc = true;
-        thePool->loadThread->wait();
-        it = thePool->newPool.find(name);
+        acc = true;
+        loadThread->wait();
+        it = newPool.find(name);
     }
-    if(it == thePool->newPool.end())
+    if(it == newPool.end())
     {
         return QSharedPointer<Card>(nullptr);
     }
     return getCard(it.value());
 }
 
-void CardPool::LoadNames()
+void CardPool::loadNames()
 {
-    thePool->loadThread->start();
+    loadThread->start();
 }
 
 QString Card::cardType()
 {
-    return std::move(CardPool::getType(type));
+    return cardPool->getType(type);
 }
 
 QString Card::cardRace()
 {
-    return std::move(CardPool::getRace(race));
+    return cardPool->getRace(race);
 }
 
 QString Card::cardAttr()
 {
-    return std::move(CardPool::getAttr(attribute));
+    return cardPool->getAttr(attribute);
 }
 
 LoadThread::LoadThread(QObject *parent, CardPool *_thePool)
-    : QThread(parent), ok(false), thePool(_thePool)
+    : QThread(parent), thePool(_thePool)
 {
 
 }
@@ -381,6 +338,5 @@ void LoadThread::run()
         }
         db.close();
     }
-    ok = true;
     thePool->otherNamesDone = true;
 }

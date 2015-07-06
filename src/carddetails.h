@@ -27,7 +27,7 @@ private:
     QPlainTextEdit *effect;
     QVBoxLayout *vbox;
     int offset;
-    int currentId;
+    quint32 currentId;
 };
 
 #endif // CARDDETAILS_H

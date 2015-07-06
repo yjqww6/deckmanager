@@ -3,7 +3,7 @@
 #include "config.h"
 #include <QDebug>
 
-QScopedPointer<LimitCards> LimitCards::lim;
+LimitCards *limitCards = nullptr;
 
 LimitCards::LimitCards()
 {
@@ -64,17 +64,11 @@ LimitCards::LimitCards()
     }
 }
 
-void LimitCards::load()
-{
-
-    lim.reset(new LimitCards());
-}
-
 QSharedPointer<QPixmap> LimitCards::getPixmap(int i)
 {
     if(i >= 0 && i <= 2)
     {
-        return lim->limits[i];
+        return limits[i];
     }
     return QSharedPointer<QPixmap>(nullptr);
 }
@@ -85,13 +79,13 @@ int LimitCards::getLimit(quint32 id)
     {
         return INT_MAX;
     }
-    else if(lim->tables.size() <= config->limit)
+    else if(tables.size() <= config->limit)
     {
         return 3;
     }
-    auto &table = lim->tables[config->limit].second;
+    auto &table = tables[config->limit].second;
 
-    auto card = CardPool::getCard(id);
+    auto card = cardPool->getCard(id);
     if(card->alias != 0)
     {
         id = card->alias;
@@ -111,9 +105,9 @@ int LimitCards::getLimit(quint32 id)
 Type::DeckP LimitCards::getCards(int index)
 {
     auto cards = Type::DeckP::create();
-    if(index >= 0 && index < lim->tables.size())
+    if(index >= 0 && index < tables.size())
     {
-        auto &table = lim->tables[index].second;
+        auto &table = tables[index].second;
         cards->reserve(table.size());
 
         for(auto it = table.begin(); it != table.end(); ++it)
@@ -127,7 +121,7 @@ Type::DeckP LimitCards::getCards(int index)
 
            if(it1.value() == it2.value())
            {
-               auto card1 = CardPool::getCard(id1), card2 = CardPool::getCard(id2);
+               auto card1 = cardPool->getCard(id1), card2 = cardPool->getCard(id2);
                if(card1 && card2)
                {
                    return (card1->type & 7) < (card2->type & 7);

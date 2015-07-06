@@ -5,14 +5,13 @@
 CardDetails::CardDetails(QWidget *parent)
     : QWidget(parent), offset(3), currentId(0)
 {
-    setMinimumWidth(180);
-    vbox = new QVBoxLayout;
-
     cp = new CardPicture;
     effect = new QPlainTextEdit;
+    effect->setReadOnly(true);
+
+    vbox = new QVBoxLayout;
     vbox->addWidget(cp);
     vbox->addWidget(effect, 1);
-    effect->setReadOnly(true);
     setLayout(vbox);
 }
 
@@ -25,7 +24,7 @@ void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
 void CardDetails::setId(quint32 id)
 {
     QStringList str;
-    QSharedPointer<Card> card = CardPool::getCard(id);
+    QSharedPointer<Card> card = cardPool->getCard(id);
     str << card->name + "[" + QString::number(id) + "]";
     currentId = id;
 
@@ -39,11 +38,11 @@ void CardDetails::setId(quint32 id)
         ot = tr("[TCG]");
     }
 
-    if(card->type & Card::TYPE_MONSTER)
+    if(card->type & Const::TYPE_MONSTER)
     {
         str << ("[" + card->cardType() + "]"
                       + card->cardRace() + "/" + card->cardAttr());
-        QString level = (card->type & Card::TYPE_XYZ) ? tr("R") : tr("L");
+        QString level = (card->type & Const::TYPE_XYZ) ? tr("R") : tr("L");
         level = "[" + level + QString::number(card->level) + "]";
         str << (level + card->cardAD() + ot);
     }

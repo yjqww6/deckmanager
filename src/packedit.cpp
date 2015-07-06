@@ -167,41 +167,20 @@ PackEditView::PackEditView(QWidget *parent)
 {
 
     pe = new PackEdit(nullptr);
-    auto hbox = new QHBoxLayout;
-    auto vbox = new QVBoxLayout;
-    hbox->addWidget(pe);
-    connect(pe, &PackEdit::currentIdChanged, this, &PackEditView::changeId);
     auto sb = new QScrollBar;
-    hbox->addWidget(sb);
+    pe->setScrollBar(sb);
 
     auto label = new DeckSizeLabel(config->getStr("label", "number", "数目"));
     label->setAlignment(Qt::AlignRight);
     label->changeSize(0);
-    vbox->addWidget(label);
-
-    pe->setScrollBar(sb);
-
-    vbox->addLayout(hbox, 1);
 
     nameEdit = new QLineEdit;
-
-    hbox = new QHBoxLayout;
-
 
     auto saveButton = new IconButton(":/icons/saveas.png", config->getStr("action", "saveas", "另存为"));
     auto sortButton = new IconButton(":/icons/sort.png", config->getStr("action", "sort", "排序"));
     auto clearButton = new IconButton(":/icons/clear.png", config->getStr("action", "clear", "清空"));
 
-    hbox->addWidget(nameEdit);
-    hbox->addWidget(saveButton);
-
-    vbox->addLayout(hbox);
-
-    hbox = new QHBoxLayout;
-    hbox->addWidget(sortButton);
-    hbox->addWidget(clearButton);
-    vbox->addLayout(hbox);
-
+    connect(pe, &PackEdit::currentIdChanged, this, &PackEditView::changeId);
     connect(pe, &PackEdit::sizeChanged, label, &DeckSizeLabel::changeSize);
     connect(pe, &PackEdit::clickId, this, &PackEditView::idClicked);
     connect(saveButton, &IconButton::clicked, this, &PackEditView::saveList);
@@ -209,6 +188,22 @@ PackEditView::PackEditView(QWidget *parent)
     connect(sortButton, &IconButton::clicked, pe, &PackEdit::sort);
     connect(pe, &PackEdit::saved, this, &PackEditView::saved);
     connect(pe, &PackEdit::details, this, &PackEditView::details);
+
+    auto hbox = new QHBoxLayout;
+    auto vbox = new QVBoxLayout;
+    hbox->addWidget(pe);
+    hbox->addWidget(sb);
+    vbox->addWidget(label);
+    vbox->addLayout(hbox, 1);
+    hbox = new QHBoxLayout;
+    hbox->addWidget(nameEdit);
+    hbox->addWidget(saveButton);
+    vbox->addLayout(hbox);
+    hbox = new QHBoxLayout;
+    hbox->addWidget(sortButton);
+    hbox->addWidget(clearButton);
+    vbox->addLayout(hbox);
+
     setLayout(vbox);
 }
 void PackEdit::sort()
@@ -216,8 +211,8 @@ void PackEdit::sort()
     qSort(ls.begin(), ls.end(),
           [&](int a, int b)
     {
-        auto ca = CardPool::getCard(a);
-        auto cb = CardPool::getCard(b);
+        auto ca = cardPool->getCard(a);
+        auto cb = cardPool->getCard(b);
         int ta = ca->type & 7, tb = cb->type & 7;
         if(ta != tb)
         {
@@ -227,7 +222,7 @@ void PackEdit::sort()
         {
             return ca->type < cb->type;
         }
-        else if(ca->type & Card::TYPE_MONSTER)
+        else if(ca->type & Const::TYPE_MONSTER)
         {
             return ca->atk >= cb->atk;
         }

@@ -133,7 +133,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         if(pos > 0)
         {
             quint32 id = line.left(pos).toUInt();
-            auto card = CardPool::getCard(id);
+            auto card = cardPool->getCard(id);
             if(card)
             {
                 vec->append(card->id);
@@ -142,7 +142,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
             {
                 line = line.mid(pos + 1);
                 line = line.trimmed();
-                auto card = CardPool::getNewCard(line, config->waitForPass);
+                auto card = cardPool->getNewCard(line, config->waitForPass);
                 if(card)
                 {
                     vec->append(card->id);
@@ -152,7 +152,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         else if(pos < 0)
         {
             quint32 id = line.toUInt();
-            auto card = CardPool::getCard(id);
+            auto card = cardPool->getCard(id);
             if(card)
             {
                 vec->append(card->id);
@@ -162,7 +162,7 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         {
             line = line.mid(pos + 1);
             line = line.trimmed();
-            auto card = CardPool::getNewCard(line, config->waitForPass);
+            auto card = cardPool->getNewCard(line, config->waitForPass);
             if(card)
             {
                 vec->append(card->id);

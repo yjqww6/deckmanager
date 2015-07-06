@@ -101,17 +101,17 @@ void CardsList::paintEvent(QPaintEvent *)
             painter.drawPixmap(0, y, cardWidth, cardHeight,
                                *item.getPixmap().data());
 
-            int lim = LimitCards::getLimit(it->getId());
+            int lim = limitCards->getLimit(it->getId());
             if(lim < 3)
             {
-                auto data = LimitCards::getPixmap(lim);
+                auto data = limitCards->getPixmap(lim);
                 if(data)
                 {
                     painter.drawPixmap(0, y, 16, 16, *data.data());
                 }
             }
 
-            auto card = CardPool::getCard(id);
+            auto card = cardPool->getCard(id);
 
             if(!card)
             {
@@ -120,7 +120,7 @@ void CardsList::paintEvent(QPaintEvent *)
 
             painter.drawText(cardWidth + 5, y + fmHeight, card->name);
             QString ot;
-            QString level = (card->type & Card::TYPE_XYZ) ? tr("R") : tr("L");
+            QString level = (card->type & Const::TYPE_XYZ) ? tr("R") : tr("L");
             level = "[" + level + QString::number(card->level) + "]";
             if((card->ot & 0x3) == 1)
             {
@@ -131,7 +131,7 @@ void CardsList::paintEvent(QPaintEvent *)
                 ot = tr("[TCG]");
             }
 
-            if(card->type & Card::TYPE_MONSTER)
+            if(card->type & Const::TYPE_MONSTER)
             {
                 painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
                                  card->cardRace() + tr("/") + card->cardAttr() + level);
@@ -140,7 +140,7 @@ void CardsList::paintEvent(QPaintEvent *)
                                  adToString(card->atk) + tr("/") +
                                  adToString(card->def) + ot);
             }
-            else if(card->type & (Card::TYPE_SPELL | Card::TYPE_TRAP))
+            else if(card->type & (Const::TYPE_SPELL | Const::TYPE_TRAP))
             {
                 painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
                                  card->cardType());
@@ -333,25 +333,26 @@ CardsList::~CardsList()
 CardsListView::CardsListView(QWidget *parent)
     : QWidget(parent)
 {
-
-    cl = new CardsList(nullptr);
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;
-    hbox->addWidget(cl);
-    connect(cl, &CardsList::currentIdChanged, this, &CardsListView::changeId);
+
+    cl = new CardsList(nullptr);
     auto sb = new QScrollBar;
-    hbox->addWidget(sb);
 
     auto label = new DeckSizeLabel(config->getStr("label", "number", "数目"));
     label->setAlignment(Qt::AlignRight);
-    vbox->addWidget(label);
 
     cl->setScrollBar(sb);
 
-    vbox->addLayout(hbox, 1);
+    connect(cl, &CardsList::currentIdChanged, this, &CardsListView::changeId);
     connect(cl, &CardsList::sizeChanged, label, &DeckSizeLabel::changeSize);
-    connect(cl, &CardsList::clickId, this, &CardsListView::idClicked);
+    connect(cl, &CardsList::clickId, this, &CardsListView::clickId);
     connect(cl, &CardsList::details, this, &CardsListView::details);
+
+    hbox->addWidget(cl);
+    hbox->addWidget(sb);
+    vbox->addWidget(label);
+    vbox->addLayout(hbox, 1);
     setLayout(vbox);
 }
 

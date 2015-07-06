@@ -12,12 +12,18 @@ DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
     spacing = QSize(3, 3);
     cardSize = QSize(177 / 3.5 , 254 / 3.5);
 
-    extFilter = [](int) {return true;};
+    extFilter = [](quint32) {return true;};
+
+    filter = [](quint32 id)
+    {
+        return cardPool->getCard(id);
+    };
+
     makeSnapShot = []() {};
     QSize min = cardSize + spacing;
     min.setWidth(min.width() * column + offset.width() * 2);
     min.setHeight(min.height() * row + offset.height() * 2);
-    min = offset + min - spacing;
+    min = offset + min;
     setMouseTracking(true);
     setMinimumSize(min);
 
@@ -27,9 +33,10 @@ DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
 void DeckWidget::resizeEvent(QResizeEvent *event)
 {
     double cardHeight = (height() - offset.height() * 2.0) / row - spacing.height();
-    double cardWidth = (width() - offset.width() * 2.0) / column - spacing.width();
-    double timesH = cardHeight / 254, timesW = cardWidth / 177;
-    double times = std::min(timesH, timesW);
+    //double cardWidth = (width() - offset.width() * 2.0) / column - spacing.width();
+    //double timesH = cardHeight / 254, timesW = cardWidth / 177;
+    //double times = std::min(timesH, timesW);
+    double times = cardHeight / 254;
     cardSize = QSize(177 * times, 254 * times);
     QWidget::resizeEvent(event);
 }
@@ -47,21 +54,22 @@ void DeckWidget::paintEvent(QPaintEvent *)
     emit deckChanged(deck);
     int cardPerRow = std::max(static_cast<int>(ceil(deckSize * 1.0 / row)), column);
     int varWidth = (width() - offset.width()) * 1.0 - cardSize.width() - offset.width();
+    int yoff = ((height() - offset.height()) * 1.0 - (cardSize.height() + spacing.height()) * row) / 2;
     auto it = deck.begin();
     for(int i = 0; i < row && it != deck.end(); i++)
     {
         for(int j = 0; j < cardPerRow && it != deck.end(); j++)
         {
             int x = offset.width() + floor(varWidth * j / (cardPerRow - 1)),
-                    y = offset.height() + i * (cardSize.height() + spacing.height());
+                    y = yoff + offset.height() + i * (cardSize.height() + spacing.height());
             it->setPos(QPoint(x, y));
             painter.drawPixmap(x, y, cardSize.width(),
                                cardSize.height(), *it->getPixmap().data());
 
-            int lim = LimitCards::getLimit(it->getId());
+            int lim = limitCards->getLimit(it->getId());
             if(lim < 3)
             {
-                auto data = LimitCards::getPixmap(lim);
+                auto data = limitCards->getPixmap(lim);
                 if(data)
                 {
                     painter.drawPixmap(x, y, 16, 16, *data.data());
@@ -113,8 +121,8 @@ void DeckWidget::sort()
 {
     qSort(deck.begin(), deck.end(),[&](CardItem &a, CardItem &b)
     {
-        auto ca = CardPool::getCard(a.getId());
-        auto cb = CardPool::getCard(b.getId());
+        auto ca = cardPool->getCard(a.getId());
+        auto cb = cardPool->getCard(b.getId());
         int ta = ca->type & 7, tb = cb->type & 7;
         if(ta != tb)
         {
@@ -124,7 +132,7 @@ void DeckWidget::sort()
         {
             return ca->type < cb->type;
         }
-        else if(ca->type & Card::TYPE_MONSTER)
+        else if(ca->type & Const::TYPE_MONSTER)
         {
             if(ca->level != cb->level)
             {
@@ -345,11 +353,11 @@ void DeckWidget::deleteCard(QPoint _pos)
 
 int DeckWidget::countCard(quint32 id)
 {
-    auto card = CardPool::getCard(id);
+    auto card = cardPool->getCard(id);
     int sum = 0;
     foreach(const CardItem &item, deck)
     {
-        auto card2 = CardPool::getCard(item.getId());
+        auto card2 = cardPool->getCard(item.getId());
         if(id == card2->id)
         {
             sum += 1;

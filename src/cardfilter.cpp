@@ -6,81 +6,81 @@
 
 const quint32 CardFilter::cardTypes[] =
 {
-    Card::TYPE_MONSTER,
-    Card::TYPE_SPELL,
-    Card::TYPE_TRAP
+    Const::TYPE_MONSTER,
+    Const::TYPE_SPELL,
+    Const::TYPE_TRAP
 };
 
 const quint32 CardFilter::monsterTypes[] =
 {
-    Card::TYPE_NORMAL,
-    Card::TYPE_EFFECT,
-    Card::TYPE_FUSION,
-    Card::TYPE_RITUAL,
-    Card::TYPE_SPIRIT,
-    Card::TYPE_UNION,
-    Card::TYPE_DUAL,
-    Card::TYPE_TUNER,
-    Card::TYPE_SYNCHRO,
-    Card::TYPE_FLIP,
-    Card::TYPE_TOON,
-    Card::TYPE_XYZ,
-    Card::TYPE_PENDULUM,
-    Card::TYPE_SYNCHRO | Card::TYPE_TUNER,
-    Card::TYPE_NORMAL | Card::TYPE_TUNER
+    Const::TYPE_NORMAL,
+    Const::TYPE_EFFECT,
+    Const::TYPE_FUSION,
+    Const::TYPE_RITUAL,
+    Const::TYPE_SPIRIT,
+    Const::TYPE_UNION,
+    Const::TYPE_DUAL,
+    Const::TYPE_TUNER,
+    Const::TYPE_SYNCHRO,
+    Const::TYPE_FLIP,
+    Const::TYPE_TOON,
+    Const::TYPE_XYZ,
+    Const::TYPE_PENDULUM,
+    Const::TYPE_SYNCHRO | Const::TYPE_TUNER,
+    Const::TYPE_NORMAL | Const::TYPE_TUNER
 };
 
 const quint32 CardFilter::spellTypes[] =
 {
-    Card::TYPE_QUICKPLAY,
-    Card::TYPE_CONTINUOUS,
-    Card::TYPE_EQUIP,
-    Card::TYPE_FIELD,
-    Card::TYPE_RITUAL
+    Const::TYPE_QUICKPLAY,
+    Const::TYPE_CONTINUOUS,
+    Const::TYPE_EQUIP,
+    Const::TYPE_FIELD,
+    Const::TYPE_RITUAL
 };
 
 const quint32 CardFilter::trapTypes[] =
 {
-    Card::TYPE_CONTINUOUS,
-    Card::TYPE_COUNTER
+    Const::TYPE_CONTINUOUS,
+    Const::TYPE_COUNTER
 };
 
 const quint32 CardFilter::monsterRaces[] =
 {
-    Card::RACE_WARRIOR,
-    Card::RACE_SPELLCASTER,
-    Card::RACE_FAIRY,
-    Card::RACE_FIEND,
-    Card::RACE_ZOMBIE,
-    Card::RACE_MACHINE,
-    Card::RACE_AQUA,
-    Card::RACE_PYRO,
-    Card::RACE_ROCK,
-    Card::RACE_WINDBEAST,
-    Card::RACE_PLANT,
-    Card::RACE_INSECT,
-    Card::RACE_THUNDER,
-    Card::RACE_DRAGON,
-    Card::RACE_BEAST,
-    Card::RACE_BEASTWARRIOR,
-    Card::RACE_DINOSAUR,
-    Card::RACE_FISH,
-    Card::RACE_SEASERPENT,
-    Card::RACE_REPTILE,
-    Card::RACE_PSYCHO,
-    Card::RACE_DEVINE,
-    Card::RACE_CREATORGOD,
-    Card::RACE_PHANTOMDRAGON
+    Const::RACE_WARRIOR,
+    Const::RACE_SPELLCASTER,
+    Const::RACE_FAIRY,
+    Const::RACE_FIEND,
+    Const::RACE_ZOMBIE,
+    Const::RACE_MACHINE,
+    Const::RACE_AQUA,
+    Const::RACE_PYRO,
+    Const::RACE_ROCK,
+    Const::RACE_WINDBEAST,
+    Const::RACE_PLANT,
+    Const::RACE_INSECT,
+    Const::RACE_THUNDER,
+    Const::RACE_DRAGON,
+    Const::RACE_BEAST,
+    Const::RACE_BEASTWARRIOR,
+    Const::RACE_DINOSAUR,
+    Const::RACE_FISH,
+    Const::RACE_SEASERPENT,
+    Const::RACE_REPTILE,
+    Const::RACE_PSYCHO,
+    Const::RACE_DEVINE,
+    Const::RACE_CREATORGOD,
+    Const::RACE_PHANTOMDRAGON
 };
 const quint32 CardFilter::monsterAttrs[] =
 {
-    Card::ATTRIBUTE_DARK,
-    Card::ATTRIBUTE_LIGHT,
-    Card::ATTRIBUTE_WATER,
-    Card::ATTRIBUTE_FIRE,
-    Card::ATTRIBUTE_EARTH,
-    Card::ATTRIBUTE_WIND,
-    Card::ATTRIBUTE_DEVINE
+    Const::ATTRIBUTE_DARK,
+    Const::ATTRIBUTE_LIGHT,
+    Const::ATTRIBUTE_WATER,
+    Const::ATTRIBUTE_FIRE,
+    Const::ATTRIBUTE_EARTH,
+    Const::ATTRIBUTE_WIND,
+    Const::ATTRIBUTE_DEVINE
 };
 
 
@@ -92,7 +92,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     cardType->addItem(tr("N/A"), QVariant(-1));
     for(auto t : cardTypes)
     {
-        cardType->addItem(CardPool::getType(t), t);
+        cardType->addItem(cardPool->getType(t), t);
     }
 
     cardTypeSub = new QComboBox;
@@ -105,8 +105,6 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     grid->addWidget(cardType, y, 0);
     grid->addWidget(cardTypeSub, y, 1);
 
-    connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &CardFilter::setCardTypeSub);
 
     auto tab = new QTabWidget;
     auto gridM = new QGridLayout;
@@ -215,25 +213,24 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     grid->addWidget(nameEdit, y, 1);
 
     auto searchButton = new IconButton(":/icons/searchall.png", config->getStr("action", "searchall", "搜索"));
-    connect(searchButton, &QPushButton::clicked, this, &CardFilter::searchAll);
-
     auto searchThisButton = new IconButton(":/icons/search.png", config->getStr("action", "search", "在结果中搜索"));
-    connect(searchThisButton, &QPushButton::clicked, this, &CardFilter::searchThis);
-
     auto revertButton = new IconButton(":/icons/revert.png", config->getStr("action", "revert", "复位"));
-    connect(revertButton, &QPushButton::clicked, this, &CardFilter::revert);
-
     y++;
     grid->addWidget(searchButton, y, 0, 1, 2);
 
     auto hbox = new QHBoxLayout;
-
     hbox->addWidget(revertButton);
     hbox->addWidget(searchThisButton);
 
     y++;
     grid->addLayout(hbox, y, 0, 1, 2);
     setLayout(grid);
+
+    connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &CardFilter::setCardTypeSub);
+    connect(searchButton, &QPushButton::clicked, this, &CardFilter::searchAll);
+    connect(searchThisButton, &QPushButton::clicked, this, &CardFilter::searchThis);
+    connect(revertButton, &QPushButton::clicked, this, &CardFilter::revert);
 }
 
 void CardFilter::setCardTypeSub(int index)
@@ -252,29 +249,29 @@ void CardFilter::setCardTypeSub(int index)
     case 1:
         for(auto t : monsterTypes)
         {
-            cardTypeSub->addItem(CardPool::getType(t), QVariant(t));
+            cardTypeSub->addItem(cardPool->getType(t), QVariant(t));
         }
         for(auto t : monsterAttrs)
         {
-            cardAttr->addItem(CardPool::getAttr(t), QVariant(t));
+            cardAttr->addItem(cardPool->getAttr(t), QVariant(t));
         }
         for(auto t : monsterRaces)
         {
-            cardRace->addItem(CardPool::getRace(t), QVariant(t));
+            cardRace->addItem(cardPool->getRace(t), QVariant(t));
         }
         break;
     case 2:
         cardTypeSub->addItem(config->getStr("string", "TYPE_NORMAL", "通常"), 0);
         for(auto t : spellTypes)
         {
-            cardTypeSub->addItem(CardPool::getType(t), QVariant(t));
+            cardTypeSub->addItem(cardPool->getType(t), QVariant(t));
         }
         break;
     case 3:
         cardTypeSub->addItem(config->getStr("string", "TYPE_NORMAL", "通常"), 0);
         for(auto t : trapTypes)
         {
-            cardTypeSub->addItem(CardPool::getType(t), QVariant(t));
+            cardTypeSub->addItem(cardPool->getType(t), QVariant(t));
         }
         break;
     default:
@@ -284,7 +281,7 @@ void CardFilter::setCardTypeSub(int index)
 
 void CardFilter::searchAll()
 {
-    search(CardPool::getMap().keys());
+    search(cardPool->getMap().keys());
 }
 
 void CardFilter::searchThis()
@@ -324,7 +321,7 @@ void CardFilter::search(const T &cards)
     int limitC = limit->currentData().toInt();
     quint32 otC = ot->currentData().toUInt();
 
-    if(type == Card::TYPE_SPELL || type == Card::TYPE_TRAP)
+    if(type == Const::TYPE_SPELL || type == Const::TYPE_TRAP)
     {
         subtype |= type;
     }
@@ -348,9 +345,9 @@ void CardFilter::search(const T &cards)
 
     foreach(auto it, cards)
     {
-        auto card = CardPool::getCard(it);
+        auto card = cardPool->getCard(it);
 
-        if(card->type & Card::TYPE_TOKEN)
+        if(card->type & Const::TYPE_TOKEN)
         {
             continue;
         }
@@ -360,7 +357,7 @@ void CardFilter::search(const T &cards)
             continue;
         }
 
-        if(limitC != -1 && LimitCards::getLimit(card->id) != limitC)
+        if(limitC != -1 && limitCards->getLimit(card->id) != limitC)
         {
             continue;
         }
@@ -374,7 +371,7 @@ void CardFilter::search(const T &cards)
         {
             continue;
         }
-        if(type & Card::TYPE_MONSTER)
+        if(type & Const::TYPE_MONSTER)
         {
             if(subtype != ~0U && !((subtype & card->type) == subtype))
             {
@@ -489,8 +486,8 @@ void CardFilter::search(const T &cards)
     qSort(ls->begin(), ls->end(),
           [&](int a, int b)
     {
-        auto ca = CardPool::getCard(a);
-        auto cb = CardPool::getCard(b);
+        auto ca = cardPool->getCard(a);
+        auto cb = cardPool->getCard(b);
         int ta = ca->type & 7, tb = cb->type & 7;
         if(ta != tb)
         {
@@ -500,7 +497,7 @@ void CardFilter::search(const T &cards)
         {
             return ca->type < cb->type;
         }
-        else if((ca->type & Card::TYPE_MONSTER) && ca->atk != cb->atk)
+        else if((ca->type & Const::TYPE_MONSTER) && ca->atk != cb->atk)
         {
             return ca->atk >= cb->atk;
         }

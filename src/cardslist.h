@@ -25,11 +25,30 @@
 class CardsList : public QWidget
 {
     Q_OBJECT
+protected:
+    int itemAt(const QPoint &pos);
+
+    QString adToString(int);
+    virtual void startDrag(int);
+
+    Type::Deck ls;
+    QHash<quint32, CardItem> items;
+
+    int pos;
+    QSize cardSize;
+    QPoint startPos;
+    int cardsPerColumn;
+    quint32 currentCardId;
+    QScrollBar *sb;
+    bool needRefreshId;
+    QPoint point;
+    int current;
+
 public:
     explicit CardsList(QWidget *parent);
     ~CardsList();
 
-    Type::Deck &getList()
+    auto getList() -> decltype((ls))
     {
         return ls;
     }
@@ -74,33 +93,16 @@ public slots:
 private slots:
     void refreshCurrentId();
     void setPos(int _pos);
-
-protected:
-    int itemAt(const QPoint &pos);
-
-    QString adToString(int);
-    virtual void startDrag(int);
-
-    Type::Deck ls;
-    QHash<quint32, CardItem> items;
-
-    int pos;
-    QSize cardSize;
-    QPoint startPos;
-    int cardsPerColumn;
-    quint32 currentCardId;
-    QScrollBar *sb;
-    bool needRefreshId;
-    QPoint point;
-    int current;
 };
 
 class CardsListView : public QWidget
 {
     Q_OBJECT
+private:
+    CardsList *cl;
 public:
     CardsListView(QWidget *parent);
-    QVector<quint32> &getList()
+    auto getList() -> decltype(cl->getList())
     {
         return cl->getList();
     }
@@ -136,14 +138,6 @@ private slots:
     {
         emit currentIdChanged(id);
     }
-
-    void idClicked(quint32 id)
-    {
-        emit clickId(id);
-    }
-
-private:
-    CardsList *cl;
 };
 
 #endif // CARDSVIEW_H

@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     auto sp = new QSplitter(Qt::Horizontal, this);
-    sp->setHandleWidth(5);
+    sp->setHandleWidth(3);
     auto deckListView = new DeckListView;
     auto deckView = new DeckView(nullptr);
     auto cardListView = new CardsListView(nullptr);
@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto pref = new Pref;
     auto widget = new QWidget;
     auto vbox = new QVBoxLayout;
-    auto getter = [=]() -> QVector<quint32>& {
+    auto getter = [=]() -> decltype(cardListView->getList()) {
         return cardListView->getList();
     };
     filter->getCurrent = getter;
@@ -66,25 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     tab = new MTabWidget;
     tab->setStyleSheet("font-size: 13px;");
-
-    tab->addTabBar();
-    tab->addTabBar();
-    tab->addWidget(1, localList, config->getStr("tab", "local", "本地"));
-    tab->addWidget(1, deckListView, config->getStr("tab", "remote", "远程"));
-    tab->addWidget(1, widget, config->getStr("tab", "replay", "录像"));
-    tab->addWidget(0, cardDetails, config->getStr("tab", "card", "卡"));
-    tab->addWidget(0, filter, config->getStr("tab", "search", "卡池"));
-    tab->addWidget(0, packView, config->getStr("tab", "pack", "卡包"));
-    tab->addWidget(0, pref, config->getStr("tab", "pref", "选项"));
-    tab->setCurrentIndex(1, 0);
-
     cardDetails->setStyleSheet("font-size: 15px");
-
-    sp->addWidget(tab);
-    sp->addWidget(deckView);
-    sp->addWidget(cardListView);
-    sp->setStretchFactor(1, 1);
-    sp->setStyleSheet("QSplitter:handle{background:transparent}");
 
     connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
     connect(deckView, &DeckView::clickId, dialog, &ScriptView::setId);
@@ -101,7 +83,6 @@ MainWindow::MainWindow(QWidget *parent)
         cardListView->setCurrentCardId(id);
     });
 
-    setCentralWidget(sp);
 
     connect(deckListView, &DeckListView::deckStream, deckView, &DeckView::loadDeck);
     connect(localList, &LocalList::deckStream, deckView, &DeckView::loadDeck);
@@ -130,7 +111,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(deckView, &DeckView::statusChanged, this, &MainWindow::setWindowTitle);
     connect(deckView, &DeckView::refreshLocals, localList, &LocalList::refresh);
 
-    connect(this, &MainWindow::destroyed, CardPool::getThread(), &LoadThread::terminate);
+    connect(this, &MainWindow::destroyed, cardPool->getThread(), &LoadThread::terminate);
 
     auto timer = new QTimer(this);
     connect(timer, &QTimer::timeout, [=]() {
@@ -139,6 +120,26 @@ MainWindow::MainWindow(QWidget *parent)
        packView->checkLeave();
     });
     timer->start(200);
+
+
+
+    tab->addTabBar();
+    tab->addTabBar();
+    tab->addWidget(1, localList, config->getStr("tab", "local", "本地"));
+    tab->addWidget(1, deckListView, config->getStr("tab", "remote", "远程"));
+    tab->addWidget(1, widget, config->getStr("tab", "replay", "录像"));
+    tab->addWidget(0, cardDetails, config->getStr("tab", "card", "卡"));
+    tab->addWidget(0, filter, config->getStr("tab", "search", "卡池"));
+    tab->addWidget(0, packView, config->getStr("tab", "pack", "卡包"));
+    tab->addWidget(0, pref, config->getStr("tab", "pref", "选项"));
+    tab->setCurrentIndex(1, 0);
+    tab->setMinimumWidth(220);
+    sp->addWidget(tab);
+    sp->addWidget(deckView);
+    sp->addWidget(cardListView);
+    sp->setStretchFactor(1, 1);
+    sp->setStyleSheet("QSplitter:handle{background:transparent}");
+    setCentralWidget(sp);
 
     deckView->setStatus();
     deckListView->getList();

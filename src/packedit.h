@@ -37,9 +37,12 @@ private:
 class PackEditView : public QWidget
 {
     Q_OBJECT
+private:
+    PackEdit *pe;
+    QLineEdit *nameEdit;
 public:
     PackEditView(QWidget *parent);
-    QVector<quint32> &getList()
+    auto getList() -> decltype(pe->getList())
     {
         return pe->getList();
     }
@@ -92,10 +95,6 @@ private slots:
         pe->saveList(nameEdit->text());
         emit refreshPack();
     }
-
-private:
-    PackEdit *pe;
-    QLineEdit *nameEdit;
 };
 
 #endif // PACKEDIT_H

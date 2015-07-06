@@ -46,9 +46,9 @@ class ItemThread : public QThread
     Q_OBJECT
 public:
     typedef QSharedPointer<QList<QList<CardItem> > > Deck;
-    ItemThread(int _load, QString _lines, DeckView *parent);
+    ItemThread(int, QString _lines, DeckView *parent);
     void run();
-    int load;
+    int ts;
     Deck::value_type deck;
     QString lines;
     DeckView *parent;
@@ -105,11 +105,6 @@ public slots:
         sideDeck->setCurrentCardId(id);
     }
 
-    void idClicked(quint32 id)
-    {
-        emit clickId(id);
-    }
-
     void makeSnapshot(bool mod = true);
     void undo();
     void redo();
@@ -141,11 +136,6 @@ public slots:
     }
 
 private slots:
-
-    void loadOtherNames()
-    {
-        CardPool::loadOtherNames();
-    }
 
     void setReady(bool t)
     {
@@ -216,7 +206,7 @@ private:
     QAction *undoAction, *redoAction;
     QAction *abortAction;
     QToolBar *toolbar;
-    int currentLoad;
+    int timestamp;
     QHash<quint32, quint32> map;
     bool waiting;
     bool sideHidden;
@@ -239,16 +229,16 @@ public slots:
         int mSum = 0, sSum = 0, tSum = 0;
         foreach(auto &item, ls)
         {
-            auto card = CardPool::getCard(item.getId());
-            if(card->type & Card::TYPE_MONSTER)
+            auto card = cardPool->getCard(item.getId());
+            if(card->type & Const::TYPE_MONSTER)
             {
                 mSum++;
             }
-            else if(card->type & Card::TYPE_SPELL)
+            else if(card->type & Const::TYPE_SPELL)
             {
                 sSum++;
             }
-            else if(card->type & Card::TYPE_TRAP)
+            else if(card->type & Const::TYPE_TRAP)
             {
                 tSum++;
             }
@@ -275,16 +265,16 @@ public slots:
         int fSum = 0, sSum = 0, xSum = 0;
         foreach(auto &item, ls)
         {
-            auto card = CardPool::getCard(item.getId());
-            if(card->type & Card::TYPE_FUSION)
+            auto card = cardPool->getCard(item.getId());
+            if(card->type & Const::TYPE_FUSION)
             {
                 fSum++;
             }
-            else if(card->type & Card::TYPE_SYNCHRO)
+            else if(card->type & Const::TYPE_SYNCHRO)
             {
                 sSum++;
             }
-            else if(card->type & Card::TYPE_XYZ)
+            else if(card->type & Const::TYPE_XYZ)
             {
                 xSum++;
             }

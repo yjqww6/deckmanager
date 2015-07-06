@@ -41,13 +41,15 @@ int main(int argc, char *argv[])
         Expansions expansionsR(zipPaths);
         expansions = &expansionsR;
 
-        CardPool::Load(paths);
+        CardPool cardPoolR(paths);
+        cardPool = &cardPoolR;
 
-        LimitCards::load();
+        LimitCards limitCardsR;
+        limitCards = &limitCardsR;
 
         MainWindow w;
         w.show();
-        CardPool::LoadNames();
+        cardPool->loadNames();
         ret =  a.exec();
     }
     catch(...)

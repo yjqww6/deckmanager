@@ -8,7 +8,9 @@ LocalList::LocalList(QWidget *parent)
 {
     listWidget = new QListWidget;
     auto vbox = new QVBoxLayout;
+    vbox->setMargin(0);
     auto hbox = new QHBoxLayout;
+    hbox->setMargin(0);
 
     pathEdit = new QLineEdit;
     buttonSave = new IconButton(":/icons/saveas.png", config->getStr("action", "saveas", "另存为"));

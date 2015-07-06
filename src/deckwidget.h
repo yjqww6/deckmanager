@@ -96,24 +96,18 @@ public:
         QWidget::mouseDoubleClickEvent(event);
     }
 
-    virtual bool filter(quint32 id)
-    {
-        auto card = CardPool::getCard(id);
-        return card;
-    }
-
     void setCurrentCardId(quint32 id)
     {
         currentCardId = id;
     }
 
-
+    std::function<bool(quint32)> filter;
     std::function<bool(quint32)> extFilter;
     std::function<void()> makeSnapShot;
 signals:
     void currentIdChanged(quint32 id);
     void sizeChanged(int size);
-    void deckChanged(QList<CardItem> &);
+    void deckChanged(QList<CardItem>&);
     void clickId(quint32);
     void details(quint32);
 public slots:

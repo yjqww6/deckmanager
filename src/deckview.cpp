@@ -10,45 +10,13 @@
 #include <QScreen>
 #include <QToolButton>
 
-
-class ExtraDeckWidget : public DeckWidget
-{
-public:
-    ExtraDeckWidget(QWidget *parent)
-        : DeckWidget(parent, 1, 10)
-    {
-
-    }
-
-    virtual bool filter(quint32 id)
-    {
-        auto card = CardPool::getCard(id);
-        return card && card->inExtra();
-    }
-};
-
-class MainDeckWidget : public DeckWidget
-{
-public:
-    MainDeckWidget(QWidget *parent)
-        : DeckWidget(parent, 4, 10)
-    {
-
-    }
-    virtual bool filter(quint32 id)
-    {
-        auto card = CardPool::getCard(id);
-        return card && !card->inExtra();
-    }
-};
-
 void DeckView::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
 }
 
 DeckView::DeckView(QWidget *parent)
-    : QWidget(parent), currentLoad(0), waiting(false), sideHidden(false)
+    : QWidget(parent), timestamp(0), waiting(false), sideHidden(false)
 {
     if(config->bg)
     {
@@ -58,13 +26,6 @@ DeckView::DeckView(QWidget *parent)
     {
         setStyleSheet("font-size: 16px");
     }
-    auto vbox = new QVBoxLayout;
-    auto hbox = new QHBoxLayout;
-    mainDeck = new MainDeckWidget(nullptr);
-
-    auto t = new DeckSizeLabel(config->getStr("label", "main", "主卡组"));
-    auto mt = new MainDeckLabel;
-
 
     toolbar = new QToolBar;
     toolbar->setStyleSheet("color: black; font-size: 12px");
@@ -162,45 +123,38 @@ DeckView::DeckView(QWidget *parent)
     helpAction->setToolTip(config->getStr("action", "help", "帮助"));
     toolbar->addAction(helpAction);
 
-    vbox->addWidget(toolbar);
 
+    mainDeck = new DeckWidget(nullptr, 4, 10);
+    auto notExtraFilter = [](quint32 id)
+    {
+        auto card = cardPool->getCard(id);
+        return card && !card->inExtra();
+    };
 
-    hbox->addWidget(t);
-    hbox->addWidget(mt);
-    vbox->addLayout(hbox);
-    vbox->addWidget(mainDeck, 4);
+    mainDeck->filter = notExtraFilter;
+    auto t1 = new DeckSizeLabel(config->getStr("label", "main", "主卡组"));
+    auto mt = new MainDeckLabel;
 
-    connect(mainDeck, &DeckWidget::sizeChanged, t, &DeckSizeLabel::changeSize);
-    connect(mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
-    connect(mainDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
-
-    extraDeck = new ExtraDeckWidget(nullptr);
+    extraDeck = new DeckWidget(nullptr, 1, 10);
+    auto extraFilter = [](quint32 id)
+    {
+        auto card = cardPool->getCard(id);
+        return card && card->inExtra();
+    };
+    extraDeck->filter = extraFilter;
     sideDeck = new DeckWidget(nullptr, 1, 10);
 
-    t = new DeckSizeLabel(config->getStr("label", "extra", "额外卡组"));
+    auto t2 = new DeckSizeLabel(config->getStr("label", "extra", "额外卡组"));
     auto et = new ExtraDeckLabel;
-    hbox = new QHBoxLayout;
-    hbox->addWidget(t);
-    hbox->addWidget(et);
-    vbox->addLayout(hbox);
-    connect(extraDeck, &DeckWidget::sizeChanged, t, &DeckSizeLabel::changeSize);
-    connect(extraDeck, &DeckWidget::deckChanged, et, &ExtraDeckLabel::deckChanged);
-    connect(extraDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
-    vbox->addWidget(extraDeck, 1);
 
     st = new DeckSizeLabel(config->getStr("label", "side", "副卡组"));
-    vbox->addWidget(st);
-    vbox->addWidget(sideDeck, 1);
-
-    connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
-    connect(sideDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
     auto extFilter = [this](quint32 id) {
         int sum = 0;
         sum += mainDeck->countCard(id);
         sum += extraDeck->countCard(id);
         sum += sideDeck->countCard(id);
-        return sum < LimitCards::getLimit(id);
+        return sum < limitCards->getLimit(id);
     };
 
     mainDeck->extFilter = extFilter;
@@ -215,12 +169,24 @@ DeckView::DeckView(QWidget *parent)
     extraDeck->makeSnapShot = snapshotMaker;
     sideDeck->makeSnapShot = snapshotMaker;
 
+
+
+    connect(mainDeck, &DeckWidget::sizeChanged, t1, &DeckSizeLabel::changeSize);
+    connect(mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
+    connect(mainDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
+
+    connect(extraDeck, &DeckWidget::sizeChanged, t2, &DeckSizeLabel::changeSize);
+    connect(extraDeck, &DeckWidget::deckChanged, et, &ExtraDeckLabel::deckChanged);
+    connect(extraDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
+    connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
+    connect(sideDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
+
     connect(sortAction, &QAction::triggered, this, &DeckView::sort);
     connect(clearAction, &QAction::triggered, this, &DeckView::clearDeck);
     connect(helpAction, &QAction::triggered, this, &DeckView::help);
-    connect(mainDeck, &DeckWidget::clickId, this, &DeckView::idClicked);
-    connect(extraDeck, &DeckWidget::clickId, this, &DeckView::idClicked);
-    connect(sideDeck, &DeckWidget::clickId, this, &DeckView::idClicked);
+    connect(mainDeck, &DeckWidget::clickId, this, &DeckView::clickId);
+    connect(extraDeck, &DeckWidget::clickId, this, &DeckView::clickId);
+    connect(sideDeck, &DeckWidget::clickId, this, &DeckView::clickId);
 
     connect(shuffleAction, &QAction::triggered, mainDeck, &DeckWidget::shuffle);
 
@@ -240,7 +206,24 @@ DeckView::DeckView(QWidget *parent)
     connect(sideDeck, &DeckWidget::details, this, &DeckView::details);
 
 
+    auto vbox = new QVBoxLayout;
+    auto hbox = new QHBoxLayout;
+    vbox->addWidget(toolbar);
+
+    hbox->addWidget(t1);
+    hbox->addWidget(mt);
+    vbox->addLayout(hbox);
+    vbox->addWidget(mainDeck, 4);
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(t2);
+    hbox->addWidget(et);
+    vbox->addLayout(hbox);
+    vbox->addWidget(extraDeck, 1);
+    vbox->addWidget(st);
+    vbox->addWidget(sideDeck, 1);
     setLayout(vbox);
+
     updateButtons();
 }
 
@@ -250,7 +233,7 @@ void DeckView::loadDeck(QString lines, QString _name, bool local)
     {
         return;
     }
-    int load = ++currentLoad;
+    int load = ++timestamp;
     makeSnapshot(false);
 
     mainDeck->clearDeck();
@@ -509,7 +492,7 @@ DeckView::SnapShot DeckView::currentSnapshot()
 void DeckView::loadFinished(int load, ItemThread::Deck deck)
 {
     waiting = false;
-    if(load == currentLoad)
+    if(load == timestamp)
     {
         mainDeck->getDeck().swap((*deck)[0]);
         extraDeck->getDeck().swap((*deck)[1]);
@@ -523,8 +506,8 @@ void DeckView::loadFinished(int load, ItemThread::Deck deck)
     }
 }
 
-ItemThread::ItemThread(int _load, QString _lines, DeckView *parent)
-    : QThread(), load(_load), lines(_lines), parent(parent)
+ItemThread::ItemThread(int _ts, QString _lines, DeckView *parent)
+    : QThread(), ts(_ts), lines(_lines), parent(parent)
 {
     static auto t = qRegisterMetaType<ItemThread::Deck>();
     Q_UNUSED(t);
@@ -535,7 +518,7 @@ QSharedPointer<Card> ItemThread::loadNewCard(quint32 id)
     auto it = parent->map.find(id);
     if(it != parent->map.end())
     {
-        return CardPool::getCard(it.value());
+        return cardPool->getCard(it.value());
     }
     QEventLoop loop;
     QString name;
@@ -546,7 +529,7 @@ QSharedPointer<Card> ItemThread::loadNewCard(quint32 id)
     loop.connect(&remote, static_cast<void (Remote::*)()>(&Remote::finished), &loop, &QEventLoop::quit);
     remote.getName(id);
     loop.exec();
-    auto card = CardPool::getNewCard(name, config->waitForPass);
+    auto card = cardPool->getNewCard(name, config->waitForPass);
     if(card)
     {
         parent->map.insert(id, card->id);
@@ -568,7 +551,7 @@ void ItemThread::run()
 
     for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
     {
-        if(load != parent->currentLoad || !parent->waiting)
+        if(ts != parent->timestamp || !parent->waiting)
         {
             return;
         }
@@ -591,7 +574,7 @@ void ItemThread::run()
                 QSharedPointer<Card> card;
                 if(ok)
                 {
-                    card = CardPool::getCard(id);
+                    card = cardPool->getCard(id);
                     if(!card && config->convertPass && id >= 10000)
                     {
                         card = loadNewCard(id);
@@ -599,10 +582,10 @@ void ItemThread::run()
                 }
                 else
                 {
-                    card = CardPool::getNewCard(line, config->waitForPass);
+                    card = cardPool->getNewCard(line, config->waitForPass);
                 }
 
-                if(load != parent->currentLoad || !parent->waiting)
+                if(ts != parent->timestamp || !parent->waiting)
                 {
                     return;
                 }
@@ -635,5 +618,5 @@ void ItemThread::run()
     }
     auto ptr = Deck::create();
     ptr->swap(deck);
-    emit finishLoad(load, ptr);
+    emit finishLoad(ts, ptr);
 }

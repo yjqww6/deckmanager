@@ -72,7 +72,7 @@ DeckListView::DeckListView(QWidget *parent)
     auto hbox = new QHBoxLayout;
 
     pageEdit = new QLineEdit(tr("1"));
-    pageEdit->setMinimumWidth(50);
+    //pageEdit->setMinimumWidth(50);
     auto goButton = new IconButton(":/icons/goto.png", config->getStr("action", "goto", "跳转"));
     auto nextButton = new IconButton(":/icons/right.png", config->getStr("action", "next", "下一页"));
     auto prevButton = new IconButton(":/icons/left.png", config->getStr("action", "prev", "上一页"));

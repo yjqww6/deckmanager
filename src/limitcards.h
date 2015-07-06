@@ -12,7 +12,8 @@
 #include <functional>
 #include "typing.h"
 
-class LimitCards{
+class LimitCards
+{
 public:
     LimitCards();
     QSharedPointer<QPixmap> limits[3];
@@ -20,19 +21,17 @@ public:
     typedef QHash<quint32, int> Table;
     QList<QPair<QString, Table> > tables;
 
-    static void load();
-    static QSharedPointer<QPixmap> getPixmap(int);
+    QSharedPointer<QPixmap> getPixmap(int);
 
-    static auto getTables() -> decltype((tables))
+    auto getTables() -> decltype((tables))
     {
-        return lim->tables;
+        return tables;
     }
 
-    static int getLimit(quint32 id);
+    int getLimit(quint32 id);
 
-    static Type::DeckP getCards(int);
-private:
-    static QScopedPointer<LimitCards> lim;
+    Type::DeckP getCards(int);
 };
 
+extern LimitCards *limitCards;
 #endif // LIMITS_H

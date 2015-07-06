@@ -16,7 +16,7 @@ ScriptView::ScriptView(QWidget *parent)
 
 void ScriptView::setId(quint32 id)
 {
-    setWindowTitle(CardPool::getCard(id)->name);
+    setWindowTitle(cardPool->getCard(id)->name);
     QFile file("script/c" + QString::number(id) + ".lua");
     QString scriptText;
     textEdit->clear();

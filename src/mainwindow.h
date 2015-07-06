@@ -22,7 +22,6 @@ private slots:
     void toDetails(quint32);
 private:
     MTabWidget *tab;
-    bool movedGlobal;
     ScriptView *dialog;
     quint32 currentId;
 };
