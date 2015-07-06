@@ -18,14 +18,6 @@ void DeckView::resizeEvent(QResizeEvent *event)
 DeckView::DeckView(QWidget *parent)
     : QWidget(parent), timestamp(0), waiting(false), sideHidden(false)
 {
-    if(config->bg)
-    {
-        setStyleSheet("color: white; font-size: 16px");
-    }
-    else
-    {
-        setStyleSheet("font-size: 16px");
-    }
 
     toolbar = new QToolBar;
     toolbar->setStyleSheet("color: black; font-size: 12px");
@@ -205,6 +197,26 @@ DeckView::DeckView(QWidget *parent)
     connect(extraDeck, &DeckWidget::details, this, &DeckView::details);
     connect(sideDeck, &DeckWidget::details, this, &DeckView::details);
 
+    QString ss;
+
+    if(config->bg)
+    {
+
+        ss = "color: white; font-size: 16px}";
+    }
+    else
+    {
+        ss = "font-size: 16px";
+    }
+
+    mainDeck->setStyleSheet(ss);
+    extraDeck->setStyleSheet(ss);
+    sideDeck->setStyleSheet(ss);
+    t1->setStyleSheet(ss);
+    t2->setStyleSheet(ss);
+    mt->setStyleSheet(ss);
+    et->setStyleSheet(ss);
+    st->setStyleSheet(ss);
 
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
