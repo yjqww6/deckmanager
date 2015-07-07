@@ -114,7 +114,8 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     auto attrL = new QLabel(config->getStr("label", "attr", "属性"));
     auto atkL = new QLabel(config->getStr("label", "atk", "攻击"));
     auto defL = new QLabel(config->getStr("label", "def", "守备"));
-    auto levelL = new QLabel(config->getStr("label", "level", "星/阶"));
+    auto levelL = new QLabel(config->getStr("label", "level", "等级"));
+    auto rankL = new QLabel(config->getStr("label", "rank", "阶级"));
     auto scaleL = new QLabel(config->getStr("label", "scale", "刻度"));
 
 
@@ -132,6 +133,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     atkEdit = new QLineEdit;
     defEdit = new QLineEdit;
     levelEdit = new QLineEdit;
+    rankEdit = new QLineEdit;
     scaleEdit = new QLineEdit;
 
 
@@ -183,6 +185,10 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     gridM->addWidget(levelEdit, y1, 1);
 
     y1++;
+    gridM->addWidget(rankL, y1, 0);
+    gridM->addWidget(rankEdit, y1, 1);
+
+    y1++;
     gridM->addWidget(scaleL, y1, 0);
     gridM->addWidget(scaleEdit, y1, 1);
 
@@ -213,13 +219,15 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     grid->addWidget(nameEdit, y, 1);
 
     auto searchButton = new IconButton(":/icons/searchall.png", config->getStr("action", "searchall", "搜索"));
-    auto searchThisButton = new IconButton(":/icons/search.png", config->getStr("action", "search", "在结果中搜索"));
+    auto searchThisButton = new IconButton(":/icons/search.png", config->getStr("action", "searchthis", "在结果中搜索"));
+    auto searchDeckButton = new IconButton(":/icons/search.png", config->getStr("action", "searchdeck", "在卡组中搜索"));
     auto revertButton = new IconButton(":/icons/revert.png", config->getStr("action", "revert", "复位"));
     y++;
     grid->addWidget(searchButton, y, 0, 1, 2);
 
     auto hbox = new QHBoxLayout;
     hbox->addWidget(revertButton);
+    hbox->addWidget(searchDeckButton);
     hbox->addWidget(searchThisButton);
 
     y++;
@@ -229,6 +237,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &CardFilter::setCardTypeSub);
     connect(searchButton, &QPushButton::clicked, this, &CardFilter::searchAll);
+    connect(searchDeckButton, &QPushButton::clicked, this, &CardFilter::searchDeck);
     connect(searchThisButton, &QPushButton::clicked, this, &CardFilter::searchThis);
     connect(revertButton, &QPushButton::clicked, this, &CardFilter::revert);
 }
@@ -290,6 +299,14 @@ void CardFilter::searchThis()
     search(t);
 }
 
+void CardFilter::searchDeck()
+{
+    auto deck = getDeck();
+    search(*deck.data());
+}
+
+QPair<int, int> ignore(-1, -1);
+
 template<typename T>
 
 void CardFilter::search(const T &cards)
@@ -304,6 +321,7 @@ void CardFilter::search(const T &cards)
     auto atkRange = getRange(atkEdit);
     auto defRange = getRange(defEdit);
     auto levelRange = getRange(levelEdit);
+    auto rankRange = getRange(rankEdit);
     auto scaleRange = getRange(scaleEdit);
 
     quint32 category = 0;
@@ -398,13 +416,28 @@ void CardFilter::search(const T &cards)
                 continue;
             }
 
-            if(!matchRange(levelRange, card->level))
+            if(levelRange != ignore)
             {
-                continue;
+                if((card->type & Const::TYPE_XYZ) || !matchRange(levelRange, card->level))
+                {
+                    continue;
+                }
             }
-            if(!matchRange(scaleRange, card->scale))
+
+            if(rankRange != ignore)
             {
+                if(!(card->type & Const::TYPE_XYZ) || !matchRange(rankRange, card->level))
+                {
+                    continue;
+                }
+            }
+
+            if(scaleRange != ignore)
+            {
+                if(!(card->type & Const::TYPE_PENDULUM) || !matchRange(scaleRange, card->scale))
+                {
                 continue;
+                }
             }
         }
         else

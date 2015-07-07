@@ -54,10 +54,19 @@ MainWindow::MainWindow(QWidget *parent)
     auto pref = new Pref;
     auto widget = new QWidget;
     auto vbox = new QVBoxLayout;
-    auto getter = [=]() -> decltype(cardListView->getList()) {
+
+    auto getCurrentResults = [=]() -> Type::Deck&
+    {
         return cardListView->getList();
     };
-    filter->getCurrent = getter;
+    filter->getCurrent = getCurrentResults;
+
+    auto getDeck = [=]() -> Type::DeckP
+    {
+        return deckView->getDeck();
+    };
+    filter->getDeck = getDeck;
+
     vbox->addWidget(replayList);
     vbox->addWidget(replayRefresh);
     widget->setLayout(vbox);

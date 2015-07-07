@@ -23,6 +23,7 @@ public:
     ~CardFilter();
 
     std::function<Type::Deck&()> getCurrent;
+    std::function<Type::DeckP()> getDeck;
 signals:
     void result(Type::DeckP);
 public slots:
@@ -32,6 +33,7 @@ private slots:
 
     void searchAll();
     void searchThis();
+    void searchDeck();
 private:
 
     template<typename T>
@@ -59,6 +61,7 @@ private:
     QLineEdit *atkEdit;
     QLineEdit *defEdit;
     QLineEdit *levelEdit;
+    QLineEdit *rankEdit;
     QLineEdit *scaleEdit;
 
     QCheckBox *effects[32];

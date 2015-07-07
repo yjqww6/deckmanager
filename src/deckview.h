@@ -81,6 +81,24 @@ public:
         return sideDeck;
     }
 
+    Type::DeckP getDeck()
+    {
+        auto deck = Type::DeckP::create();
+        foreach(auto &item, mainDeck->getDeck())
+        {
+            deck->append(item.getId());
+        }
+        foreach(auto &item, extraDeck->getDeck())
+        {
+            deck->append(item.getId());
+        }
+        foreach(auto &item, sideDeck->getDeck())
+        {
+            deck->append(item.getId());
+        }
+        return deck;
+    }
+
     void resizeEvent(QResizeEvent *event);
 signals:
     void currentIdChanged(int);

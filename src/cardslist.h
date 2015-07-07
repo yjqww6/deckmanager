@@ -102,7 +102,7 @@ private:
     CardsList *cl;
 public:
     CardsListView(QWidget *parent);
-    auto getList() -> decltype(cl->getList())
+    auto getList() -> decltype((cl->getList()))
     {
         return cl->getList();
     }
