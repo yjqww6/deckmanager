@@ -17,6 +17,8 @@ void DeckView::resizeEvent(QResizeEvent *event)
     QWidget::resizeEvent(event);
 }
 
+static Type::DeckI nullDeck;
+
 DeckView::DeckView(QWidget *parent)
     : QWidget(parent), timestamp(0), waiting(false), sideHidden(false)
 {
@@ -211,15 +213,18 @@ DeckView::DeckView(QWidget *parent)
     connect(hideAction, &QAction::triggered, this, &DeckView::hideSide);
 
     connect(textAction1, &QAction::triggered, [=]() {
-       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(), sideDeck->getDeck(), ScriptView::NORMAL);
+       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(),
+                     sideHidden ? nullDeck : sideDeck->getDeck(), ScriptView::NORMAL);
     });
 
     connect(textAction2, &QAction::triggered, [=]() {
-       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(), sideDeck->getDeck(), ScriptView::BRACKET);
+       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(),
+                     sideHidden ? nullDeck : sideDeck->getDeck(), ScriptView::BRACKET);
     });
 
     connect(textAction3, &QAction::triggered, [=]() {
-       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(), sideDeck->getDeck(), ScriptView::COUNT);
+       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(),
+                     sideHidden ? nullDeck : sideDeck->getDeck(), ScriptView::COUNT);
     });
 
     connect(mainDeck, &DeckWidget::details, this, &DeckView::details);
