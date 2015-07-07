@@ -56,4 +56,6 @@ private:
     QSharedPointer<QPixmap> pixmap;
 };
 
+bool itemCompare(CardItem &a, CardItem &b);
+bool idCompare(quint32 a, quint32 b);
 #endif // CARDITEM_H

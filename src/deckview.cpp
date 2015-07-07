@@ -2,11 +2,13 @@
 #include "limitcards.h"
 #include "config.h"
 #include "range.h"
+#include "scriptview.h"
 #include <QDebug>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QResizeEvent>
 #include <QUrl>
+#include <QMenu>
 #include <QScreen>
 #include <QToolButton>
 
@@ -53,6 +55,21 @@ DeckView::DeckView(QWidget *parent)
     printAction->setIcon(QIcon(":/icons/print.png"));
     printAction->setToolTip(config->getStr("action", "print", "截图"));
     toolbar->addAction(printAction);
+
+    auto menu = new QMenu;
+    auto textAction1 = new QAction("A", this);
+    menu->addAction(textAction1);
+    auto textAction2 = new QAction("[A]", this);
+    menu->addAction(textAction2);
+    auto textAction3 = new QAction("n A", this);
+    menu->addAction(textAction3);
+
+    auto toolButton = new QToolButton();
+    toolButton->setIcon(QIcon(":/icons/text.png"));
+    toolButton->setToolTip(config->getStr("action", "text", "文字卡表"));
+    toolButton->setMenu(menu);
+    toolButton->setPopupMode(QToolButton::InstantPopup);
+    toolbar->addWidget(toolButton);
 
     toolbar->addSeparator();
 
@@ -192,6 +209,18 @@ DeckView::DeckView(QWidget *parent)
     connect(homeAction, &QAction::triggered, this, &DeckView::home);
     connect(printAction, &QAction::triggered, this, &DeckView::print);
     connect(hideAction, &QAction::triggered, this, &DeckView::hideSide);
+
+    connect(textAction1, &QAction::triggered, [=]() {
+       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(), sideDeck->getDeck(), ScriptView::NORMAL);
+    });
+
+    connect(textAction2, &QAction::triggered, [=]() {
+       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(), sideDeck->getDeck(), ScriptView::BRACKET);
+    });
+
+    connect(textAction3, &QAction::triggered, [=]() {
+       emit deckText(mainDeck->getDeck(), extraDeck->getDeck(), sideDeck->getDeck(), ScriptView::COUNT);
+    });
 
     connect(mainDeck, &DeckWidget::details, this, &DeckView::details);
     connect(extraDeck, &DeckWidget::details, this, &DeckView::details);
@@ -426,9 +455,9 @@ void DeckView::clearDeck()
     setStatus();
 }
 
-static void toCards(QList<CardItem>& items, Type::Deck &shot)
+static void toCards(Type::DeckI& items, Type::Deck &shot)
 {
-    QList<CardItem> temp;
+    Type::DeckI temp;
     temp.reserve(shot.size());
     foreach(auto id, shot)
     {
@@ -445,7 +474,7 @@ void DeckView::restoreSnapshot(SnapShot &snap)
     deckStatus = snap.deckStatus;
 }
 
-static void toShot(Type::Deck &shot, QList<CardItem>& items)
+static void toShot(Type::Deck &shot, Type::DeckI& items)
 {
     shot.reserve(items.size());
     foreach(auto &item, items)

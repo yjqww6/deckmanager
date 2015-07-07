@@ -45,7 +45,7 @@ class ItemThread : public QThread
 {
     Q_OBJECT
 public:
-    typedef QSharedPointer<QList<QList<CardItem> > > Deck;
+    typedef QSharedPointer<QList<Type::DeckI> > Deck;
     ItemThread(int, QString _lines, DeckView *parent);
     void run();
     int ts;
@@ -92,9 +92,12 @@ public:
         {
             deck->append(item.getId());
         }
-        foreach(auto &item, sideDeck->getDeck())
+        if(!sideHidden)
         {
-            deck->append(item.getId());
+            foreach(auto &item, sideDeck->getDeck())
+            {
+                deck->append(item.getId());
+            }
         }
         return deck;
     }
@@ -107,6 +110,7 @@ signals:
     void save();
     void statusChanged(QString);
     void refreshLocals();
+    void deckText(Type::DeckI&, Type::DeckI&, Type::DeckI&, int);
 
 public slots:
 
@@ -242,7 +246,7 @@ public:
         setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     }
 public slots:
-    void deckChanged(QList<CardItem> &ls)
+    void deckChanged(Type::DeckI &ls)
     {
         int mSum = 0, sSum = 0, tSum = 0;
         foreach(auto &item, ls)
@@ -278,7 +282,7 @@ public:
         setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     }
 public slots:
-    void deckChanged(QList<CardItem> &ls)
+    void deckChanged(Type::DeckI &ls)
     {
         int fSum = 0, sSum = 0, xSum = 0;
         foreach(auto &item, ls)

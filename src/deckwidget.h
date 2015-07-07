@@ -27,7 +27,7 @@ protected:
 
     void startDrag(int);
 
-    QList<CardItem> deck;
+    Type::DeckI deck;
     QPoint startPos;
     QSize cardSize;
     int row;
@@ -107,7 +107,7 @@ public:
 signals:
     void currentIdChanged(quint32 id);
     void sizeChanged(int size);
-    void deckChanged(QList<CardItem>&);
+    void deckChanged(Type::DeckI&);
     void clickId(quint32);
     void details(quint32);
 public slots:

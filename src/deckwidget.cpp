@@ -119,41 +119,7 @@ void DeckWidget::shuffle()
 
 void DeckWidget::sort()
 {
-    qSort(deck.begin(), deck.end(),[&](CardItem &a, CardItem &b)
-    {
-        auto ca = cardPool->getCard(a.getId());
-        auto cb = cardPool->getCard(b.getId());
-        int ta = ca->type & 7, tb = cb->type & 7;
-        if(ta != tb)
-        {
-            return ta < tb;
-        }
-        else if(ca->type != cb->type)
-        {
-            return ca->type < cb->type;
-        }
-        else if(ca->type & Const::TYPE_MONSTER)
-        {
-            if(ca->level != cb->level)
-            {
-                return ca->level >= cb->level;
-            }
-
-            if(ca->atk != cb->atk)
-            {
-                return ca->atk >= cb->atk;
-            }
-            if(ca->def != cb->def)
-            {
-                return ca->def >= cb->def;
-            }
-            return ca->id < cb->id;
-        }
-        else
-        {
-            return ca->id < cb->id;
-        }
-    });
+    qSort(deck.begin(), deck.end(), itemCompare);
     update();
 }
 
@@ -355,7 +321,7 @@ int DeckWidget::countCard(quint32 id)
 {
     auto card = cardPool->getCard(id);
     int sum = 0;
-    foreach(const CardItem &item, deck)
+    foreach(auto &item, deck)
     {
         auto card2 = cardPool->getCard(item.getId());
         if(id == card2->id)

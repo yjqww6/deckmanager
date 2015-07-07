@@ -5,7 +5,7 @@
 PackEdit::PackEdit(QWidget *parent)
     : CardsList(parent)
 {
-
+    setMinimumWidth(200);
 }
 
 int PackEdit::itemAt2(const QPoint _pos)

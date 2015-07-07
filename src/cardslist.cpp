@@ -91,7 +91,7 @@ void CardsList::paintEvent(QPaintEvent *)
                 color.setAlpha(160);
                 newBrush.setColor(color);
                 painter.setBrush(newBrush);
-                painter.drawRect(QRect(QPoint(0,  y), QSize(width(), cardSize.height())));
+                painter.drawRect(QRect(QPoint(0,  y), QSize(sb->geometry().x(), cardSize.height())));
                 painter.setBrush(brush);
                 painter.setPen(pen);
             }

@@ -22,5 +22,6 @@
         <file>icons/home.png</file>
         <file>icons/print.png</file>
         <file>icons/side.png</file>
+        <file>icons/text.png</file>
     </qresource>
 </RCC>

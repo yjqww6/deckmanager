@@ -1,5 +1,6 @@
 #include "carditem.h"
 #include "expansions.h"
+#include "card.h"
 #include <QDebug>
 
 CardItem::Pool CardItem::pool;
@@ -66,3 +67,44 @@ CardItem::CardItem(quint32 _id, bool small)
     }
 }
 
+bool idCompare(quint32 a, quint32 b)
+{
+    auto ca = cardPool->getCard(a);
+    auto cb = cardPool->getCard(b);
+    int ta = ca->type & 7, tb = cb->type & 7;
+    if(ta != tb)
+    {
+        return ta < tb;
+    }
+    else if(ca->type != cb->type)
+    {
+        return ca->type < cb->type;
+    }
+    else if(ca->type & Const::TYPE_MONSTER)
+    {
+        if(ca->level != cb->level)
+        {
+            return ca->level >= cb->level;
+        }
+
+        if(ca->atk != cb->atk)
+        {
+            return ca->atk >= cb->atk;
+        }
+        if(ca->def != cb->def)
+        {
+            return ca->def >= cb->def;
+        }
+        return ca->id < cb->id;
+    }
+    else
+    {
+        return ca->id < cb->id;
+    }
+}
+
+
+bool itemCompare(CardItem &a, CardItem &b)
+{
+    return idCompare(a.getId(), b.getId());
+}

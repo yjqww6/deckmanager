@@ -305,7 +305,7 @@ void CardFilter::searchDeck()
     search(*deck.data());
 }
 
-QPair<int, int> ignore(-1, -1);
+static QPair<int, int> ignore(-1, -1);
 
 template<typename T>
 
@@ -516,29 +516,7 @@ void CardFilter::search(const T &cards)
     }
 
 
-    qSort(ls->begin(), ls->end(),
-          [&](int a, int b)
-    {
-        auto ca = cardPool->getCard(a);
-        auto cb = cardPool->getCard(b);
-        int ta = ca->type & 7, tb = cb->type & 7;
-        if(ta != tb)
-        {
-            return ta < tb;
-        }
-        else if(ca->type != cb->type)
-        {
-            return ca->type < cb->type;
-        }
-        else if((ca->type & Const::TYPE_MONSTER) && ca->atk != cb->atk)
-        {
-            return ca->atk >= cb->atk;
-        }
-        else
-        {
-            return a < b;
-        }
-    });
+    qSort(ls->begin(), ls->end(), idCompare);
 
     emit result(ls);
 

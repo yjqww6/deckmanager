@@ -80,6 +80,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
     connect(deckView, &DeckView::clickId, dialog, &ScriptView::setId);
     connect(cardListView, &CardsListView::clickId, dialog, &ScriptView::setId);
+    connect(deckView, &DeckView::deckText, dialog, &ScriptView::setDeck);
 
     connect(replayRefresh, &IconButton::clicked, replayList, &ReplayList::refresh);
 
