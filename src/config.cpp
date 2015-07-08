@@ -3,6 +3,7 @@
 #include <QDebug>
 
 Config *config = nullptr;
+RemoteConfig tempRemoteConfig("Temp");
 
 Config::Config(QObject *parent)
     : QObject(parent), remote(0)
@@ -48,6 +49,28 @@ Config::Config(QObject *parent)
 RemoteConfig::RemoteConfig(QString group)
 {
     id = group;
+    str = group;
+}
+
+RemoteConfig& RemoteConfig::operator =(const RemoteConfig &other)
+{
+    id = other.id;
+    str = other.str;
+    codec = other.codec;
+    getlist = other.getlist;
+    getlistparam = other.getlistparam;
+    finishlist = other.finishlist;
+    deckname = other.deckname;
+    deckid = other.deckid;
+    decktype = other.decktype;
+    getdeck = other.getdeck;
+    finishdeck = other.finishdeck;
+    deck = other.deck;
+    getname = other.getname;
+    finishname = other.finishname;
+    name = other.name;
+    openurl = other.openurl;
+    return *this;
 }
 
 RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
@@ -85,9 +108,11 @@ RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
     FILL(str);
     FILL(codec);
     FILL(getlist);
+    FILL(getlistparam);
     FILL(finishlist);
     FILL(deckname);
     FILL(deckid);
+    FILL(decktype);
     FILL(getdeck);
     FILL(finishdeck);
     FILL(deck);
@@ -104,6 +129,10 @@ RemoteConfig& Config::getCurrentRemote()
     if(remote >= 0 && remote < remoteConfigs.size())
     {
         return remoteConfigs[remote];
+    }
+    else if(remote == -1)
+    {
+        return tempRemoteConfig;
     }
     else
     {

@@ -16,9 +16,11 @@ public:
     QString str;
     QString codec;
     QString getlist;
+    QString getlistparam;
     QString finishlist;
     QString deckname;
     QString deckid;
+    QString decktype;
     QString getdeck;
     QString finishdeck;
     QString deck;
@@ -30,6 +32,7 @@ public:
     {
         return id == other.id;
     }
+    RemoteConfig& operator =(const RemoteConfig &other);
 };
 
 class Config : public QObject
@@ -60,4 +63,5 @@ public slots:
 };
 
 extern Config *config;
+extern RemoteConfig tempRemoteConfig;
 #endif // CONFIG_H

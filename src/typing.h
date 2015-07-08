@@ -10,6 +10,7 @@ namespace Type
 typedef QVector<quint32> Deck;
 typedef QSharedPointer<Deck> DeckP;
 typedef QList<CardItem> DeckI;
+typedef QSharedPointer<QList<QPair<QString, QVariantList> > > DeckL;
 }
 #endif // TYPING_H
 

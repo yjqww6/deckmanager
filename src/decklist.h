@@ -25,8 +25,9 @@ public:
 
 signals:
     void selectDeck(QString, QString);
+    void deckType(QString);
 public slots:
-    void setList(QSharedPointer<QList<QPair<QString, QString> > >);
+    void setList(Type::DeckL);
 private slots:
     void onItemChanged();
     void onItem(QListWidgetItem *);
@@ -43,7 +44,7 @@ signals:
     void deckStream(QString, QString, bool);
 
 public slots:
-    void setList(QSharedPointer<QList<QPair<QString, QString> > >);
+    void setList(Type::DeckL);
     void getList()
     {
         remote.getList(page);
@@ -59,6 +60,7 @@ private:
     int page;
     QCheckBox *allCards;
     QLineEdit *pageEdit;
+    QLineEdit *typeEdit;
 };
 
 #endif // DECKLIST_H

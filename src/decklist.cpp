@@ -17,7 +17,7 @@ DeckList::~DeckList()
 
 }
 
-void DeckList::setList(QSharedPointer<QList<QPair<QString, QString> > > ls)
+void DeckList::setList(Type::DeckL ls)
 {
     clear();
     foreach(auto &it, *ls)
@@ -36,13 +36,16 @@ void DeckList::onItemChanged()
 
 void DeckList::onItem(QListWidgetItem *item)
 {
-    QString id = item->data(Qt::UserRole).toString();
+    QVariantList vls = item->data(Qt::UserRole).toList();
+    QString id = vls[0].toString();
+    QString type = vls[1].toString();
+    emit deckType(type);
     emit selectDeck(id, item->text());
 }
 
 void DeckList::openURL(QListWidgetItem* item)
 {
-    QString id = item->data(Qt::UserRole).toString();
+    QString id = item->data(Qt::UserRole).toList()[0].toString();
     QUrl url(config->getCurrentRemote().openurl.replace("~0", id));
     QDesktopServices::openUrl(url);
 }
@@ -51,6 +54,7 @@ DeckListView::DeckListView(QWidget *parent)
     : QWidget(parent), page(1)
 {
     auto vbox = new QVBoxLayout;
+    auto hbox = new QHBoxLayout;
     decklist = new DeckList;
 
     vbox->addWidget(decklist);
@@ -61,24 +65,29 @@ DeckListView::DeckListView(QWidget *parent)
     {
         cata->addItem(remoteConfig.str, index++);
     }
+    cata->addItem(tempRemoteConfig.str, -1);
     if(cata->count() > 0) {
         cata->setCurrentIndex(0);
     }
-    connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            config, &Config::setRemote);
-    vbox->addWidget(cata);
+
+    typeEdit = new QLineEdit;
+    auto switchButton = new IconButton(":/icons/down.png", config->getStr("action", "same", "同类卡组"));
+    hbox = new QHBoxLayout;
+    hbox->addWidget(cata);
+    hbox->addWidget(typeEdit);
+    hbox->addWidget(switchButton);
+    vbox->addLayout(hbox);
 
     auto buttom = new QWidget;
-    auto hbox = new QHBoxLayout;
 
     pageEdit = new QLineEdit(tr("1"));
-    //pageEdit->setMinimumWidth(50);
     auto goButton = new IconButton(":/icons/goto.png", config->getStr("action", "goto", "跳转"));
     auto nextButton = new IconButton(":/icons/right.png", config->getStr("action", "next", "下一页"));
     auto prevButton = new IconButton(":/icons/left.png", config->getStr("action", "prev", "上一页"));
     auto abortButton = new IconButton(":/icons/abort.png", config->getStr("action", "abort", "中止"));
     abortButton->setEnabled(false);
 
+    hbox = new QHBoxLayout;
     hbox->addWidget(pageEdit, 1);
     hbox->addWidget(goButton);
     hbox->addWidget(prevButton);
@@ -107,9 +116,24 @@ DeckListView::DeckListView(QWidget *parent)
     connect(&remote, &Remote::list, decklist, &DeckList::setList);
     connect(&remote, &Remote::ready, abortButton, &IconButton::setDisabled);
     connect(abortButton, &IconButton::clicked, &remote, &Remote::abort);
+
+
+    connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            config, &Config::setRemote);
+
+    connect(decklist, &DeckList::deckType, [this] (QString type) {
+        typeEdit->setText(type);
+    });
+    connect(switchButton, &IconButton::clicked, [=] () {
+        tempRemoteConfig = config->getCurrentRemote();
+        tempRemoteConfig.getlistparam = typeEdit->text();
+        cata->setCurrentIndex(cata->count() - 1);
+        config->setRemote(-1);
+        getList();
+    });
 }
 
-void DeckListView::setList(QSharedPointer<QList<QPair<QString, QString> > > ls)
+void DeckListView::setList(Type::DeckL ls)
 {
     decklist->setList(ls);
 }

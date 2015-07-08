@@ -61,7 +61,11 @@ void Remote::getList(int page)
         return;
     }
     waiting = true;
-    currentUrl = arg(config->getCurrentRemote().getlist, QString::number(page));
+    QString getlist = config->getCurrentRemote().getlist;
+    QStringList args;
+    args << QString::number(page);
+    args << config->getCurrentRemote().getlistparam;
+    currentUrl = arg(getlist, args);
     waitingFor = 1;
     get();
 }
@@ -99,11 +103,12 @@ void Remote::listFinished(QNetworkReply *reply)
 
         QString idI = config->getCurrentRemote().deckid;
         QString nameI = config->getCurrentRemote().deckname;
+        QString typeI = config->getCurrentRemote().decktype;
 
         regexp.setMinimal(true);
         int pos = 0, prevPos = -1;
 
-        auto ls = QSharedPointer<QList<QPair<QString, QString> > >::create();
+        auto ls = Type::DeckL::create();
 
         while(pos >= 0 && pos > prevPos)
         {
@@ -113,10 +118,16 @@ void Remote::listFinished(QNetworkReply *reply)
             if(pos >= 0 && regexp.captureCount() > 0)
             {
                 QString name = arg(nameI, regexp.capturedTexts());
+                QString type = arg(typeI, regexp.capturedTexts());
                 QTextDocument text;
                 text.setHtml(name);
                 name = text.toPlainText();
-                ls->append(qMakePair(name, arg(idI, regexp.capturedTexts())));
+                text.setHtml(type);
+                type = text.toPlainText();
+                QVariantList vls;
+                vls << arg(idI, regexp.capturedTexts());
+                vls << type;
+                ls->append(qMakePair(name, vls));
             }
         }
         emit list(ls);

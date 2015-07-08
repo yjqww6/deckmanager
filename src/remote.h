@@ -14,6 +14,7 @@
 #include <QtNetwork/QNetworkConfiguration>
 #include <QtNetwork/QNetworkConfigurationManager>
 #include <QDebug>
+#include "typing.h"
 
 class Remote : public QObject
 {
@@ -32,7 +33,7 @@ public:
 signals:
 
     void deckStream(QString, QString, bool);
-    void list(QSharedPointer<QList<QPair<QString, QString> > >);
+    void list(Type::DeckL);
     void cardName(QString);
     void finished();
     void ready(bool);
