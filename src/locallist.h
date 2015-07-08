@@ -22,8 +22,9 @@ signals:
     void saveDeck(QString);
 public slots:
     void refresh();
-    void setPathFocus()
+    void setPathFocus(QString name)
     {
+        pathEdit->setText(name);
         pathEdit->setFocus();
         pathEdit->selectAll();
     }

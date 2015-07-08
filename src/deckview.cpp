@@ -204,7 +204,7 @@ DeckView::DeckView(QWidget *parent)
     connect(undoAction, &QAction::triggered, this, &DeckView::undo);
     connect(redoAction, &QAction::triggered, this, &DeckView::redo);
     connect(saveAction, &QAction::triggered, this, &DeckView::saveSlot);
-    connect(saveAsAction, &QAction::triggered, this, &DeckView::save);
+    connect(saveAsAction, &QAction::triggered, [this](){emit save(deckStatus.name);});
     connect(newAction, &QAction::triggered, this, &DeckView::newDeck);
     connect(deleteAction, &QAction::triggered, this, &DeckView::deleteDeck);
     connect(abortAction, &QAction::triggered, this, &DeckView::abort);
@@ -503,7 +503,7 @@ void DeckView::saveSlot()
     }
     else
     {
-        emit save();
+        emit save(deckStatus.name);
     }
 }
 

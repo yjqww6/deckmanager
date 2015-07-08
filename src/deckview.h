@@ -107,7 +107,7 @@ signals:
     void currentIdChanged(int);
     void clickId(int);
     void details(int);
-    void save();
+    void save(QString);
     void statusChanged(QString);
     void refreshLocals();
     void deckText(Type::DeckI&, Type::DeckI&, Type::DeckI&, int);

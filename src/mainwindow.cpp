@@ -113,9 +113,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(packView, &PackView::details, this, &MainWindow::toDetails);
     connect(deckView, &DeckView::details, this, &MainWindow::toDetails);
 
-    connect(deckView, &DeckView::save, [=](){
+    connect(deckView, &DeckView::save, [=](QString name){
         tab->setCurrentIndex(1, 0);
-        localList->setPathFocus();
+        localList->setPathFocus(name);
     });
 
     connect(deckView, &DeckView::statusChanged, this, &MainWindow::setWindowTitle);
