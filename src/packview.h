@@ -21,7 +21,7 @@ public:
 signals:
     void cards(Type::DeckP);
     void details(quint32);
-
+    void clickId(quint32);
     void checkLeave();
 public slots:
     void changeTab()

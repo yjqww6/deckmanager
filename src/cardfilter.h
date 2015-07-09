@@ -28,6 +28,7 @@ signals:
     void result(Type::DeckP);
 public slots:
     void revert();
+    void searchSet(quint32 id);
 private slots:
     void setCardTypeSub(int);
 

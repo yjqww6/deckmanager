@@ -289,6 +289,56 @@ void CardFilter::setCardTypeSub(int index)
     }
 }
 
+void CardFilter::searchSet(quint32 id)
+{
+    auto cardW = cardPool->getCard(id);
+    if(cardW.isNull())
+    {
+        return;
+    }
+    quint64 setcode1 = cardW.ref().setcode;
+
+    auto &map = cardPool->getMap();
+    auto ls = Type::DeckP::create();
+    for(auto it = map.begin(); it != map.end(); ++it)
+    {
+        quint64 set_code = setcode1;
+        bool foundO = false;
+
+        while(set_code)
+        {
+            quint64 setcode2 = it.value()->setcode;
+            quint64 settype = set_code & 0x0fff;
+            bool found = false;
+            while(setcode2)
+            {
+                if((setcode2 & 0x0fff) == settype)
+                {
+                    found = true;
+                    break;
+                }
+                setcode2 = setcode2 >> 16;
+            }
+
+            if(found)
+            {
+                foundO = true;
+                break;
+            }
+            set_code = set_code >> 16;
+        }
+        if(foundO)
+        {
+            ls->append(it.value()->id);
+        }
+    }
+    if(!ls->empty())
+    {
+        qSort(ls->begin(), ls->end(), idCompare);
+        emit result(ls);
+    }
+}
+
 void CardFilter::searchAll()
 {
     search(cardPool->getMap().keys());

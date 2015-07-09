@@ -78,8 +78,9 @@ MainWindow::MainWindow(QWidget *parent)
     cardDetails->setStyleSheet("font-size: 15px");
 
     connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
-    connect(deckView, &DeckView::clickId, dialog, &ScriptView::setId);
-    connect(cardListView, &CardsListView::clickId, dialog, &ScriptView::setId);
+    connect(deckView, &DeckView::clickId, filter, &CardFilter::searchSet);
+    connect(cardListView, &CardsListView::clickId, filter, &CardFilter::searchSet);
+    connect(packView, &PackView::clickId, filter, &CardFilter::searchSet);
     connect(deckView, &DeckView::deckText, dialog, &ScriptView::setDeck);
 
     connect(replayRefresh, &IconButton::clicked, replayList, &ReplayList::refresh);
