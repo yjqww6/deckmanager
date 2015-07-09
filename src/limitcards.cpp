@@ -130,11 +130,11 @@ Type::DeckP LimitCards::getCards(int index)
 
            if(it1.value() == it2.value())
            {
-               auto card1 = cardPool->getCard(id1), card2 = cardPool->getCard(id2);
-               if(!card1.isNull() && !card2.isNull())
-               {
-                   return (card1.ref().type & 7) < (card2.ref().type & 7);
-               }
+               return call_with_def([](Card &card1, Card &card2) {
+                   return (card1.type & 7) < (card2.type & 7);
+               },
+               (it1.value() < it2.value()),
+               cardPool->getCard(id1), cardPool->getCard(id2));
            }
            return it1.value() < it2.value();
         });

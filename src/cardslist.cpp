@@ -111,7 +111,6 @@ void CardsList::paintEvent(QPaintEvent *)
                 }
             }
 
-            auto card = cardPool->getCard(id);
             call_with_ref([&](Card &card) {
 
                 painter.drawText(cardWidth + 5, y + fmHeight, card.name);
@@ -142,7 +141,7 @@ void CardsList::paintEvent(QPaintEvent *)
                                      card.cardType());
                     painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3, ot);
                 }
-            }, card);
+            }, cardPool->getCard(id));
         }
         items.swap(newItems);
     }

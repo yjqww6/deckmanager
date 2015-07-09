@@ -121,6 +121,9 @@ void PackList::readPack(QTreeWidgetItem *item, int)
 
     QTextStream stream(&data);
     auto vec = Type::DeckP::create();
+    auto appender = [&](Card &card) {
+        vec->append(card.id);
+    };
 
     for(QString line = stream.readLine(); !line.isNull();
         line = stream.readLine())
@@ -142,31 +145,19 @@ void PackList::readPack(QTreeWidgetItem *item, int)
             {
                 line = line.mid(pos + 1);
                 line = line.trimmed();
-                auto card = cardPool->getNewCard(line, config->waitForPass);
-                if(!card.isNull())
-                {
-                    vec->append(card.ref().id);
-                }
+                call_with_ref(appender, cardPool->getNewCard(line, config->waitForPass));
             }
         }
         else if(pos < 0)
         {
             quint32 id = line.toUInt();
-            auto card = cardPool->getCard(id);
-            if(!card.isNull())
-            {
-                vec->append(card.ref().id);
-            }
+            call_with_ref(appender, cardPool->getCard(id));
         }
         else
         {
             line = line.mid(pos + 1);
             line = line.trimmed();
-            auto card = cardPool->getNewCard(line, config->waitForPass);
-            if(!card.isNull())
-            {
-                vec->append(card.ref().id);
-            }
+            call_with_ref(appender, cardPool->getNewCard(line, config->waitForPass));
         }
     }
 

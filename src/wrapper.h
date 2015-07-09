@@ -9,6 +9,8 @@ private:
     QSharedPointer<T> ptr;
 public:
     Wrapper(QSharedPointer<T> p) : ptr(p) {}
+    Wrapper(Wrapper<T> &&other) : ptr(other.ptr) {}
+    Wrapper(const Wrapper<T> &other) : ptr(other.ptr) {}
     Wrapper() : ptr(QSharedPointer<T>(nullptr)) {}
 
     bool isNull() const
@@ -16,31 +18,56 @@ public:
         return ptr.isNull();
     }
 
-    T& ref()
+    T& ref() const
     {
         return *ptr.data();
+    }
+
+    operator T&() const
+    {
+        return *ptr.data();
+    }
+
+    Wrapper<T>& operator =(const Wrapper<T> &other)
+    {
+        ptr = other.ptr;
+        return *this;
+    }
+    Wrapper<T>& operator =(Wrapper<T> &&other)
+    {
+        ptr = other.ptr;
+        return *this;
     }
 };
 
 
-template<typename Func, typename T>
-static inline void call_with_ref(Func f, Wrapper<T> w)
+static inline bool valid()
 {
-    if(!w.isNull())
-    {
-        auto t = std::forward<T&>(w.ref());
-        f(t);
-    }
-    return;
+    return true;
 }
 
-template<typename Func, typename T, typename Ret>
-static inline Ret call_with_def(Func f, Ret ret, Wrapper<T> w)
+template<typename T, typename ...Args>
+static inline bool valid(Wrapper<T> &&w, Wrapper<Args>&&... args)
 {
-    if(!w.isNull())
+    return !w.isNull() && valid(std::forward<Wrapper<Args> >(args)...);
+}
+
+
+template<typename Func, typename ...Args>
+static inline void call_with_ref(Func &&f, Wrapper<Args>&&... w)
+{
+    if(valid(std::forward<Wrapper<Args> >(w)...))
     {
-        auto t = std::forward<T&>(w.ref());
-        return f(t);
+        f(std::forward<Wrapper<Args> >(w)...);
+    }
+}
+
+template<typename Func, typename Ret, typename ...Args>
+static inline Ret call_with_def(Func &&f, Ret &&ret, Wrapper<Args>&&... w)
+{
+    if(valid(std::forward<Wrapper<Args> >(w)...))
+    {
+        return f(std::forward<Wrapper<Args> >(w)...);
     }
     else
     {

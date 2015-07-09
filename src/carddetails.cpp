@@ -34,7 +34,6 @@ void CardDetails::resizeEvent(QResizeEvent *event)
 void CardDetails::setId(quint32 id)
 {
     QStringList str;
-    auto card = cardPool->getCard(id);
     call_with_ref([&] (Card& card) {
         str << card.name + "[" + QString::number(id) + "]";
         currentId = id;
@@ -80,7 +79,7 @@ void CardDetails::setId(quint32 id)
         vbox->removeWidget(effect);
         vbox->addWidget(effect, 1);
         updateGeometry();
-    }, card);
+    }, cardPool->getCard(id));
 }
 
 CardDetails::~CardDetails()

@@ -419,7 +419,6 @@ void CardFilter::search(const T &cards)
 
     foreach(auto it, cards)
     {
-        auto card = cardPool->getCard(it);
         call_with_ref([&](Card& card) {
 
             if(card.type & Const::TYPE_TOKEN)
@@ -570,7 +569,7 @@ void CardFilter::search(const T &cards)
             }
 
             ls->append(card.id);
-        }, card);
+        }, cardPool->getCard(it));
     }
 
 
