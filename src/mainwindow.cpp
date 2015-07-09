@@ -143,7 +143,7 @@ MainWindow::MainWindow(QWidget *parent)
     tab->addWidget(0, packView, config->getStr("tab", "pack", "卡包"));
     tab->addWidget(0, pref, config->getStr("tab", "pref", "选项"));
     tab->setCurrentIndex(1, 0);
-    tab->setMinimumWidth(220);
+    tab->changeSize();
     sp->addWidget(tab);
     sp->addWidget(deckView);
     sp->addWidget(cardListView);

@@ -26,6 +26,7 @@ public slots:
     void addWidget(int tab, QWidget* widget, QString text);
     void setCurrentIndex(int tab, int column);
     void setCurrentIndex(QPair<int, int>);
+    void changeSize();
 private:
     void setCurrentIndexInner(int tab, int column);
     QPair<int, int> current;

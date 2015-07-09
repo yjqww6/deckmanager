@@ -12,7 +12,7 @@ class CardItem
 public:
     CardItem(quint32 _id, bool small = false);
 
-    CardItem() : id(0), pixmap(nullptr) {}
+    CardItem() : id(0), pixmap(QSharedPointer<QPixmap>::create()) {}
 
     CardItem(const CardItem &item) : id(item.getId()), pixmap(item.getPixmap()) {}
 

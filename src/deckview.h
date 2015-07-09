@@ -52,7 +52,7 @@ public:
     Deck::value_type deck;
     QString lines;
     DeckView *parent;
-    QSharedPointer<Card> loadNewCard(quint32 id);
+    Wrapper<Card> loadNewCard(quint32 id);
 signals:
     void finishLoad(int, ItemThread::Deck);
 };
@@ -251,19 +251,20 @@ public slots:
         int mSum = 0, sSum = 0, tSum = 0;
         foreach(auto &item, ls)
         {
-            auto card = cardPool->getCard(item.getId());
-            if(card->type & Const::TYPE_MONSTER)
-            {
-                mSum++;
-            }
-            else if(card->type & Const::TYPE_SPELL)
-            {
-                sSum++;
-            }
-            else if(card->type & Const::TYPE_TRAP)
-            {
-                tSum++;
-            }
+            call_with_ref([&](Card &card) {
+                if(card.type & Const::TYPE_MONSTER)
+                {
+                    mSum++;
+                }
+                else if(card.type & Const::TYPE_SPELL)
+                {
+                    sSum++;
+                }
+                else if(card.type & Const::TYPE_TRAP)
+                {
+                    tSum++;
+                }
+            }, cardPool->getCard(item.getId()));
         }
         QString text = config->getStr("string", "TYPE_MONSTER", "怪兽") + ": " + QString::number(mSum);
         text = text + " " + config->getStr("string", "TYPE_SPELL", "魔法") + ": " + QString::number(sSum);
@@ -287,19 +288,21 @@ public slots:
         int fSum = 0, sSum = 0, xSum = 0;
         foreach(auto &item, ls)
         {
-            auto card = cardPool->getCard(item.getId());
-            if(card->type & Const::TYPE_FUSION)
-            {
-                fSum++;
-            }
-            else if(card->type & Const::TYPE_SYNCHRO)
-            {
-                sSum++;
-            }
-            else if(card->type & Const::TYPE_XYZ)
-            {
-                xSum++;
-            }
+            call_with_ref([&](Card &card) {
+
+                if(card.type & Const::TYPE_FUSION)
+                {
+                    fSum++;
+                }
+                else if(card.type & Const::TYPE_SYNCHRO)
+                {
+                    sSum++;
+                }
+                else if(card.type & Const::TYPE_XYZ)
+                {
+                    xSum++;
+                }
+            }, cardPool->getCard(item.getId()));
         }
         QString text = config->getStr("string", "TYPE_FUSION", "融合") + ": " + QString::number(fSum);
         text = text + " " + config->getStr("string", "TYPE_SYNCHRO", "同调") + ": " + QString::number(sSum);

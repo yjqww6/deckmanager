@@ -14,6 +14,7 @@
 #include <QThread>
 #include "remote.h"
 #include "constant.h"
+#include "wrapper.h"
 #include <QDebug>
 
 class Card
@@ -53,8 +54,8 @@ public:
         return adToString(atk) + "/" + adToString(def);
     }
 
-private:
     Card() {}
+private:
 
     QString adToString(int ad)
     {
@@ -102,8 +103,8 @@ public:
 
     CardPool(QStringList paths);
 
-    QSharedPointer<Card> getCard(quint32 id);
-    QSharedPointer<Card> getNewCard(QString name, bool wait = true);
+    Wrapper<Card> getCard(quint32 id);
+    Wrapper<Card> getNewCard(QString name, bool wait = true);
 
     void loadNames();
     auto getTypes() -> decltype((types))

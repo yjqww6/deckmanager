@@ -66,7 +66,7 @@ void PackEdit::mousePressEvent(QMouseEvent *event)
         ls.removeAt(index);
         update();
     }
-    CardsList::mouseMoveEvent(event);
+    CardsList::mousePressEvent(event);
 }
 
 void PackEdit::startDrag(int index)
@@ -81,9 +81,12 @@ void PackEdit::startDrag(int index)
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimedata);
     auto &item = items.find(index).value();
-    drag->setPixmap(item.getPixmap()->scaled(cardSize));
-    drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
-                            drag->pixmap().height() / 2));
+    if(item.getPixmap())
+    {
+        drag->setPixmap(item.getPixmap()->scaled(cardSize));
+        drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
+                                drag->pixmap().height() / 2));
+    }
 
     bool copy = true;
     if((QApplication::keyboardModifiers() & Qt::ControlModifier) == 0)
@@ -208,28 +211,6 @@ PackEditView::PackEditView(QWidget *parent)
 }
 void PackEdit::sort()
 {
-    qSort(ls.begin(), ls.end(),
-          [&](int a, int b)
-    {
-        auto ca = cardPool->getCard(a);
-        auto cb = cardPool->getCard(b);
-        int ta = ca->type & 7, tb = cb->type & 7;
-        if(ta != tb)
-        {
-            return ta < tb;
-        }
-        else if(ca->type != cb->type)
-        {
-            return ca->type < cb->type;
-        }
-        else if(ca->type & Const::TYPE_MONSTER)
-        {
-            return ca->atk >= cb->atk;
-        }
-        else
-        {
-            return a < b;
-        }
-    });
+    qSort(ls.begin(), ls.end(), idCompare);
     update();
 }

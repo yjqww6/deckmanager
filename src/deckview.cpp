@@ -88,12 +88,11 @@ DeckView::DeckView(QWidget *parent)
     abortAction->setEnabled(false);
     toolbar->addAction(abortAction);
 
-    toolbar->addSeparator();
-
     auto hideButton = new QToolButton;
     hideButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
-    auto hideAction = new QAction("Side", hideButton);
+    auto hideAction = new QAction(hideButton);
+    hideAction->setToolTip(config->getStr("action", "hide", "隐藏副卡组"));
     hideAction->setIcon(QIcon(":/icons/side.png"));
 
     hideButton->addAction(hideAction);
@@ -138,8 +137,9 @@ DeckView::DeckView(QWidget *parent)
     mainDeck = new DeckWidget(nullptr, 4, 10);
     auto notExtraFilter = [](quint32 id)
     {
-        auto card = cardPool->getCard(id);
-        return card && !card->inExtra();
+        return call_with_def([](Card &card) {
+            return !card.inExtra();
+        }, false, cardPool->getCard(id));
     };
 
     mainDeck->filter = notExtraFilter;
@@ -149,8 +149,9 @@ DeckView::DeckView(QWidget *parent)
     extraDeck = new DeckWidget(nullptr, 1, 10);
     auto extraFilter = [](quint32 id)
     {
-        auto card = cardPool->getCard(id);
-        return card && card->inExtra();
+        return call_with_def([](Card &card) {
+            return card.inExtra();
+        }, false, cardPool->getCard(id));
     };
     extraDeck->filter = extraFilter;
     sideDeck = new DeckWidget(nullptr, 1, 10);
@@ -559,12 +560,12 @@ ItemThread::ItemThread(int _ts, QString _lines, DeckView *parent)
     Q_UNUSED(t);
 }
 
-QSharedPointer<Card> ItemThread::loadNewCard(quint32 id)
+Wrapper<Card> ItemThread::loadNewCard(quint32 id)
 {
     auto it = parent->map.find(id);
     if(it != parent->map.end())
     {
-        return cardPool->getCard(it.value());
+       return cardPool->getCard(it.value());
     }
     QEventLoop loop;
     QString name;
@@ -576,10 +577,9 @@ QSharedPointer<Card> ItemThread::loadNewCard(quint32 id)
     remote.getName(id);
     loop.exec();
     auto card = cardPool->getNewCard(name, config->waitForPass);
-    if(card)
-    {
-        parent->map.insert(id, card->id);
-    }
+    call_with_ref([&](Card &card) {
+        parent->map.insert(id, card.id);
+    }, card);
     return card;
 }
 
@@ -617,11 +617,11 @@ void ItemThread::run()
                 bool ok = true;
                 quint32 id = line.toUInt(&ok);
 
-                QSharedPointer<Card> card;
+                Wrapper<Card> card;
                 if(ok)
                 {
                     card = cardPool->getCard(id);
-                    if(!card && config->convertPass && id >= 10000)
+                    if(card.isNull() && config->convertPass && id >= 10000)
                     {
                         card = loadNewCard(id);
                     }
@@ -636,20 +636,15 @@ void ItemThread::run()
                     return;
                 }
 
-                if(!card)
-                {
-                    continue;
-                }
-                else
-                {
-                    id = card->id;
+                call_with_ref([&](Card &card) {
+                    id = card.id;
                     if(side)
                     {
                         deck[2].append(CardItem(id));
                     }
                     else
                     {
-                        if(card->inExtra())
+                        if(card.inExtra())
                         {
                             deck[1].append(CardItem(id));
                         }
@@ -658,7 +653,7 @@ void ItemThread::run()
                             deck[0].append(CardItem(id));
                         }
                     }
-                }
+                }, card);
             }
         }
     }

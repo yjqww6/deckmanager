@@ -17,26 +17,27 @@ ScriptView::ScriptView(QWidget *parent)
 
 void ScriptView::setId(quint32 id)
 {
-    setWindowTitle(cardPool->getCard(id)->name);
-    QFile file("script/c" + QString::number(id) + ".lua");
-    QString scriptText;
-    textEdit->clear();
-    if(file.open(QFile::ReadOnly))
-    {
-        scriptText = file.readAll();
-    }
-    else
-    {
-       scriptText = expansions->open("script/c" + QString::number(id) + ".lua");
-    }
+    call_with_ref([&](Card &card) {
+        setWindowTitle(card.name);
+        QFile file("script/c" + QString::number(id) + ".lua");
+        QString scriptText;
+        textEdit->clear();
+        if(file.open(QFile::ReadOnly))
+        {
+            scriptText = file.readAll();
+        }
+        else
+        {
+            scriptText = expansions->open("script/c" + QString::number(id) + ".lua");
+        }
 
-    textEdit->insertPlainText(scriptText);
-    textEdit->setReadOnly(true);
-    //textEdit->adjustSize();
-    if(isHidden())
-    {
-        show();
-    }
+        textEdit->insertPlainText(scriptText);
+        textEdit->setReadOnly(true);
+        if(isHidden())
+        {
+            show();
+        }
+    }, cardPool->getCard(id));
 }
 
 static void printTo(QStringList &ls, Type::DeckI &deck, QString key, QString name, int mode)
@@ -47,19 +48,16 @@ static void printTo(QStringList &ls, Type::DeckI &deck, QString key, QString nam
         ls << "";
         foreach(auto &item, deck)
         {
-            auto card = cardPool->getCard(item.getId());
-            if(!card)
-            {
-                continue;
-            }
-            if(mode == ScriptView::NORMAL)
-            {
-                ls << card->name;
-            }
-            else
-            {
-                ls << '[' + card->name + ']';
-            }
+            call_with_ref([&](Card &card) {
+                if(mode == ScriptView::NORMAL)
+                {
+                    ls << card.name;
+                }
+                else
+                {
+                    ls << '[' + card.name + ']';
+                }
+            }, cardPool->getCard(item.getId()));
         }
     }
     ls << "";
@@ -88,12 +86,9 @@ static void printCount(QStringList &ls, Type::DeckI &deck, QString key, QString 
         qSort(list.begin(), list.end(), idCompare);
         foreach(auto id, list)
         {
-            auto card = cardPool->getCard(id);
-            if(!card)
-            {
-                continue;
-            }
-            ls << QString::number(map.find(id).value()) + ' ' + card->name;
+            call_with_ref([&](Card &card) {
+                ls << QString::number(map.find(id).value()) + ' ' + card.name;
+            }, cardPool->getCard(id));
         }
     }
     ls << "";

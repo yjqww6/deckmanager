@@ -104,6 +104,7 @@ void Remote::listFinished(QNetworkReply *reply)
         QString idI = config->getCurrentRemote().deckid;
         QString nameI = config->getCurrentRemote().deckname;
         QString typeI = config->getCurrentRemote().decktype;
+        QString tooltipI = config->getCurrentRemote().decktooltip;
 
         regexp.setMinimal(true);
         int pos = 0, prevPos = -1;
@@ -119,14 +120,18 @@ void Remote::listFinished(QNetworkReply *reply)
             {
                 QString name = arg(nameI, regexp.capturedTexts());
                 QString type = arg(typeI, regexp.capturedTexts());
+                QString tooltip = arg(tooltipI, regexp.capturedTexts());
                 QTextDocument text;
                 text.setHtml(name);
                 name = text.toPlainText();
                 text.setHtml(type);
                 type = text.toPlainText();
+                text.setHtml(tooltip);
+                tooltip = text.toPlainText();
                 QVariantList vls;
                 vls << arg(idI, regexp.capturedTexts());
                 vls << type;
+                vls << tooltip;
                 ls->append(qMakePair(name, vls));
             }
         }

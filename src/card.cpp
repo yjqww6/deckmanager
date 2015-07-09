@@ -6,14 +6,14 @@
 
 CardPool *cardPool = nullptr;
 
-QSharedPointer<Card> CardPool::getCard(quint32 id)
+Wrapper<Card> CardPool::getCard(quint32 id)
 {
     auto it = pool.find(id);
     if(it == pool.end())
     {
-        return QSharedPointer<Card>(nullptr);
+        return Wrapper<Card>();
     }
-    return it.value();
+    return Wrapper<Card>(it.value());
 }
 
 void CardPool::loadCard(QSqlQuery &query)
@@ -233,7 +233,7 @@ QString CardPool::getAttr(quint32 attribute)
 }
 
 
-QSharedPointer<Card> CardPool::getNewCard(QString name, bool wait)
+Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
 {
     name = nameConv(name);
     auto it = newPool.find(name);
@@ -245,9 +245,9 @@ QSharedPointer<Card> CardPool::getNewCard(QString name, bool wait)
     }
     if(it == newPool.end())
     {
-        return QSharedPointer<Card>(nullptr);
+        return Wrapper<Card>();
     }
-    return getCard(it.value());
+    return Wrapper<Card>(getCard(it.value()));
 }
 
 void CardPool::loadNames()

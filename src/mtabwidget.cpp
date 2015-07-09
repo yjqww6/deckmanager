@@ -74,6 +74,24 @@ int MTabWidget::addTab(int i, QString text)
     return -1;
 }
 
+void MTabWidget::changeSize()
+{
+    int max = 200;
+    foreach(auto tabbar, tabs)
+    {
+        int cur = 0;
+        for(int i : range(tabbar->count()))
+        {
+            cur += tabbar->tabRect(i).width();
+        }
+        if(cur > max)
+        {
+            max = cur;
+        }
+    }
+    setMinimumWidth(max + 20);
+}
+
 void MTabWidget::addWidget(int tab, QWidget *widget, QString text)
 {
     if(tab >= 0 && tab < tabs.size())

@@ -8,6 +8,7 @@
 #include "config.h"
 #include "card.h"
 #include "carditem.h"
+#include "wrapper.h"
 
 
 int main(int argc, char *argv[])
@@ -50,6 +51,7 @@ int main(int argc, char *argv[])
         MainWindow w;
         w.show();
         cardPool->loadNames();
+
         ret =  a.exec();
     }
     catch(...)

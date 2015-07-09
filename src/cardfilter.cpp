@@ -3,6 +3,7 @@
 #include "config.h"
 #include "limitcards.h"
 #include "range.h"
+#include "wrapper.h"
 
 const quint32 CardFilter::cardTypes[] =
 {
@@ -364,155 +365,157 @@ void CardFilter::search(const T &cards)
     foreach(auto it, cards)
     {
         auto card = cardPool->getCard(it);
+        call_with_ref([&](Card& card) {
 
-        if(card->type & Const::TYPE_TOKEN)
-        {
-            continue;
-        }
-
-        if(type != ~0U && !(type & card->type))
-        {
-            continue;
-        }
-
-        if(limitC != -1 && limitCards->getLimit(card->id) != limitC)
-        {
-            continue;
-        }
-
-        if(otC != 0 && (card->ot & 3) != otC)
-        {
-            continue;
-        }
-
-        if(!matchRange(passRange, card->id))
-        {
-            continue;
-        }
-        if(type & Const::TYPE_MONSTER)
-        {
-            if(subtype != ~0U && !((subtype & card->type) == subtype))
+            if(card.type & Const::TYPE_TOKEN)
             {
-                continue;
+                return;
             }
 
-            if(race != ~0U && !(race & card->race))
+            if(type != ~0U && !(type & card.type))
             {
-                continue;
+                return;
             }
 
-            if(attr != ~0U && !(attr & card->attribute))
+            if(limitC != -1 && limitCards->getLimit(card.id) != limitC)
             {
-                continue;
+                return;
             }
 
-            if(!matchRange(atkRange, card->atk))
+            if(otC != 0 && (card.ot & 3) != otC)
             {
-                continue;
+                return;
             }
 
-            if(!matchRange(defRange, card->def))
+            if(!matchRange(passRange, card.id))
             {
-                continue;
+                return;
             }
-
-            if(levelRange != ignore)
+            if(type & Const::TYPE_MONSTER)
             {
-                if((card->type & Const::TYPE_XYZ) || !matchRange(levelRange, card->level))
+                if(subtype != ~0U && !((subtype & card.type) == subtype))
                 {
-                    continue;
+                    return;
                 }
-            }
 
-            if(rankRange != ignore)
-            {
-                if(!(card->type & Const::TYPE_XYZ) || !matchRange(rankRange, card->level))
+                if(race != ~0U && !(race & card.race))
                 {
-                    continue;
+                    return;
                 }
-            }
 
-            if(scaleRange != ignore)
-            {
-                if(!(card->type & Const::TYPE_PENDULUM) || !matchRange(scaleRange, card->scale))
+                if(attr != ~0U && !(attr & card.attribute))
                 {
-                continue;
+                    return;
                 }
-            }
-        }
-        else
-        {
-            if(subtype != ~0U && card->type != subtype)
-            {
-                continue;
-            }
-        }
 
-        if((category & card->category) != category)
-        {
-            continue;
-        }
-
-        if(set_code)
-        {
-            quint64 setcode = card->setcode;
-            quint64 settype = set_code & 0x0fff;
-            quint64 setsubtype = set_code & 0xf000;
-            bool found = false;
-            while(setcode)
-            {
-                if((setcode & 0x0fff) == settype &&
-                        (setsubtype == 0 || (setcode & 0xf000) == setsubtype))
+                if(!matchRange(atkRange, card.atk))
                 {
-                    found = true;
-                    break;
+                    return;
                 }
-                setcode = setcode >> 16;
-            }
-            if(!found)
-            {
-                continue;
-            }
-        }
-        if(!name.isEmpty())
-        {
-            if(!expr)
-            {
-                if(card->name.indexOf(name) < 0 &&
-                        card->effect.indexOf(name) < 0)
+
+                if(!matchRange(defRange, card.def))
                 {
-                    continue;
+                    return;
+                }
+
+                if(levelRange != ignore)
+                {
+                    if((card.type & Const::TYPE_XYZ) || !matchRange(levelRange, card.level))
+                    {
+                        return;
+                    }
+                }
+
+                if(rankRange != ignore)
+                {
+                    if(!(card.type & Const::TYPE_XYZ) || !matchRange(rankRange, card.level))
+                    {
+                        return;
+                    }
+                }
+
+                if(scaleRange != ignore)
+                {
+                    if(!(card.type & Const::TYPE_PENDULUM) || !matchRange(scaleRange, card.scale))
+                    {
+                        return;
+                    }
                 }
             }
             else
             {
-                bool outer = false;
-                foreach(auto &andExprs, exprs)
+                if(subtype != ~0U && card.type != subtype)
                 {
-                    bool inner = true;
-                    foreach(auto &str, andExprs)
+                    return;
+                }
+            }
+
+            if((category & card.category) != category)
+            {
+                return;
+            }
+
+            if(set_code)
+            {
+                quint64 setcode = card.setcode;
+                quint64 settype = set_code & 0x0fff;
+                quint64 setsubtype = set_code & 0xf000;
+                bool found = false;
+                while(setcode)
+                {
+                    if((setcode & 0x0fff) == settype &&
+                            (setsubtype == 0 || (setcode & 0xf000) == setsubtype))
                     {
-                        if(card->name.indexOf(str) < 0 &&
-                                    card->effect.indexOf(str) < 0)
+                        found = true;
+                        break;
+                    }
+                    setcode = setcode >> 16;
+                }
+                if(!found)
+                {
+                    return;
+                }
+            }
+            if(!name.isEmpty())
+            {
+                if(!expr)
+                {
+                    if(card.name.indexOf(name) < 0 &&
+                            card.effect.indexOf(name) < 0)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    bool outer = false;
+                    foreach(auto &andExprs, exprs)
+                    {
+                        bool inner = true;
+                        foreach(auto &str, andExprs)
                         {
-                            inner = false;
+                            if(card.name.indexOf(str) < 0 &&
+                                    card.effect.indexOf(str) < 0)
+                            {
+                                inner = false;
+                                break;
+                            }
+                        }
+                        if(inner)
+                        {
+                            outer = true;
                             break;
                         }
                     }
-                    if(inner)
+                    if(!outer)
                     {
-                        outer = true;
-                        break;
+                        return;
                     }
                 }
-                if(!outer)
-                {
-                    continue;
-                }
             }
-        }
 
-        ls->append(card->id);
+            ls->append(card.id);
+        }, card);
     }
 
 
@@ -570,7 +573,7 @@ QPair<int, int> CardFilter::getRange(QLineEdit *lineEdit)
     for(QChar ch : line)
     {
         unsigned int c = ch.unicode();
-//        qDebug() << c;
+        //        qDebug() << c;
         if(state == INIT)
         {
             if(c == '<')
@@ -724,7 +727,7 @@ QPair<int, int> CardFilter::getRange(QLineEdit *lineEdit)
         num1 += 1;
     }
 
-//    qDebug() << num1 << num2;
+    //    qDebug() << num1 << num2;
     return qMakePair(num1, num2);
 }
 

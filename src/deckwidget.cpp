@@ -16,7 +16,7 @@ DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
 
     filter = [](quint32 id)
     {
-        return cardPool->getCard(id);
+        return !cardPool->getCard(id).isNull();
     };
 
     makeSnapShot = []() {};
@@ -230,9 +230,12 @@ void DeckWidget::startDrag(int index)
     mimedata->setText(QString::number(card.getId()));
     auto *drag = new QDrag(this);
     drag->setMimeData(mimedata);
-    drag->setPixmap(card.getPixmap()->scaled(cardSize));
-    drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
-                            drag->pixmap().height() / 2));
+    if(card.getPixmap())
+    {
+        drag->setPixmap(card.getPixmap()->scaled(cardSize));
+        drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
+                                drag->pixmap().height() / 2));
+    }
     makeSnapShot();
     bool copy = true;
     dragHelper.atomic = true;
@@ -319,29 +322,43 @@ void DeckWidget::deleteCard(QPoint _pos)
 
 int DeckWidget::countCard(quint32 id)
 {
-    auto card = cardPool->getCard(id);
-    int sum = 0;
-    foreach(auto &item, deck)
+    return call_with_def([&](Card &card) {
+        int sum = 0;
+        foreach(auto &item, deck)
+        {
+            call_with_ref([&](Card &card2) {
+                if(id == card2.id)
+                {
+                    sum += 1;
+                }
+                else if(id == card2.alias)
+                {
+                    sum += 1;
+                }
+                else if(card.alias == card2.id)
+                {
+                    sum += 1;
+                }
+                else if(card.alias == card2.alias && card.alias != 0)
+                {
+                    sum += 1;
+                }
+            }, cardPool->getCard(item.getId()));
+        }
+        return sum;
+    }, 0, cardPool->getCard(id));
+}
+
+void DeckWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if(event->buttons() & Qt::LeftButton)
     {
-        auto card2 = cardPool->getCard(item.getId());
-        if(id == card2->id)
+        if(itemAt(mapFromGlobal(QCursor::pos())) >= 0)
         {
-            sum += 1;
-        }
-        else if(id == card2->alias)
-        {
-            sum += 1;
-        }
-        else if(card->alias == card2->id)
-        {
-            sum += 1;
-        }
-        else if(card->alias == card2->alias && card->alias != 0)
-        {
-            sum += 1;
+            emit clickId(currentCardId);
         }
     }
-    return sum;
+    QWidget::mouseDoubleClickEvent(event);
 }
 
 DeckWidget::~DeckWidget()

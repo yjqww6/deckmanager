@@ -134,18 +134,18 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         {
             quint32 id = line.left(pos).toUInt();
             auto card = cardPool->getCard(id);
-            if(card)
+            if(!card.isNull())
             {
-                vec->append(card->id);
+                vec->append(card.ref().id);
             }
             else
             {
                 line = line.mid(pos + 1);
                 line = line.trimmed();
                 auto card = cardPool->getNewCard(line, config->waitForPass);
-                if(card)
+                if(!card.isNull())
                 {
-                    vec->append(card->id);
+                    vec->append(card.ref().id);
                 }
             }
         }
@@ -153,9 +153,9 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         {
             quint32 id = line.toUInt();
             auto card = cardPool->getCard(id);
-            if(card)
+            if(!card.isNull())
             {
-                vec->append(card->id);
+                vec->append(card.ref().id);
             }
         }
         else
@@ -163,9 +163,9 @@ void PackList::readPack(QTreeWidgetItem *item, int)
             line = line.mid(pos + 1);
             line = line.trimmed();
             auto card = cardPool->getNewCard(line, config->waitForPass);
-            if(card)
+            if(!card.isNull())
             {
-                vec->append(card->id);
+                vec->append(card.ref().id);
             }
         }
     }

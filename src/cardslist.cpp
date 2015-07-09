@@ -112,40 +112,37 @@ void CardsList::paintEvent(QPaintEvent *)
             }
 
             auto card = cardPool->getCard(id);
+            call_with_ref([&](Card &card) {
 
-            if(!card)
-            {
-                continue;
-            }
+                painter.drawText(cardWidth + 5, y + fmHeight, card.name);
+                QString ot;
+                QString level = (card.type & Const::TYPE_XYZ) ? tr("R") : tr("L");
+                level = "[" + level + QString::number(card.level) + "]";
+                if((card.ot & 0x3) == 1)
+                {
+                    ot = tr("[OCG]");
+                }
+                else if((card.ot & 0x3) == 2)
+                {
+                    ot = tr("[TCG]");
+                }
 
-            painter.drawText(cardWidth + 5, y + fmHeight, card->name);
-            QString ot;
-            QString level = (card->type & Const::TYPE_XYZ) ? tr("R") : tr("L");
-            level = "[" + level + QString::number(card->level) + "]";
-            if((card->ot & 0x3) == 1)
-            {
-                ot = tr("[OCG]");
-            }
-            else if((card->ot & 0x3) == 2)
-            {
-                ot = tr("[TCG]");
-            }
+                if(card.type & Const::TYPE_MONSTER)
+                {
+                    painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
+                                     card.cardRace() + tr("/") + card.cardAttr() + level);
 
-            if(card->type & Const::TYPE_MONSTER)
-            {
-                painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
-                                 card->cardRace() + tr("/") + card->cardAttr() + level);
-
-                painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3,
-                                 adToString(card->atk) + tr("/") +
-                                 adToString(card->def) + ot);
-            }
-            else if(card->type & (Const::TYPE_SPELL | Const::TYPE_TRAP))
-            {
-                painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
-                                 card->cardType());
-                painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3, ot);
-            }
+                    painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3,
+                                     adToString(card.atk) + tr("/") +
+                                     adToString(card.def) + ot);
+                }
+                else if(card.type & (Const::TYPE_SPELL | Const::TYPE_TRAP))
+                {
+                    painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
+                                     card.cardType());
+                    painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3, ot);
+                }
+            }, card);
         }
         items.swap(newItems);
     }
@@ -253,9 +250,11 @@ void CardsList::startDrag(int index)
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimedata);
     auto &item = items.find(index).value();
-    drag->setPixmap(item.getPixmap()->scaled(cardSize));
-    drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
-                            drag->pixmap().height() / 2));
+    if(item.getPixmap())
+    {
+        drag->setPixmap(item.getPixmap()->scaled(cardSize));
+        drag->setHotSpot(QPoint(drag->pixmap().width() / 2, drag->pixmap().height() / 2));
+    }
     dragHelper.moved = false;
     drag->exec(Qt::MoveAction);
 }
@@ -323,6 +322,18 @@ void CardsList::checkLeave()
         current = i;
         update();
     }
+}
+
+void CardsList::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if(event->buttons() & Qt::LeftButton)
+    {
+        if(itemAt(mapFromGlobal(QCursor::pos())) >= 0)
+        {
+            emit clickId(currentCardId);
+        }
+    }
+    QWidget::mouseDoubleClickEvent(event);
 }
 
 CardsList::~CardsList()

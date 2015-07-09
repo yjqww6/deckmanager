@@ -72,14 +72,7 @@ public:
 
     void refresh();
 
-    void mouseDoubleClickEvent(QMouseEvent *event)
-    {
-        if(event->buttons() & Qt::LeftButton)
-        {
-            emit clickId(currentCardId);
-        }
-        QWidget::mouseDoubleClickEvent(event);
-    }
+    void mouseDoubleClickEvent(QMouseEvent *event);
 
 signals:
     void sizeChanged(int);

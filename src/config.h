@@ -21,6 +21,7 @@ public:
     QString deckname;
     QString deckid;
     QString decktype;
+    QString decktooltip;
     QString getdeck;
     QString finishdeck;
     QString deck;

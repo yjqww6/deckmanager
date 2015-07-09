@@ -14,6 +14,7 @@
 #include <QDesktopServices>
 #include <QInputDialog>
 #include <QCheckBox>
+#include <QMenu>
 #include "remote.h"
 
 class DeckList : public QListWidget
@@ -22,7 +23,7 @@ class DeckList : public QListWidget
 public:
     DeckList(QWidget *parent = 0);
     ~DeckList();
-
+    void contextMenuEvent(QContextMenuEvent *);
 signals:
     void selectDeck(QString, QString);
     void deckType(QString);
@@ -32,6 +33,10 @@ private slots:
     void onItemChanged();
     void onItem(QListWidgetItem *);
     void openURL(QListWidgetItem*);
+    void same();
+private:
+    QMenu *popup;
+    QListWidgetItem *menuItem;
 };
 
 class DeckListView : public QWidget
@@ -47,6 +52,7 @@ public slots:
     void setList(Type::DeckL);
     void getList()
     {
+        pageEdit->setText(QString::number(page));
         remote.getList(page);
     }
 
@@ -58,9 +64,9 @@ private:
     DeckList *decklist;
     Remote remote;
     int page;
-    QCheckBox *allCards;
     QLineEdit *pageEdit;
-    QLineEdit *typeEdit;
+    int lastConfig;
+    int lastPage;
 };
 
 #endif // DECKLIST_H

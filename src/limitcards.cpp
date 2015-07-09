@@ -58,7 +58,10 @@ LimitCards::LimitCards()
                 quint32 id = line.left(pos).toUInt();
                 int numPos = line.indexOf(QChar(' '), pos + 1);
                 int lim = line.mid(pos + 1, numPos - pos - 1).toInt();
-                table.insert(id, lim);
+                if(!cardPool->getCard(id).isNull())
+                {
+                    table.insert(id, lim);
+                }
             }
         }
     }
@@ -70,7 +73,7 @@ QSharedPointer<QPixmap> LimitCards::getPixmap(int i)
     {
         return limits[i];
     }
-    return QSharedPointer<QPixmap>(nullptr);
+    return QSharedPointer<QPixmap>::create();
 }
 
 int LimitCards::getLimit(quint32 id)
@@ -85,11 +88,17 @@ int LimitCards::getLimit(quint32 id)
     }
     auto &table = tables[config->limit].second;
 
-    auto card = cardPool->getCard(id);
-    if(card->alias != 0)
+    if(cardPool->getCard(id).isNull())
     {
-        id = card->alias;
+        return 0;
     }
+
+    call_with_ref([&](Card &card) {
+        if(card.alias != 0)
+        {
+            id = card.alias;
+        }
+    }, cardPool->getCard(id));
 
     auto it = table.find(id);
     if(it == table.end())
@@ -122,9 +131,9 @@ Type::DeckP LimitCards::getCards(int index)
            if(it1.value() == it2.value())
            {
                auto card1 = cardPool->getCard(id1), card2 = cardPool->getCard(id2);
-               if(card1 && card2)
+               if(!card1.isNull() && !card2.isNull())
                {
-                   return (card1->type & 7) < (card2->type & 7);
+                   return (card1.ref().type & 7) < (card2.ref().type & 7);
                }
            }
            return it1.value() < it2.value();

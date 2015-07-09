@@ -5,8 +5,14 @@
 #include <QComboBox>
 
 DeckList::DeckList(QWidget *parent)
-    : QListWidget(parent)
+    : QListWidget(parent), menuItem(nullptr)
 {
+    popup = new QMenu(this);
+    auto sameAction = new QAction(popup);
+    sameAction->setText(config->getStr("action", "same", "同类卡组"));
+    popup->addAction(sameAction);
+
+    connect(sameAction, &QAction::triggered, this, &DeckList::same);
     connect(this, &DeckList::itemClicked, this, &DeckList::onItem);
     connect(this, &DeckList::itemDoubleClicked, this, &DeckList::openURL);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -17,6 +23,27 @@ DeckList::~DeckList()
 
 }
 
+void DeckList::contextMenuEvent(QContextMenuEvent *)
+{
+    auto item = itemAt(mapFromGlobal(QCursor::pos()));
+    if(item)
+    {
+        menuItem = item;
+        popup->exec(QCursor::pos());
+    }
+}
+
+void DeckList::same()
+{
+    auto item = menuItem;
+    if(item)
+    {
+        auto vls = item->data(Qt::UserRole).toList();
+        QString type = vls[1].toString();
+        emit deckType(type);
+    }
+}
+
 void DeckList::setList(Type::DeckL ls)
 {
     clear();
@@ -25,6 +52,7 @@ void DeckList::setList(Type::DeckL ls)
         auto item = new QListWidgetItem;
         item->setText(it.first);
         item->setData(Qt::UserRole, it.second);
+        item->setToolTip(it.second[2].toString());
         addItem(item);
     }
 }
@@ -38,8 +66,8 @@ void DeckList::onItem(QListWidgetItem *item)
 {
     QVariantList vls = item->data(Qt::UserRole).toList();
     QString id = vls[0].toString();
-    QString type = vls[1].toString();
-    emit deckType(type);
+    //QString type = vls[1].toString();
+    //emit deckType(type);
     emit selectDeck(id, item->text());
 }
 
@@ -51,7 +79,7 @@ void DeckList::openURL(QListWidgetItem* item)
 }
 
 DeckListView::DeckListView(QWidget *parent)
-    : QWidget(parent), page(1)
+    : QWidget(parent), page(1), lastConfig(0), lastPage(1)
 {
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
@@ -70,12 +98,12 @@ DeckListView::DeckListView(QWidget *parent)
         cata->setCurrentIndex(0);
     }
 
-    typeEdit = new QLineEdit;
-    auto switchButton = new IconButton(":/icons/down.png", config->getStr("action", "same", "同类卡组"));
+    auto switchButton = new QPushButton("...");
+    auto backButton = new IconButton(":/icons/back.png", config->getStr("action", "back", "返回"));
     hbox = new QHBoxLayout;
     hbox->addWidget(cata);
-    hbox->addWidget(typeEdit);
     hbox->addWidget(switchButton);
+    hbox->addWidget(backButton);
     vbox->addLayout(hbox);
 
     auto buttom = new QWidget;
@@ -118,17 +146,48 @@ DeckListView::DeckListView(QWidget *parent)
     connect(abortButton, &IconButton::clicked, &remote, &Remote::abort);
 
 
-    connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            config, &Config::setRemote);
-
-    connect(decklist, &DeckList::deckType, [this] (QString type) {
-        typeEdit->setText(type);
+    connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index) {
+        config->setRemote(cata->itemData(index).toInt());
     });
-    connect(switchButton, &IconButton::clicked, [=] () {
+
+    connect(decklist, &DeckList::deckType, [=] (QString type) {
+        if(config->remote != -1)
+        {
+            lastConfig = config->remote;
+            lastPage = page;
+        }
         tempRemoteConfig = config->getCurrentRemote();
-        tempRemoteConfig.getlistparam = typeEdit->text();
+        tempRemoteConfig.getlistparam = type;
+        page = 1;
         cata->setCurrentIndex(cata->count() - 1);
         config->setRemote(-1);
+        getList();
+    });
+
+    connect(switchButton, &QPushButton::clicked, [=] () {
+        bool ok;
+        QString text = QInputDialog::getText(this, "getlistparam", "", QLineEdit::Normal,
+                                             config->getCurrentRemote().getlistparam, &ok);
+        if(ok)
+        {
+            if(config->remote != -1)
+            {
+                lastConfig = config->remote;
+                lastPage = page;
+            }
+            tempRemoteConfig = config->getCurrentRemote();
+            tempRemoteConfig.getlistparam = text;
+            page = 1;
+            cata->setCurrentIndex(cata->count() - 1);
+            config->setRemote(-1);
+            getList();
+        }
+    });
+    connect(backButton, &IconButton::clicked, [=] () {
+        config->setRemote(lastConfig);
+        cata->setCurrentIndex(lastConfig);
+        page = lastPage;
+        pageEdit->setText(QString::number(page));
         getList();
     });
 }
@@ -143,7 +202,6 @@ void DeckListView::nextPage()
     if(!remote.is_waiting())
     {
         page++;
-        pageEdit->setText(QString::number(page));
         getList();
     }
 }
@@ -153,7 +211,6 @@ void DeckListView::prevPage()
     if(!remote.is_waiting() && page > 1)
     {
         page--;
-        pageEdit->setText(QString::number(page));
         getList();
     }
 }

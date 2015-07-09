@@ -63,6 +63,7 @@ RemoteConfig& RemoteConfig::operator =(const RemoteConfig &other)
     deckname = other.deckname;
     deckid = other.deckid;
     decktype = other.decktype;
+    decktooltip = other.decktooltip;
     getdeck = other.getdeck;
     finishdeck = other.finishdeck;
     deck = other.deck;
@@ -113,6 +114,7 @@ RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
     FILL(deckname);
     FILL(deckid);
     FILL(decktype);
+    FILL(decktooltip);
     FILL(getdeck);
     FILL(finishdeck);
     FILL(deck);

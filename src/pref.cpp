@@ -9,18 +9,14 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
     auto lf = new QLabel(config->getStr("label", "limit", "禁卡表"));
     auto getButton = new IconButton(":/icons/right.png");
     lfcombo = new QComboBox();
-
     auto tables = limitCards->getTables();
-
+    auto it = tables.begin();
+    int index = 0;
+    for(; it != tables.end(); ++it, ++index)
     {
-        auto it = tables.begin();
-        int index = 0;
-        for(; it != tables.end(); ++it, ++index)
-        {
-            lfcombo->addItem(it->first, index);
-        }
-        lfcombo->addItem(config->getStr("label", "noupperbound", "无上限"), -1);
+        lfcombo->addItem(it->first, index);
     }
+    lfcombo->addItem(config->getStr("label", "noupperbound", "无上限"), -1);
 
     auto waitC = new QCheckBox(config->getStr("label", "passwait", "卡密缺失等待"));
     auto convertC = new QCheckBox(config->getStr("label", "passconvert", "先行/正式卡密转换"));
