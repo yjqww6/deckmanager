@@ -305,6 +305,11 @@ void CardFilter::searchSet(quint32 id)
         quint64 set_code = setcode1;
         bool foundO = false;
 
+        if(it.value()->type & Const::TYPE_TOKEN)
+        {
+            continue;
+        }
+
         while(set_code)
         {
             quint64 setcode2 = it.value()->setcode;
