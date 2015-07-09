@@ -579,7 +579,7 @@ Wrapper<Card> ItemThread::loadNewCard(quint32 id)
     auto card = cardPool->getNewCard(name, config->waitForPass);
     call_with_ref([&](Card &card) {
         parent->map.insert(id, card.id);
-    }, std::move(card));
+    }, card.copy());
     return card;
 }
 

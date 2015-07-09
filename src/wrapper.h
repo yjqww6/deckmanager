@@ -9,8 +9,6 @@ private:
     QSharedPointer<T> ptr;
 public:
     Wrapper(QSharedPointer<T> p) : ptr(p) {}
-    Wrapper(Wrapper<T> &&other) : ptr(other.ptr) {}
-    Wrapper(const Wrapper<T> &other) : ptr(other.ptr) {}
     Wrapper() : ptr(QSharedPointer<T>(nullptr)) {}
 
     bool isNull() const
@@ -33,10 +31,9 @@ public:
         ptr = other.ptr;
         return *this;
     }
-    Wrapper<T>& operator =(Wrapper<T> &&other)
+    Wrapper<T> copy() const
     {
-        ptr = other.ptr;
-        return *this;
+        return Wrapper<T>(ptr);
     }
 };
 
@@ -59,6 +56,19 @@ static inline void call_with_ref(Func &&f, Wrapper<Args>&&... w)
     if(valid(std::forward<Wrapper<Args> >(w)...))
     {
         f(std::forward<Wrapper<Args> >(w)...);
+    }
+}
+
+template<typename KT, typename KF, typename ...Args>
+static inline void call_with_ref2(KT &&kt, KF &&kf, Wrapper<Args>&&... w)
+{
+    if(valid(std::forward<Wrapper<Args> >(w)...))
+    {
+        kt(std::forward<Wrapper<Args> >(w)...);
+    }
+    else
+    {
+        kf();
     }
 }
 

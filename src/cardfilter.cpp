@@ -291,57 +291,54 @@ void CardFilter::setCardTypeSub(int index)
 
 void CardFilter::searchSet(quint32 id)
 {
-    auto cardW = cardPool->getCard(id);
-    if(cardW.isNull())
-    {
-        return;
-    }
-    quint64 setcode1 = cardW.ref().setcode;
+    call_with_ref([&](Card &card) {
+        quint64 setcode1 = card.setcode;
 
-    auto &map = cardPool->getMap();
-    auto ls = Type::DeckP::create();
-    for(auto it = map.begin(); it != map.end(); ++it)
-    {
-        quint64 set_code = setcode1;
-        bool foundO = false;
-
-        if(it.value()->type & Const::TYPE_TOKEN)
+        auto &map = cardPool->getMap();
+        auto ls = Type::DeckP::create();
+        for(auto it = map.begin(); it != map.end(); ++it)
         {
-            continue;
-        }
+            quint64 set_code = setcode1;
+            bool foundO = false;
 
-        while(set_code)
-        {
-            quint64 setcode2 = it.value()->setcode;
-            quint64 settype = set_code & 0x0fff;
-            bool found = false;
-            while(setcode2)
+            if(it.value()->type & Const::TYPE_TOKEN)
             {
-                if((setcode2 & 0x0fff) == settype)
+                continue;
+            }
+
+            while(set_code)
+            {
+                quint64 setcode2 = it.value()->setcode;
+                quint64 settype = set_code & 0x0fff;
+                bool found = false;
+                while(setcode2)
                 {
-                    found = true;
+                    if((setcode2 & 0x0fff) == settype)
+                    {
+                        found = true;
+                        break;
+                    }
+                    setcode2 = setcode2 >> 16;
+                }
+
+                if(found)
+                {
+                    foundO = true;
                     break;
                 }
-                setcode2 = setcode2 >> 16;
+                set_code = set_code >> 16;
             }
-
-            if(found)
+            if(foundO)
             {
-                foundO = true;
-                break;
+                ls->append(it.value()->id);
             }
-            set_code = set_code >> 16;
         }
-        if(foundO)
+        if(!ls->empty())
         {
-            ls->append(it.value()->id);
+            qSort(ls->begin(), ls->end(), idCompare);
+            emit result(ls);
         }
-    }
-    if(!ls->empty())
-    {
-        qSort(ls->begin(), ls->end(), idCompare);
-        emit result(ls);
-    }
+    }, cardPool->getCard(id));
 }
 
 void CardFilter::searchAll()

@@ -136,17 +136,11 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         if(pos > 0)
         {
             quint32 id = line.left(pos).toUInt();
-            auto card = cardPool->getCard(id);
-            if(!card.isNull())
-            {
-                vec->append(card.ref().id);
-            }
-            else
-            {
+            call_with_ref2(appender, [&]() {
                 line = line.mid(pos + 1);
                 line = line.trimmed();
                 call_with_ref(appender, cardPool->getNewCard(line, config->waitForPass));
-            }
+            }, cardPool->getCard(id));
         }
         else if(pos < 0)
         {
