@@ -61,12 +61,12 @@ public:
 
     void addCard(quint32 id)
     {
-        deck.append(std::move(CardItem(id)));
+        deck.append(CardItem(id));
     }
 
     void insertCard(int index, quint32 id)
     {
-        deck.insert(index, std::move(CardItem(id)));
+        deck.insert(index, CardItem(id));
     }
 
     void clearDeck()

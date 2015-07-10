@@ -388,7 +388,7 @@ void DeckView::makeSnapshot(bool mod)
         snapshots.pop_back();
     }
     redoSnapshots.clear();
-    snapshots.push_front(std::move(currentSnapshot()));
+    snapshots.push_front(currentSnapshot());
 
     if(mod)
     {
@@ -407,7 +407,7 @@ void DeckView::undo()
             redoSnapshots.pop_back();
         }
 
-        redoSnapshots.push_front(std::move(currentSnapshot()));
+        redoSnapshots.push_front(currentSnapshot());
         restoreSnapshot(snapshots.front());
         snapshots.pop_front();
         update();
@@ -425,7 +425,7 @@ void DeckView::redo()
             snapshots.pop_back();
         }
 
-        snapshots.push_front(std::move(currentSnapshot()));
+        snapshots.push_front(currentSnapshot());
         restoreSnapshot(redoSnapshots.front());
         redoSnapshots.pop_front();
         update();

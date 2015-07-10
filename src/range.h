@@ -54,13 +54,13 @@ private:
 template<typename T>
 static inline Range<T> range(T __begin, T __end)
 {
-    return std::move(Range<T>(__begin, __end));
+    return Range<T>(__begin, __end);
 }
 
 template<typename T>
 static inline Range<T> range(T __end)
 {
-    return std::move(Range<T>(static_cast<T>(0), __end));
+    return Range<T>(static_cast<T>(0), __end);
 }
 
 #endif // RANGE_H

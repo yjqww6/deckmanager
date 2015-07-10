@@ -45,7 +45,7 @@ LimitCards::LimitCards()
             {
                 Table newTable;
                 newTable.swap(table);
-                tables.append(std::move(qMakePair(name, std::move(newTable))));
+                tables.append(qMakePair(name, std::move(newTable)));
                 name = line.mid(1);
                 name.trimmed();
                 table.reserve(150);

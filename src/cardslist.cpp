@@ -51,7 +51,7 @@ QString CardsList::adToString(int ad)
     }
     else
     {
-        return std::move(QString::number(ad));
+        return QString::number(ad);
     }
 }
 
