@@ -1,19 +1,13 @@
 #ifndef CARD_H
 #define CARD_H
 
-#include <QObject>
 #include <QString>
-#include <QVariant>
-#include <QSharedPointer>
-#include <QScopedPointer>
-#include <QWeakPointer>
 #include <QHash>
 #include <QtSql/QSqlRecord>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
 #include <QFile>
 #include <QThread>
-#include "remote.h"
 #include "constant.h"
 #include "wrapper.h"
 #include <QDebug>

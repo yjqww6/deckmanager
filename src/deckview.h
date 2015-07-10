@@ -1,8 +1,6 @@
 #ifndef DECKVIEW_H
 #define DECKVIEW_H
 
-#include <QScrollArea>
-#include <QScrollBar>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -10,7 +8,6 @@
 #include <QTextStream>
 #include <QSharedPointer>
 #include <QEventLoop>
-#include <QCheckBox>
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QAction>

@@ -1,6 +1,5 @@
 #ifndef WRAPPER_H
 #define WRAPPER_H
-#include <QSharedPointer>
 
 template<typename T>
 class Wrapper

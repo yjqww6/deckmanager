@@ -12,8 +12,8 @@
 #include <QPushButton>
 #include <QVector>
 #include "card.h"
-#include <functional>
 #include "typing.h"
+#include <functional>
 
 class CardFilter : public QWidget
 {

@@ -2,6 +2,7 @@
 #include "expansions.h"
 #include "card.h"
 #include <QDebug>
+#include <QFile>
 
 CardItem::Pool CardItem::pool;
 CardItem::Pool CardItem::spool;

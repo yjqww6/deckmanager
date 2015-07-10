@@ -1,6 +1,6 @@
 #ifndef DECKWIDGET_H
 #define DECKWIDGET_H
-#include <QApplication>
+
 #include <QWidget>
 #include <QList>
 #include <QPainter>

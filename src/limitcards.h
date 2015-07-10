@@ -7,7 +7,6 @@
 #include <QHash>
 #include <QFile>
 #include <QList>
-#include <QScopedPointer>
 #include <QSharedPointer>
 #include <functional>
 #include "typing.h"

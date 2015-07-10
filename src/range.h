@@ -1,7 +1,6 @@
 #ifndef RANGE_H
 #define RANGE_H
 #include <type_traits>
-#include <unordered_map>
 
 template<typename T>
 class Range

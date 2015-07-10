@@ -5,7 +5,6 @@
 #include <QWeakPointer>
 #include <QHash>
 #include <QPoint>
-#include <QFile>
 
 class CardItem
 {

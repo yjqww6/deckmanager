@@ -1,8 +1,7 @@
 #include "deckwidget.h"
 #include "draghelper.h"
-#include <ctime>
-#include <random>
 #include <QDebug>
+#include <QApplication>
 
 DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
     : QWidget(parent), row(_row), column(_column), currentCardId(0),

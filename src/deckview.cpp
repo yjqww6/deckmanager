@@ -3,7 +3,9 @@
 #include "config.h"
 #include "range.h"
 #include "scriptview.h"
+#include "remote.h"
 #include <QDebug>
+#include <QApplication>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QResizeEvent>

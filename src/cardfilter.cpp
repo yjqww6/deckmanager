@@ -296,19 +296,20 @@ void CardFilter::searchSet(quint32 id)
 
         auto &map = cardPool->getMap();
         auto ls = Type::DeckP::create();
-        for(auto it = map.begin(); it != map.end(); ++it)
+        for(auto &it : map)
         {
             quint64 set_code = setcode1;
             bool foundO = false;
+            auto &card2 = *it.second.get();
 
-            if(it->second.get()->type & Const::TYPE_TOKEN)
+            if(card2.type & Const::TYPE_TOKEN)
             {
                 continue;
             }
 
             while(set_code)
             {
-                quint64 setcode2 = it->second.get()->setcode;
+                quint64 setcode2 = card2.setcode;
                 quint64 settype = set_code & 0x0fff;
                 bool found = false;
                 while(setcode2)
@@ -330,7 +331,7 @@ void CardFilter::searchSet(quint32 id)
             }
             if(foundO)
             {
-                ls->append(it->second.get()->id);
+                ls->append(card2.id);
             }
         }
         if(!ls->empty())

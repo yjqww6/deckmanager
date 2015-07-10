@@ -3,9 +3,7 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
-#include <QGridLayout>
 #include <QPlainTextEdit>
-#include <QFont>
 #include <QResizeEvent>
 #include "cardpicture.h"
 #include "card.h"
