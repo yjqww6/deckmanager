@@ -5,6 +5,7 @@
 #include <QString>
 #include <QVariant>
 #include <QSharedPointer>
+#include <QScopedPointer>
 #include <QWeakPointer>
 #include <QHash>
 #include <QtSql/QSqlRecord>
@@ -16,6 +17,8 @@
 #include "constant.h"
 #include "wrapper.h"
 #include <QDebug>
+#include <memory>
+#include <unordered_map>
 
 class Card
 {
@@ -89,7 +92,7 @@ class CardPool
 private:
     QStringList cdbPath;
     void loadCard(QSqlQuery&);
-    QHash<quint32, QSharedPointer<Card> > pool;
+    std::unordered_map<quint32, std::unique_ptr<Card> > pool;
     QHash<QString, quint32> newPool;
     QHash<quint32, QString> races;
     QHash<quint32, QString> types;

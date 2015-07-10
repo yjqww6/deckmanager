@@ -6,24 +6,24 @@ template<typename T>
 class Wrapper
 {
 private:
-    QSharedPointer<T> ptr;
+    T *ptr;
 public:
-    Wrapper(QSharedPointer<T> p) : ptr(p) {}
-    Wrapper() : ptr(QSharedPointer<T>(nullptr)) {}
+    Wrapper(T *p) : ptr(p) {}
+    Wrapper() : ptr(nullptr) {}
 
     bool isNull() const
     {
-        return ptr.isNull();
+        return ptr == nullptr;
     }
 
     T& ref() const
     {
-        return *ptr.data();
+        return *ptr;
     }
 
     operator T&() const
     {
-        return *ptr.data();
+        return *ptr;
     }
 
     Wrapper<T>& operator =(const Wrapper<T> &other)

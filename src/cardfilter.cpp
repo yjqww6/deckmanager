@@ -301,14 +301,14 @@ void CardFilter::searchSet(quint32 id)
             quint64 set_code = setcode1;
             bool foundO = false;
 
-            if(it.value()->type & Const::TYPE_TOKEN)
+            if(it->second.get()->type & Const::TYPE_TOKEN)
             {
                 continue;
             }
 
             while(set_code)
             {
-                quint64 setcode2 = it.value()->setcode;
+                quint64 setcode2 = it->second.get()->setcode;
                 quint64 settype = set_code & 0x0fff;
                 bool found = false;
                 while(setcode2)
@@ -330,7 +330,7 @@ void CardFilter::searchSet(quint32 id)
             }
             if(foundO)
             {
-                ls->append(it.value()->id);
+                ls->append(it->second.get()->id);
             }
         }
         if(!ls->empty())
@@ -343,26 +343,28 @@ void CardFilter::searchSet(quint32 id)
 
 void CardFilter::searchAll()
 {
-    search(cardPool->getMap().keys());
+    auto &map = cardPool->getMap();
+    typedef std::remove_reference<decltype(map)>::type T;
+    search(KeysIter<T>(map.begin()), KeysIter<T>(map.end()));
 }
 
 void CardFilter::searchThis()
 {
     auto &t = getCurrent();
-    search(t);
+    search(t.begin(), t.end());
 }
 
 void CardFilter::searchDeck()
 {
     auto deck = getDeck();
-    search(*deck.data());
+    search(deck->begin(), deck->end());
 }
 
 static QPair<int, int> ignore(-1, -1);
 
 template<typename T>
 
-void CardFilter::search(const T &cards)
+void CardFilter::search(const T &begin, const T &end)
 {
     auto ls = Type::DeckP::create();
     quint32 type = cardType->currentData().toUInt();
@@ -412,9 +414,8 @@ void CardFilter::search(const T &cards)
     }
 
     getRange(atkEdit);
-    ls->reserve(cards.size());
 
-    foreach(auto it, cards)
+    for(auto it = begin; it != end; ++it)
     {
         call_with_ref([&](Card& card) {
 
@@ -566,7 +567,7 @@ void CardFilter::search(const T &cards)
             }
 
             ls->append(card.id);
-        }, cardPool->getCard(it));
+        }, cardPool->getCard(*it));
     }
 
 

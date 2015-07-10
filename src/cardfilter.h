@@ -38,7 +38,7 @@ private slots:
 private:
 
     template<typename T>
-    void search(const T&);
+    void search(const T &Begin, const T& End);
 
     static const quint32 cardTypes[];
     static const quint32 monsterTypes[];

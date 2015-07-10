@@ -1,6 +1,7 @@
 #ifndef RANGE_H
 #define RANGE_H
 #include <type_traits>
+#include <unordered_map>
 
 template<typename T>
 class Range
@@ -62,6 +63,29 @@ static inline Range<T> range(T __end)
 {
     return Range<T>(static_cast<T>(0), __end);
 }
+
+template<typename T>
+class KeysIter
+{
+private:
+    typedef typename T::iterator It;
+    It it;
+public:
+    KeysIter(It _it) : it(_it) {}
+    KeysIter& operator ++()
+    {
+        ++it;
+        return *this;
+    }
+    bool operator !=(const KeysIter<T>& other)
+    {
+        return it != other.it;
+    }
+    auto operator *() -> decltype(it->first)
+    {
+        return it->first;
+    }
+};
 
 #endif // RANGE_H
 

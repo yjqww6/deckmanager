@@ -13,12 +13,12 @@ Wrapper<Card> CardPool::getCard(quint32 id)
     {
         return Wrapper<Card>();
     }
-    return Wrapper<Card>(it.value());
+    return Wrapper<Card>(it->second.get());
 }
 
 void CardPool::loadCard(QSqlQuery &query)
 {
-    auto card = QSharedPointer<Card>(new Card);
+    std::unique_ptr<Card> card(new Card);
 
 #define ASSIGN(field, index) card->field = query.value(index).toUInt();
     ASSIGN(id, 0);
@@ -37,7 +37,8 @@ void CardPool::loadCard(QSqlQuery &query)
     card->name = query.value(11).toString();
     card->effect = query.value(12).toString();
 
-    pool.insert(card->id, card);
+    quint32 id = card->id;
+    pool.insert(std::make_pair(id, std::move(card)));
 }
 
 CardPool::CardPool(QStringList paths)
