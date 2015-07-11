@@ -361,8 +361,6 @@ void CardFilter::searchDeck()
     search(deck->begin(), deck->end());
 }
 
-static QPair<int, int> ignore(-1, -1);
-
 template<typename T>
 
 void CardFilter::search(const T &begin, const T &end)
@@ -373,12 +371,12 @@ void CardFilter::search(const T &begin, const T &end)
     quint32 race = cardRace->currentData().toUInt();
     quint32 attr = cardAttr->currentData().toUInt();
 
-    auto passRange = getRange(passEdit);
-    auto atkRange = getRange(atkEdit);
-    auto defRange = getRange(defEdit);
-    auto levelRange = getRange(levelEdit);
-    auto rankRange = getRange(rankEdit);
-    auto scaleRange = getRange(scaleEdit);
+    auto passPred = rangeMatcher(passEdit->text());
+    auto atkPred = rangeMatcher(atkEdit->text());
+    auto defPred = rangeMatcher(defEdit->text());
+    auto levelPred = rangeMatcher(levelEdit->text());
+    auto rankPred = rangeMatcher(rankEdit->text());
+    auto scalePred = rangeMatcher(scaleEdit->text());
 
     quint32 category = 0;
 
@@ -414,8 +412,6 @@ void CardFilter::search(const T &begin, const T &end)
         }
     }
 
-    getRange(atkEdit);
-
     for(auto it = begin; it != end; ++it)
     {
         call_with_ref([&](Card& card) {
@@ -440,7 +436,7 @@ void CardFilter::search(const T &begin, const T &end)
                 return;
             }
 
-            if(!matchRange(passRange, card.id))
+            if(!passPred(card.id))
             {
                 return;
             }
@@ -461,35 +457,47 @@ void CardFilter::search(const T &begin, const T &end)
                     return;
                 }
 
-                if(!matchRange(atkRange, card.atk))
+                if(!atkPred(card.atk))
                 {
                     return;
                 }
 
-                if(!matchRange(defRange, card.def))
+                if(!defPred(card.def))
                 {
                     return;
                 }
 
-                if(levelRange != ignore)
+                if(levelPred.isValid())
                 {
-                    if((card.type & Const::TYPE_XYZ) || !matchRange(levelRange, card.level))
+                    if(!(card.type & Const::TYPE_MONSTER))
+                    {
+                        return;
+                    }
+                    if((card.type & Const::TYPE_XYZ) || !levelPred(card.level))
                     {
                         return;
                     }
                 }
 
-                if(rankRange != ignore)
+                if(rankPred.isValid())
                 {
-                    if(!(card.type & Const::TYPE_XYZ) || !matchRange(rankRange, card.level))
+                    if(!(card.type & Const::TYPE_MONSTER))
+                    {
+                        return;
+                    }
+                    if(!(card.type & Const::TYPE_XYZ) || !rankPred(card.level))
                     {
                         return;
                     }
                 }
 
-                if(scaleRange != ignore)
+                if(scalePred.isValid())
                 {
-                    if(!(card.type & Const::TYPE_PENDULUM) || !matchRange(scaleRange, card.scale))
+                    if(!(card.type & Const::TYPE_MONSTER))
+                    {
+                        return;
+                    }
+                    if(!(card.type & Const::TYPE_PENDULUM) || !scalePred(card.scale))
                     {
                         return;
                     }
@@ -579,209 +587,69 @@ void CardFilter::search(const T &begin, const T &end)
     return;
 }
 
-bool CardFilter::matchRange(QPair<int, int> range, int num)
+CardFilter::Matcher CardFilter::rangeMatcher(QString str)
 {
-    if(range.first == -3)
+    static Matcher ignore([](int) {return true;}, false);
+    if(str.isNull() || str.isEmpty())
     {
-        return false;
+        return ignore;
     }
-
-    if(range.first == -2)
+    if(str.startsWith("?"))
     {
-        return num == -2;
+        return [](int num) {return num == -2;};
     }
-
-    if(range.first != -1 && num < range.first)
+    else if(str.startsWith(">="))
     {
-        return false;
+        str = str.mid(2);
+        bool ok;
+        int n = str.toInt(&ok);
+        return ok ? [=](int num) {return num >= n;} : ignore;
     }
-
-    if(range.second != -1 && num > range.second)
+    else if(str.startsWith(">"))
     {
-        return false;
+        str = str.mid(1);
+        bool ok;
+        int n = str.toInt(&ok);
+        return ok? [=](int num) {return num > n;} : ignore;
     }
-
-    return true;
-}
-
-QPair<int, int> CardFilter::getRange(QLineEdit *lineEdit)
-{
-    QString line = lineEdit->text();
-
-    enum
+    else if(str.startsWith("<="))
     {
-        INIT,
-        NUM,
-        LE,
-        LT,
-        GE,
-        GT,
-        QUESTION,
-        RANGE,
-        ERR
-    } state = INIT;
-
-    int num1 = 0, num2 = 0;
-
-    for(QChar ch : line)
+        str = str.mid(2);
+        bool ok;
+        int n = str.toInt(&ok);
+        return ok? [=](int num) {return num <= n;} : ignore;
+    }
+    else if(str.startsWith("<"))
     {
-        unsigned int c = ch.unicode();
-        //        qDebug() << c;
-        if(state == INIT)
+        str = str.mid(1);
+        bool ok;
+        int n = str.toInt(&ok);
+        return ok? [=](int num) {return num < n;} : ignore;
+    }
+    else if(str.startsWith("!="))
+    {
+        str = str.mid(2);
+        bool ok;
+        int n = str.toInt(&ok);
+        return ok? [=](int num) {return num != n;} : ignore;
+    }
+    else
+    {
+        int pos = str.indexOf('-');
+        if(pos >= 0)
         {
-            if(c == '<')
-            {
-                num1 = -1;
-                state = LT;
-            }
-            else if(c == '>')
-            {
-                num2 = -1;
-                state = GT;
-            }
-            else if(c == '?')
-            {
-                num1 = -2;
-                num2 = -2;
-                state = QUESTION;
-            }
-            else if(isdigit(c))
-            {
-                state = NUM;
-                num2 = -1;
-                num1 = c - '0';
-            }
-            else
-            {
-                state = ERR;
-                num1 = -3;
-                num2 = -3;
-                break;
-            }
+            bool ok1, ok2;
+            int left = str.left(pos).toInt(&ok1);
+            int right = str.mid(pos + 1).toInt(&ok2);
+            return ok1 && ok2 ? [=](int num) {return num >= left && num <= right;} : ignore;
         }
-        else if(state == LT)
+        else
         {
-            if(c == '=')
-            {
-                state = LE;
-            }
-            else if(isdigit(c))
-            {
-                num2 = num2 * 10 + c - '0';
-            }
-            else
-            {
-                state = ERR;
-                num1 = -3;
-                num2 = -3;
-                break;
-            }
-        }
-        else if(state == GT)
-        {
-            if(c == '=')
-            {
-                state = GE;
-            }
-            else if(isdigit(c))
-            {
-                num1 = num1 * 10 + c - '0';
-            }
-            else
-            {
-                state = ERR;
-                num1 = -3;
-                num2 = -3;
-                break;
-            }
-        }
-        else if(state == LE)
-        {
-            if(isdigit(c))
-            {
-                num2 = num2 * 10 + c - '0';
-            }
-            else
-            {
-                state = ERR;
-                num1 = -3;
-                num2 = -3;
-                break;
-            }
-        }
-        else if(state == GE)
-        {
-            if(isdigit(c))
-            {
-                num1 = num1 * 10 + c - '0';
-            }
-            else
-            {
-                state = ERR;
-                num1 = -3;
-                num2 = -3;
-                break;
-            }
-        }
-        else if(state == NUM)
-        {
-            if(isdigit(c))
-            {
-                num1 = num1 * 10 + c - '0';
-            }
-            else if(c == '-')
-            {
-                num2 = 0;
-                state = RANGE;
-            }
-            else
-            {
-                break;
-            }
-        }
-        else if(state == QUESTION)
-        {
-            break;
-        }
-        else if(state == RANGE)
-        {
-            if(isdigit(c))
-            {
-                num2 = num2 * 10 + c - '0';
-            }
-            else
-            {
-                break;
-            }
-        }
-        else if(state == ERR)
-        {
-            num1 = -3;
-            num2 = -3;
-            break;
+            bool ok;
+            int n = str.toInt(&ok);
+            return ok? [=](int num) {return num == n;} : ignore;
         }
     }
-
-    if(state == INIT)
-    {
-        num1 = -1;
-        num2 = -1;
-    }
-    else if(state == NUM)
-    {
-        num2 = num1;
-    }
-    else if(state == LT)
-    {
-        num2 -= 1;
-    }
-    else if(state == GT)
-    {
-        num1 += 1;
-    }
-
-    //    qDebug() << num1 << num2;
-    return qMakePair(num1, num2);
 }
 
 void CardFilter::revert()

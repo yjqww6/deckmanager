@@ -36,6 +36,23 @@ private slots:
     void searchThis();
     void searchDeck();
 private:
+    class Matcher
+    {
+    private:
+        std::function<bool(int)> pred;
+        bool valid;
+    public:
+        template<typename T>
+        Matcher(T _pred, bool _valid = true) : pred(_pred), valid(_valid) {}
+        bool isValid()
+        {
+            return valid;
+        }
+        bool operator ()(int p)
+        {
+            return pred(p);
+        }
+    };
 
     template<typename T>
     void search(const T &Begin, const T& End);
@@ -47,8 +64,7 @@ private:
     static const quint32 monsterRaces[];
     static const quint32 monsterAttrs[];
 
-    QPair<int, int> getRange(QLineEdit*);
-    bool matchRange(QPair<int, int>, int);
+    Matcher rangeMatcher(QString);
     QComboBox *cardType;
     QComboBox *cardTypeSub;
 
