@@ -107,7 +107,7 @@ void CardsList::paintEvent(QPaintEvent *)
                 auto data = limitCards->getPixmap(lim);
                 if(data)
                 {
-                    painter.drawPixmap(0, y, 16, 16, *data.data());
+                    painter.drawPixmap(0, y, 16, 16, *data);
                 }
             }
 

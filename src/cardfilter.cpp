@@ -27,8 +27,7 @@ const quint32 CardFilter::monsterTypes[] =
     Const::TYPE_TOON,
     Const::TYPE_XYZ,
     Const::TYPE_PENDULUM,
-    Const::TYPE_SYNCHRO | Const::TYPE_TUNER,
-    Const::TYPE_NORMAL | Const::TYPE_TUNER
+    Const::TYPE_SYNCHRO | Const::TYPE_TUNER
 };
 
 const quint32 CardFilter::spellTypes[] =
@@ -210,9 +209,9 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     tab->addTab(wE, config->getStr("label", "effect", "效果"));
 
     y++;
-    grid->addWidget(tab, y, 0, 4, 2);
+    grid->addWidget(tab, y, 0, 5, 2);
 
-    y += 4;
+    y += 5;
     grid->addWidget(setL, y, 0);
     grid->addWidget(setEdit, y, 1);
     y++;
@@ -233,6 +232,12 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
 
     y++;
     grid->addLayout(hbox, y, 0, 1, 2);
+
+    y++;
+    inverseMode = new QCheckBox;
+    inverseMode->setText(config->getStr("label", "inverse", "反选模式"));
+    grid->addWidget(inverseMode, y, 0, 1, 2);
+
     setLayout(grid);
 
     connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -339,33 +344,41 @@ void CardFilter::searchSet(quint32 id)
             qSort(ls->begin(), ls->end(), idCompare);
             emit result(ls);
         }
+        else
+        {
+            ls->append(id);
+            emit result(ls);
+        }
     }, cardPool->getCard(id));
 }
 
 void CardFilter::searchAll()
 {
     auto &map = cardPool->getMap();
-    typedef std::remove_reference<decltype(map)>::type T;
-    search(KeysIter<T>(map.begin()), KeysIter<T>(map.end()));
+    call_with_pred([&](Pred &&pred) {
+        search(keysBegin(map), keysEnd(map), std::move(pred));
+    });
 }
 
 void CardFilter::searchThis()
 {
     auto &t = getCurrent();
-    search(t.begin(), t.end());
+    call_with_pred([&](Pred &&pred) {
+        search(t.begin(), t.end(), std::move(pred));
+    });
 }
 
 void CardFilter::searchDeck()
 {
     auto deck = getDeck();
-    search(deck->begin(), deck->end());
+    call_with_pred([&](Pred &&pred) {
+        search(deck->begin(), deck->end(), std::move(pred));
+    });
 }
 
-template<typename T>
-
-void CardFilter::search(const T &begin, const T &end)
+void CardFilter::call_with_pred(Ctx &&ctx)
 {
-    auto ls = Type::DeckP::create();
+
     quint32 type = cardType->currentData().toUInt();
     quint32 subtype = cardTypeSub->currentData().toUInt();
     quint32 race = cardRace->currentData().toUInt();
@@ -412,170 +425,192 @@ void CardFilter::search(const T &begin, const T &end)
         }
     }
 
-    for(auto it = begin; it != end; ++it)
-    {
-        call_with_ref([&](Card& card) {
 
-            if(card.type & Const::TYPE_TOKEN)
+    auto predicate = [&](Card &card) {
+
+        if(type != ~0U && !(type & card.type))
+        {
+            return false;
+        }
+
+        if(limitC != -1 && limitCards->getLimit(card.id) != limitC)
+        {
+            return false;
+        }
+
+        if(otC != 0 && (card.ot & 3) != otC)
+        {
+            return false;
+        }
+
+        if(!passPred(card.id))
+        {
+            return false;
+        }
+        if(type & Const::TYPE_MONSTER)
+        {
+            if(subtype != ~0U && !((subtype & card.type) == subtype))
             {
-                return;
+                return false;
             }
 
-            if(type != ~0U && !(type & card.type))
+            if(race != ~0U && !(race & card.race))
             {
-                return;
+                return false;
             }
 
-            if(limitC != -1 && limitCards->getLimit(card.id) != limitC)
+            if(attr != ~0U && !(attr & card.attribute))
             {
-                return;
+                return false;
             }
 
-            if(otC != 0 && (card.ot & 3) != otC)
+            if(!atkPred(card.atk))
             {
-                return;
+                return false;
             }
 
-            if(!passPred(card.id))
+            if(!defPred(card.def))
             {
-                return;
+                return false;
             }
-            if(type & Const::TYPE_MONSTER)
+
+            if(levelPred.isValid())
             {
-                if(subtype != ~0U && !((subtype & card.type) == subtype))
+                if(!(card.type & Const::TYPE_MONSTER))
                 {
-                    return;
+                    return false;
                 }
-
-                if(race != ~0U && !(race & card.race))
+                if((card.type & Const::TYPE_XYZ) || !levelPred(card.level))
                 {
-                    return;
+                    return false;
                 }
+            }
 
-                if(attr != ~0U && !(attr & card.attribute))
+            if(rankPred.isValid())
+            {
+                if(!(card.type & Const::TYPE_MONSTER))
                 {
-                    return;
+                    return false;
                 }
-
-                if(!atkPred(card.atk))
+                if(!(card.type & Const::TYPE_XYZ) || !rankPred(card.level))
                 {
-                    return;
+                    return false;
                 }
+            }
 
-                if(!defPred(card.def))
+            if(scalePred.isValid())
+            {
+                if(!(card.type & Const::TYPE_MONSTER))
                 {
-                    return;
+                    return false;
                 }
-
-                if(levelPred.isValid())
+                if(!(card.type & Const::TYPE_PENDULUM) || !scalePred(card.scale))
                 {
-                    if(!(card.type & Const::TYPE_MONSTER))
-                    {
-                        return;
-                    }
-                    if((card.type & Const::TYPE_XYZ) || !levelPred(card.level))
-                    {
-                        return;
-                    }
+                    return false;
                 }
+            }
+        }
+        else
+        {
+            if(subtype != ~0U && card.type != subtype)
+            {
+                return false;
+            }
+        }
 
-                if(rankPred.isValid())
+        if((category & card.category) != category)
+        {
+            return false;
+        }
+
+        if(set_code)
+        {
+            quint64 setcode = card.setcode;
+            quint64 settype = set_code & 0x0fff;
+            quint64 setsubtype = set_code & 0xf000;
+            bool found = false;
+            while(setcode)
+            {
+                if((setcode & 0x0fff) == settype &&
+                        (setsubtype == 0 || (setcode & 0xf000) == setsubtype))
                 {
-                    if(!(card.type & Const::TYPE_MONSTER))
-                    {
-                        return;
-                    }
-                    if(!(card.type & Const::TYPE_XYZ) || !rankPred(card.level))
-                    {
-                        return;
-                    }
+                    found = true;
+                    break;
                 }
-
-                if(scalePred.isValid())
+                setcode = setcode >> 16;
+            }
+            if(!found)
+            {
+                return false;
+            }
+        }
+        if(!name.isEmpty())
+        {
+            if(!expr)
+            {
+                if(card.name.indexOf(name) < 0 &&
+                        card.effect.indexOf(name) < 0)
                 {
-                    if(!(card.type & Const::TYPE_MONSTER))
-                    {
-                        return;
-                    }
-                    if(!(card.type & Const::TYPE_PENDULUM) || !scalePred(card.scale))
-                    {
-                        return;
-                    }
+                    return false;
                 }
             }
             else
             {
-                if(subtype != ~0U && card.type != subtype)
+                bool outer = false;
+                foreach(auto &andExprs, exprs)
                 {
-                    return;
-                }
-            }
-
-            if((category & card.category) != category)
-            {
-                return;
-            }
-
-            if(set_code)
-            {
-                quint64 setcode = card.setcode;
-                quint64 settype = set_code & 0x0fff;
-                quint64 setsubtype = set_code & 0xf000;
-                bool found = false;
-                while(setcode)
-                {
-                    if((setcode & 0x0fff) == settype &&
-                            (setsubtype == 0 || (setcode & 0xf000) == setsubtype))
+                    bool inner = true;
+                    foreach(auto &str, andExprs)
                     {
-                        found = true;
-                        break;
-                    }
-                    setcode = setcode >> 16;
-                }
-                if(!found)
-                {
-                    return;
-                }
-            }
-            if(!name.isEmpty())
-            {
-                if(!expr)
-                {
-                    if(card.name.indexOf(name) < 0 &&
-                            card.effect.indexOf(name) < 0)
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    bool outer = false;
-                    foreach(auto &andExprs, exprs)
-                    {
-                        bool inner = true;
-                        foreach(auto &str, andExprs)
+                        if(card.name.indexOf(str) < 0 &&
+                                card.effect.indexOf(str) < 0)
                         {
-                            if(card.name.indexOf(str) < 0 &&
-                                    card.effect.indexOf(str) < 0)
-                            {
-                                inner = false;
-                                break;
-                            }
-                        }
-                        if(inner)
-                        {
-                            outer = true;
+                            inner = false;
                             break;
                         }
                     }
-                    if(!outer)
+                    if(inner)
                     {
-                        return;
+                        outer = true;
+                        break;
                     }
                 }
+                if(!outer)
+                {
+                    return false;
+                }
             }
+        }
+        return true;
+    };
 
-            ls->append(card.id);
+    if(inverseMode->isChecked())
+    {
+        ctx([&](Card &card) {return !predicate(card);});
+    }
+    else
+    {
+        ctx(std::move(predicate));
+    }
+}
+
+template<typename T>
+void CardFilter::search(T &&begin, T &&end, Pred &&predicate)
+{
+    auto ls = Type::DeckP::create();
+
+
+    for(auto it = begin; it != end; ++it)
+    {
+        call_with_ref([&] (Card& card) {
+            if(card.type & Const::TYPE_TOKEN)
+            {
+                return;
+            }
+            if(predicate(card))
+            {
+                ls->append(card.id);
+            }
         }, cardPool->getCard(*it));
     }
 
@@ -664,6 +699,7 @@ void CardFilter::revert()
     atkEdit->clear();
     defEdit->clear();
     levelEdit->clear();
+    rankEdit->clear();
     scaleEdit->clear();
     setEdit->clear();
     nameEdit->clear();
@@ -672,6 +708,7 @@ void CardFilter::revert()
     {
         effect->setChecked(false);
     }
+    inverseMode->setChecked(false);
 }
 
 CardFilter::~CardFilter()

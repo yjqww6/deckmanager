@@ -87,7 +87,7 @@ void DeckWidget::paintEvent(QPaintEvent *)
                 auto data = limitCards->getPixmap(lim);
                 if(data)
                 {
-                    painter.drawPixmap(x, y, 16, 16, *data.data());
+                    painter.drawPixmap(x, y, 16, 16, *data);
                 }
             }
             if(current == i * cardPerRow + j)

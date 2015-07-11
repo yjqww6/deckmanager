@@ -14,7 +14,7 @@ LimitCards::LimitCards()
 
     for(auto &p : limits)
     {
-        p = QSharedPointer<QPixmap>::create();
+        p.reset(new QPixmap);
     }
 
     if(img.width() > 0)
@@ -67,13 +67,15 @@ LimitCards::LimitCards()
     }
 }
 
-QSharedPointer<QPixmap> LimitCards::getPixmap(int i)
+
+QPixmap* LimitCards::getPixmap(int i)
 {
+    static QPixmap nullPixmap;
     if(i >= 0 && i <= 2)
     {
-        return limits[i];
+        return limits[i].data();
     }
-    return QSharedPointer<QPixmap>::create();
+    return &nullPixmap;
 }
 
 int LimitCards::getLimit(quint32 id)

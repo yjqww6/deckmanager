@@ -67,7 +67,7 @@ template<typename T>
 class KeysIter
 {
 private:
-    typedef typename T::iterator It;
+    typedef typename T::const_iterator It;
     It it;
 public:
     KeysIter(It _it) : it(_it) {}
@@ -85,6 +85,18 @@ public:
         return it->first;
     }
 };
+
+template<typename T>
+KeysIter<T> keysBegin(const T &t)
+{
+    return KeysIter<T>(t.cbegin());
+}
+
+template<typename T>
+KeysIter<T> keysEnd(const T& t)
+{
+    return KeysIter<T>(t.cend());
+}
 
 #endif // RANGE_H
 

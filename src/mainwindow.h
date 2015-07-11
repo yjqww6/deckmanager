@@ -14,7 +14,6 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
     void keyPressEvent(QKeyEvent *);
-
 signals:
     void currentIdChanged(quint32);
 private slots:

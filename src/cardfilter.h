@@ -44,18 +44,23 @@ private:
     public:
         template<typename T>
         Matcher(T _pred, bool _valid = true) : pred(_pred), valid(_valid) {}
-        bool isValid()
+        bool isValid() const
         {
             return valid;
         }
-        bool operator ()(int p)
+        bool operator ()(int p) const
         {
             return pred(p);
         }
     };
 
+    typedef std::function<bool(Card&)> Pred;
+    typedef std::function<void(Pred&&)> Ctx;
+
+    void call_with_pred(Ctx &&ctx);
+
     template<typename T>
-    void search(const T &Begin, const T& End);
+    void search(T &&begin, T &&end, Pred &&predicate);
 
     static const quint32 cardTypes[];
     static const quint32 monsterTypes[];
@@ -85,7 +90,7 @@ private:
 
     QLineEdit *setEdit;
     QLineEdit *nameEdit;
-
+    QCheckBox *inverseMode;
 };
 
 #endif // CARDFILTER_H

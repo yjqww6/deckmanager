@@ -66,8 +66,6 @@ void DeckList::onItem(QListWidgetItem *item)
 {
     QVariantList vls = item->data(Qt::UserRole).toList();
     QString id = vls[0].toString();
-    //QString type = vls[1].toString();
-    //emit deckType(type);
     emit selectDeck(id, item->text());
 }
 

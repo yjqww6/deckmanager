@@ -7,7 +7,7 @@
 #include <QHash>
 #include <QFile>
 #include <QList>
-#include <QSharedPointer>
+#include <QScopedPointer>
 #include <functional>
 #include "typing.h"
 
@@ -15,12 +15,12 @@ class LimitCards
 {
 public:
     LimitCards();
-    QSharedPointer<QPixmap> limits[3];
+    QScopedPointer<QPixmap> limits[3];
 
     typedef QHash<quint32, int> Table;
     QList<QPair<QString, Table> > tables;
 
-    QSharedPointer<QPixmap> getPixmap(int);
+    QPixmap *getPixmap(int);
 
     auto getTables() -> decltype((tables))
     {
