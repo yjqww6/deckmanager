@@ -41,19 +41,20 @@ void DeckWidget::paintEvent(QPaintEvent *)
 
     emit deckChanged(deck);
 
+    int cardPerRow = std::max(static_cast<int>(ceil(deckSize * 1.0 / row)), column);
+
     double cardHeight = (height() - offset.height() * 2.0) / row - spacing.height();
-    double cardWidth = (width() - offset.width() * 2.0) / 10 - spacing.width();
+    double cardWidth = (width() - offset.width() * 2.0) / cardPerRow - spacing.width();
     double timesH = cardHeight / 254;
     double timesW = cardWidth / 177;
     double times = overlapV ? std::max(timesH, timesW) : timesH;
     cardSize = QSize(177 * times, 254 * times);
 
-    int cardPerRow = std::max(static_cast<int>(ceil(deckSize * 1.0 / row)), column);
     int varWidth = (width() - offset.width()) * 1.0 - cardSize.width() - offset.width();
     int varHeight = (height() - offset.height() * 1.0 - cardSize.height()) - offset.height();
     int yoff = ((height() - offset.height()) * 1.0 - (cardSize.height() + spacing.height()) * row) / 2;
     int actualRow = static_cast<int>(ceil(deck.size() * 1.0 / cardPerRow));
-    bool needOverlap = (actualRow * cardSize.height()) > height();
+    bool needOverlap = (actualRow * (cardSize.height() + spacing.height())) + offset.height() * 2 > height();
     auto it = deck.begin();
     for(int i = 0; i < row && it != deck.end(); i++)
     {
