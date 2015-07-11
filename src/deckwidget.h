@@ -10,8 +10,6 @@
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
 #include <QMimeData>
-#include <QSharedPointer>
-#include <QResizeEvent>
 #include <algorithm>
 #include <functional>
 #include "carditem.h"
@@ -85,8 +83,6 @@ public:
     void dragMoveEvent(QDragMoveEvent *event);
     void dropEvent(QDropEvent *event);
 
-    void resizeEvent(QResizeEvent *);
-
     void mouseDoubleClickEvent(QMouseEvent *event);
 
     void setCurrentCardId(quint32 id)
@@ -97,6 +93,7 @@ public:
     std::function<bool(quint32)> filter;
     std::function<bool(quint32)> extFilter;
     std::function<void()> makeSnapShot;
+    bool overlapV;
 signals:
     void currentIdChanged(quint32 id);
     void sizeChanged(int size);

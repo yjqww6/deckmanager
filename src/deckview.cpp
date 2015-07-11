@@ -90,16 +90,15 @@ DeckView::DeckView(QWidget *parent)
     abortAction->setEnabled(false);
     toolbar->addAction(abortAction);
 
-    auto hideButton = new QToolButton;
-    hideButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-
-    auto hideAction = new QAction(hideButton);
+    auto hideAction = new QAction(toolbar);
     hideAction->setToolTip(config->getStr("action", "hide", "隐藏副卡组"));
     hideAction->setIcon(QIcon(":/icons/side.png"));
+    toolbar->addAction(hideAction);
 
-    hideButton->addAction(hideAction);
-    hideButton->setDefaultAction(hideAction);
-    toolbar->addWidget(hideButton);
+    auto overlapAction = new QAction(toolbar);
+    overlapAction->setToolTip(config->getStr("action", "overlap", "垂直方向重叠"));
+    overlapAction->setIcon(QIcon(":/icons/overlap.png"));
+    toolbar->addAction(overlapAction);
 
     auto spacer = new QWidget;
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -137,6 +136,7 @@ DeckView::DeckView(QWidget *parent)
 
 
     mainDeck = new DeckWidget(nullptr, 4, 10);
+    mainDeck->overlapV = true;
     auto notExtraFilter = [](quint32 id)
     {
         return call_with_def([](Card &card) {
@@ -214,6 +214,10 @@ DeckView::DeckView(QWidget *parent)
     connect(homeAction, &QAction::triggered, this, &DeckView::home);
     connect(printAction, &QAction::triggered, this, &DeckView::print);
     connect(hideAction, &QAction::triggered, this, &DeckView::hideSide);
+    connect(overlapAction, &QAction::triggered, [=]() {
+       mainDeck->overlapV = !mainDeck->overlapV;
+       mainDeck->update();
+    });
 
     connect(textAction1, &QAction::triggered, [=]() {
        emit deckText(mainDeck->getDeck(), extraDeck->getDeck(),

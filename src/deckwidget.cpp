@@ -5,9 +5,9 @@
 
 DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
     : QWidget(parent), row(_row), column(_column), currentCardId(0),
-      deckSize(-1), current(-1)
+      deckSize(-1), current(-1), overlapV(false)
 {
-    offset = QSize(2, 2);
+    offset = QSize(3, 3);
     spacing = QSize(3, 3);
     cardSize = QSize(177 / 3.5 , 254 / 3.5);
 
@@ -29,17 +29,6 @@ DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
     setAcceptDrops(true);
 }
 
-void DeckWidget::resizeEvent(QResizeEvent *event)
-{
-    double cardHeight = (height() - offset.height() * 2.0) / row - spacing.height();
-    //double cardWidth = (width() - offset.width() * 2.0) / column - spacing.width();
-    //double timesH = cardHeight / 254, timesW = cardWidth / 177;
-    //double times = std::min(timesH, timesW);
-    double times = cardHeight / 254;
-    cardSize = QSize(177 * times, 254 * times);
-    QWidget::resizeEvent(event);
-}
-
 void DeckWidget::paintEvent(QPaintEvent *)
 {
 
@@ -51,16 +40,42 @@ void DeckWidget::paintEvent(QPaintEvent *)
     }
 
     emit deckChanged(deck);
+
+    double cardHeight = (height() - offset.height() * 2.0) / row - spacing.height();
+    double cardWidth = (width() - offset.width() * 2.0) / 10 - spacing.width();
+    double timesH = cardHeight / 254;
+    double timesW = cardWidth / 177;
+    double times = overlapV ? std::max(timesH, timesW) : timesH;
+    cardSize = QSize(177 * times, 254 * times);
+
     int cardPerRow = std::max(static_cast<int>(ceil(deckSize * 1.0 / row)), column);
     int varWidth = (width() - offset.width()) * 1.0 - cardSize.width() - offset.width();
+    int varHeight = (height() - offset.height() * 1.0 - cardSize.height()) - offset.height();
     int yoff = ((height() - offset.height()) * 1.0 - (cardSize.height() + spacing.height()) * row) / 2;
+    int actualRow = static_cast<int>(ceil(deck.size() * 1.0 / cardPerRow));
+    bool needOverlap = (actualRow * cardSize.height()) > height();
     auto it = deck.begin();
     for(int i = 0; i < row && it != deck.end(); i++)
     {
         for(int j = 0; j < cardPerRow && it != deck.end(); j++)
         {
-            int x = offset.width() + floor(varWidth * j / (cardPerRow - 1)),
-                    y = yoff + offset.height() + i * (cardSize.height() + spacing.height());
+            int x = offset.width() + floor(varWidth * j / (cardPerRow - 1));
+            int y = 0;
+            if(overlapV)
+            {
+                if(needOverlap)
+                {
+                    y = offset.height() + (actualRow <= 1 ? 0 : floor(varHeight * i) / (actualRow - 1));
+                }
+                else
+                {
+                    y = offset.height() + i * (cardSize.height() + spacing.height());
+                }
+            }
+            else
+            {
+                y = yoff + offset.height() + i * (cardSize.height() + spacing.height());
+            }
             it->setPos(QPoint(x, y));
             painter.drawPixmap(x, y, cardSize.width(),
                                cardSize.height(), *it->getPixmap().data());
