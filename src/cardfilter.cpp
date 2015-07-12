@@ -4,6 +4,7 @@
 #include "limitcards.h"
 #include "range.h"
 #include "wrapper.h"
+#include <QApplication>
 
 const quint32 CardFilter::cardTypes[] =
 {
@@ -298,46 +299,70 @@ void CardFilter::searchSet(quint32 id)
 {
     call_with_ref([&](Card &card) {
         quint64 setcode1 = card.setcode;
+        Pred predicate;
+        if(QApplication::keyboardModifiers() & Qt::ControlModifier)
+        {
+            predicate = [=](Card &card2) {
+                quint64 set_code = setcode1;
+                while(set_code)
+                {
+                    quint64 setcode2 = card2.setcode;
+                    quint64 settype = set_code & 0xffff;
+                    bool found = false;
+                    while(setcode2)
+                    {
+                        if((setcode2 & 0xffff) == settype)
+                        {
+                            found = true;
+                            break;
+                        }
+                        setcode2 = setcode2 >> 16;
+                    }
+                    if(!found)
+                    {
+                        return false;
+                    }
+                    set_code = set_code >> 16;
+                }
+                return true;
+            };
+        }
+        else
+        {
+            predicate = [=](Card &card2) {
+                quint64 set_code = setcode1;
+                while(set_code)
+                {
+                    quint64 setcode2 = card2.setcode;
+                    quint64 settype = set_code & 0x0fff;
+                    while(setcode2)
+                    {
+                        if((setcode2 & 0x0fff) == settype)
+                        {
+                            return true;
+                        }
+                        setcode2 = setcode2 >> 16;
+                    }
+                    set_code = set_code >> 16;
+                }
+                return false;
+            };
+        }
 
         auto &map = cardPool->getMap();
         auto ls = Type::DeckP::create();
         for(auto &it : map)
         {
-            quint64 set_code = setcode1;
-            bool foundO = false;
-            auto &card2 = *it.second.get();
-
-            if(card2.type & Const::TYPE_TOKEN)
-            {
-                continue;
-            }
-
-            while(set_code)
-            {
-                quint64 setcode2 = card2.setcode;
-                quint64 settype = set_code & 0x0fff;
-                bool found = false;
-                while(setcode2)
+            call_with_ref([&](Card &card2) {
+                if(card2.type & Const::TYPE_TOKEN)
                 {
-                    if((setcode2 & 0x0fff) == settype)
-                    {
-                        found = true;
-                        break;
-                    }
-                    setcode2 = setcode2 >> 16;
+                    return;
                 }
-
-                if(found)
+                if(predicate(card2))
                 {
-                    foundO = true;
-                    break;
+                    ls->append(card2.id);
                 }
-                set_code = set_code >> 16;
-            }
-            if(foundO)
-            {
-                ls->append(card2.id);
-            }
+            }, wrap(it.second.get()));
         }
         if(!ls->empty())
         {

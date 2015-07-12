@@ -36,6 +36,11 @@ public:
     }
 };
 
+template<typename T>
+static inline Wrapper<T> wrap(T* p)
+{
+    return Wrapper<T>(p);
+}
 
 static inline bool valid()
 {
