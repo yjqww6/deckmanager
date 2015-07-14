@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QAction>
 #include <QToolBar>
+#include <QTabBar>
 
 #include "decklabel.h"
 #include "deckmodel.h"
@@ -28,7 +29,7 @@ class DeckView : public QWidget
 public:
     friend class ItemThread;
 
-    DeckView(QWidget *parent);
+    DeckView(QWidget *parent, QTabBar *_tabbar);
     DeckWidget *getMain()
     {
         return mainDeck;
@@ -71,7 +72,7 @@ signals:
     void save(QString);
     void statusChanged(QString);
     void refreshLocals();
-    void deckText(Type::DeckI&, Type::DeckI&, Type::DeckI&, int);
+    void deckText(DeckModel*, bool, int);
 
 public slots:
 
@@ -88,7 +89,7 @@ public slots:
         sideDeck->setCurrentCardId(id);
     }
 
-    void makeSnapshot(bool mod = true);
+    void makeSnapShot(bool mod = true);
     void undo();
     void redo();
     void newDeck();
@@ -99,7 +100,7 @@ public slots:
 
     void abort()
     {
-        model.waiting = false;
+        getCurrentModel().waiting = false;
         setReady(true);
     }
 
@@ -110,6 +111,7 @@ public slots:
         sideDeck->checkLeave();
     }
 
+    void newTab();
 private slots:
 
     void setReady(bool t)
@@ -123,9 +125,20 @@ private slots:
     void home();
     void print();
     void hideSide();
-
+    void modelRefresh(int);
+    void modelReady(int, bool);
+    void closeTab(int);
 private:
-    DeckModel model;
+    DeckModel& addModel();
+    DeckModel& getCurrentModel();
+    int getTabIndexById(int id);
+    void refreshTabs();
+    void switchTab(int);
+
+    typedef QSharedPointer<DeckModel> ModelP;
+    QList<ModelP> models;
+    ModelP currentModel;
+
     DeckWidget *mainDeck;
     DeckWidget *extraDeck;
     DeckWidget *sideDeck;
@@ -133,6 +146,7 @@ private:
     QAction *undoAction, *redoAction;
     QAction *abortAction;
     QToolBar *toolbar;
+    QTabBar *tabbar;
     bool sideHidden;
 };
 

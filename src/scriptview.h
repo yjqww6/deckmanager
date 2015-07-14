@@ -6,7 +6,7 @@
 #include <QFile>
 #include <QVBoxLayout>
 #include "card.h"
-#include "typing.h"
+#include "deckmodel.h"
 #include <QDebug>
 
 class ScriptView : public QDialog
@@ -25,7 +25,7 @@ public:
     static const int COUNT = 2;
 public slots:
     void setId(quint32 id);
-    void setDeck(Type::DeckI &main, Type::DeckI &extra, Type::DeckI &side, int mode);
+    void setDeck(DeckModel *model, bool hideSide, int mode);
 private:
     QPlainTextEdit *textEdit;
 };

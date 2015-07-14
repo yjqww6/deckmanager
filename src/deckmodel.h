@@ -91,15 +91,16 @@ public:
     void loadDeck(QString lines, QString _name, bool local);
     void saveDeck(QString path);
 
-    Type::DeckI mainDeck, extraDeck, sideDeck;
+    int id;
+    QSharedPointer<Type::DeckI> mainDeck, extraDeck, sideDeck;
     QList<SnapShot> snapshots, redoSnapshots;
     int timestamp;
     bool waiting;
 
-    std::function<void(bool)> setReady;
-
+    static int counter;
 signals:
-    void refresh();
+    void ready(int, bool);
+    void refresh(int);
 public slots:
     void loadFinished(int ts, ItemThread::Deck);
 };

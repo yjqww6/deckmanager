@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QApplication>
 
-DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, Type::DeckI &_deck)
+DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, QSharedPointer<Type::DeckI> _deck)
     : QWidget(parent), deck(_deck), row(_row), column(_column), currentCardId(0),
       deckSize(-1), current(-1), overlapV(false)
 {
@@ -33,13 +33,13 @@ void DeckWidget::paintEvent(QPaintEvent *)
 {
 
     QPainter painter(this);
-    if(deckSize != deck.size())
+    if(deckSize != deck->size())
     {
-        emit sizeChanged(deck.size());
-        deckSize = deck.size();
+        emit sizeChanged(deck->size());
+        deckSize = deck->size();
     }
 
-    emit deckChanged(deck);
+    emit deckChanged(*deck);
 
     int cardPerRow = std::max(static_cast<int>(ceil(deckSize * 1.0 / row)), column);
 
@@ -53,12 +53,12 @@ void DeckWidget::paintEvent(QPaintEvent *)
     int varWidth = (width() - offset.width()) * 1.0 - cardSize.width() - offset.width();
     int varHeight = (height() - offset.height() * 1.0 - cardSize.height()) - offset.height();
     int yoff = ((height() - offset.height()) * 1.0 - (cardSize.height() + spacing.height()) * row) / 2;
-    int actualRow = static_cast<int>(ceil(deck.size() * 1.0 / cardPerRow));
+    int actualRow = static_cast<int>(ceil(deck->size() * 1.0 / cardPerRow));
     bool needOverlap = (actualRow * (cardSize.height() + spacing.height())) + offset.height() * 2 > height();
-    auto it = deck.begin();
-    for(int i = 0; i < row && it != deck.end(); i++)
+    auto it = deck->begin();
+    for(int i = 0; i < row && it != deck->end(); i++)
     {
-        for(int j = 0; j < cardPerRow && it != deck.end(); j++)
+        for(int j = 0; j < cardPerRow && it != deck->end(); j++)
         {
             int x = offset.width() + floor(varWidth * j / (cardPerRow - 1));
             int y = 0;
@@ -107,8 +107,8 @@ void DeckWidget::paintEvent(QPaintEvent *)
 
 int DeckWidget::itemAt(const QPoint &pos)
 {
-    int i = deck.size();
-    for(auto it = deck.end(); it != deck.begin() && i > 0;)
+    int i = deck->size();
+    for(auto it = deck->end(); it != deck->begin() && i > 0;)
     {
         --it;
         --i;
@@ -138,9 +138,9 @@ void DeckWidget::checkLeave()
 
 int DeckWidget::posIndex(const QPoint &pos)
 {
-    int i = deck.size();
+    int i = deck->size();
     bool found = false;
-    for(auto it = deck.end(); it != deck.begin() && i > 0;)
+    for(auto it = deck->end(); it != deck->begin() && i > 0;)
     {
         --it;
         --i;
@@ -161,8 +161,8 @@ int DeckWidget::posIndex(const QPoint &pos)
     }
     else
     {
-        int center = deck[i].getPos().x() + cardSize.width() / 2;
-        if(pos.x() > center && i < deck.size())
+        int center = deck->at(i).getPos().x() + cardSize.width() / 2;
+        if(pos.x() > center && i < deck->size())
         {
             return i + 1;
         }
@@ -188,7 +188,7 @@ void DeckWidget::mousePressEvent(QMouseEvent *event)
         int index = itemAt(event->pos());
         if(index >= 0)
         {
-            quint32 id = deck[index].getId();
+            quint32 id = deck->at(index).getId();
             emit details(id);
         }
     }
@@ -200,7 +200,7 @@ void DeckWidget::mouseMoveEvent(QMouseEvent *event)
     int index = itemAt(event->pos());
     if(index != -1)
     {
-        quint32 id = deck[index].getId();
+        quint32 id = deck->at(index).getId();
         if(currentCardId != id)
         {
             currentCardId = id;
@@ -228,7 +228,7 @@ void DeckWidget::mouseMoveEvent(QMouseEvent *event)
 void DeckWidget::startDrag(int index)
 {
     auto *mimedata = new QMimeData;
-    CardItem card(deck[index]);
+    CardItem card(deck->at(index));
     mimedata->setText(QString::number(card.getId()));
     auto *drag = new QDrag(this);
     drag->setMimeData(mimedata);
@@ -243,21 +243,26 @@ void DeckWidget::startDrag(int index)
     dragHelper.atomic = true;
     if((QApplication::keyboardModifiers() & Qt::ControlModifier) == 0)
     {
-        deck.removeAt(index);
+        deck->removeAt(index);
         copy = false;
     }
-    emit sizeChanged(deck.size());
-    emit deckChanged(deck);
+    emit sizeChanged(deck->size());
+    emit deckChanged(*deck);
     update();
     dragHelper.moved = false;
     drag->exec(Qt::MoveAction);
     if(!dragHelper.moved && !copy)
     {
-        deck.append(card);
+        deck->append(card);
     }
     dragHelper.atomic = false;
     update();
 }
+void DeckWidget::setDeck(const QSharedPointer<Type::DeckI> value)
+{
+    deck = value;
+}
+
 
 void DeckWidget::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -318,7 +323,7 @@ void DeckWidget::deleteCard(QPoint _pos)
 {
     int index = itemAt(_pos);
     makeSnapShot();
-    deck.removeAt(index);
+    deck->removeAt(index);
     update();
 }
 
@@ -326,7 +331,7 @@ int DeckWidget::countCard(quint32 id)
 {
     return call_with_def([&](Card &card) {
         int sum = 0;
-        foreach(auto &item, deck)
+        foreach(auto &item, *deck)
         {
             call_with_ref([&](Card &card2) {
                 if(id == card2.id)

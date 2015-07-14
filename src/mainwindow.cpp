@@ -17,6 +17,7 @@
 #include <QSqlQuery>
 #include <QSplitter>
 #include <QTimer>
+#include <QTabBar>
 #include <functional>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -29,10 +30,11 @@ MainWindow::MainWindow(QWidget *parent)
         setStyleSheet("QMainWindow{border-image: url(" + bg + ")}");
     }
 
+    auto modelTabBar = new QTabBar;
     auto sp = new QSplitter(Qt::Horizontal, this);
     sp->setHandleWidth(3);
     auto deckListView = new DeckListView;
-    auto deckView = new DeckView(nullptr);
+    auto deckView = new DeckView(nullptr, modelTabBar);
     auto cardListView = new CardsListView(nullptr);
 
     auto cardDetails = new CardDetails;
@@ -125,7 +127,6 @@ MainWindow::MainWindow(QWidget *parent)
     timer->start(200);
 
 
-
     tab->addTabBar();
     tab->addTabBar();
     tab->addWidget(1, localList, config->getStr("tab", "local", "本地"));
@@ -142,9 +143,33 @@ MainWindow::MainWindow(QWidget *parent)
     sp->addWidget(cardListView);
     sp->setStretchFactor(1, 1);
     sp->setStyleSheet("QSplitter:handle{background:transparent}");
-    setCentralWidget(sp);
 
     tab->changeSize();
+
+    auto hboxtop = new QHBoxLayout;
+
+    auto vboxtop = new QVBoxLayout;
+    hboxtop->addWidget(modelTabBar);
+
+    auto newButton = new QPushButton;
+    newButton->setIcon(QIcon(":/icons/add.png"));
+    newButton->setToolTip(config->getStr("action", "new", "新建"));
+    newButton->setFixedWidth(32);
+    newButton->setFlat(true);
+    hboxtop->addWidget(newButton);
+    auto spacer = new QWidget;
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    hboxtop->addWidget(spacer);
+    connect(newButton, &QPushButton::clicked, deckView, &DeckView::newTab);
+
+    vboxtop->addLayout(hboxtop);
+    vboxtop->addWidget(sp, 1);
+    auto widgettop = new QWidget;
+    vboxtop->setMargin(0);
+    vboxtop->setSpacing(0);
+
+    widgettop->setLayout(vboxtop);
+    setCentralWidget(widgettop);
 
     deckView->setStatus();
     deckListView->getList();

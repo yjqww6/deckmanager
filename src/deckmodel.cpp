@@ -3,11 +3,17 @@
 #include "range.h"
 #include "config.h"
 #include <algorithm>
+#include <QDebug>
+
+int DeckModel::counter = 0;
 
 DeckModel::DeckModel(QObject *parent)
     : QObject(parent), timestamp(0), waiting(false)
 {
-
+    mainDeck = QSharedPointer<Type::DeckI>::create();
+    extraDeck = QSharedPointer<Type::DeckI>::create();
+    sideDeck = QSharedPointer<Type::DeckI>::create();
+    id = ++counter;
 }
 
 static void toShot(Type::Deck &shot, Type::DeckI& items)
@@ -32,18 +38,18 @@ static void toCards(Type::DeckI& items, Type::Deck &shot)
 
 void DeckModel::restoreSnapshot(SnapShot &snap)
 {
-    toCards(mainDeck, snap.shot[0]);
-    toCards(extraDeck, snap.shot[1]);
-    toCards(sideDeck, snap.shot[2]);
+    toCards(*mainDeck, snap.shot[0]);
+    toCards(*extraDeck, snap.shot[1]);
+    toCards(*sideDeck, snap.shot[2]);
     deckStatus = snap.deckStatus;
 }
 
 DeckModel::SnapShot DeckModel::currentSnapshot()
 {
     SnapShot snap;
-    toShot(snap.shot[0], mainDeck);
-    toShot(snap.shot[1], extraDeck);
-    toShot(snap.shot[2], sideDeck);
+    toShot(snap.shot[0], *mainDeck);
+    toShot(snap.shot[1], *extraDeck);
+    toShot(snap.shot[2], *sideDeck);
     snap.deckStatus = deckStatus;
     return std::move(snap);
 }
@@ -95,9 +101,9 @@ void DeckModel::redo()
 void DeckModel::clear()
 {
     makeSnapShot();
-    mainDeck.clear();
-    extraDeck.clear();
-    sideDeck.clear();
+    mainDeck->clear();
+    extraDeck->clear();
+    sideDeck->clear();
 }
 
 void DeckModel::newDeck()
@@ -107,23 +113,23 @@ void DeckModel::newDeck()
     deckStatus.name = "";
     deckStatus.isLocal = false;
     deckStatus.modified = false;
-    mainDeck.clear();
-    extraDeck.clear();
-    sideDeck.clear();
+    mainDeck->clear();
+    extraDeck->clear();
+    sideDeck->clear();
 }
 
 void DeckModel::sort()
 {
     makeSnapShot();
-    qSort(mainDeck.begin(), mainDeck.end(), itemCompare);
-    qSort(extraDeck.begin(), extraDeck.end(), itemCompare);
-    qSort(sideDeck.begin(), sideDeck.end(), itemCompare);
+    qSort(mainDeck->begin(), mainDeck->end(), itemCompare);
+    qSort(extraDeck->begin(), extraDeck->end(), itemCompare);
+    qSort(sideDeck->begin(), sideDeck->end(), itemCompare);
 }
 
 void DeckModel::shuffle()
 {
     makeSnapShot();
-    std::random_shuffle(mainDeck.begin(), mainDeck.end());
+    std::random_shuffle(mainDeck->begin(), mainDeck->end());
 }
 
 void DeckModel::loadDeck(QString lines, QString _name, bool local)
@@ -135,9 +141,9 @@ void DeckModel::loadDeck(QString lines, QString _name, bool local)
     int ts = ++timestamp;
     makeSnapShot(false);
 
-    mainDeck.clear();
-    extraDeck.clear();
-    sideDeck.clear();
+    mainDeck->clear();
+    extraDeck->clear();
+    sideDeck->clear();
 
 
     deckStatus.name = _name;
@@ -145,7 +151,7 @@ void DeckModel::loadDeck(QString lines, QString _name, bool local)
     deckStatus.modified = !local;
 
     waiting = true;
-    setReady(false);
+    emit ready(id, false);
     auto thread = new ItemThread(ts, lines, this);
     connect(thread, &ItemThread::finishLoad, this, &DeckModel::loadFinished);
     connect(thread, &ItemThread::finished, thread, &ItemThread::deleteLater);
@@ -160,17 +166,17 @@ void DeckModel::saveDeck(QString path)
     {
         QTextStream out(&file);
         out << "#create by ...\n#main\n";
-        foreach(auto &item, mainDeck)
+        foreach(auto &item, *mainDeck)
         {
             out << item.getId() << "\n";
         }
         out << "#extra\n";
-        foreach(auto &item, extraDeck)
+        foreach(auto &item, *extraDeck)
         {
             out << item.getId() << "\n";
         }
         out << "!side\n";
-        foreach(auto &item, sideDeck)
+        foreach(auto &item, *sideDeck)
         {
             out << item.getId() << "\n";
         }
@@ -186,11 +192,11 @@ void DeckModel::loadFinished(int ts, ItemThread::Deck deck)
     waiting = false;
     if(ts == timestamp)
     {
-        mainDeck.swap((*deck)[0]);
-        extraDeck.swap((*deck)[1]);
-        sideDeck.swap((*deck)[2]);
-        setReady(true);
-        emit refresh();
+        mainDeck->swap((*deck)[0]);
+        extraDeck->swap((*deck)[1]);
+        sideDeck->swap((*deck)[2]);
+        emit ready(id, true);
+        emit refresh(id);
     }
 }
 

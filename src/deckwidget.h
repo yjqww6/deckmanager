@@ -24,7 +24,7 @@ protected:
 
     void startDrag(int);
 
-    Type::DeckI &deck;
+    QSharedPointer<Type::DeckI> deck;
     QPoint startPos;
     QSize cardSize;
     int row;
@@ -36,14 +36,13 @@ protected:
     int deckSize;
     int current;
 public:
-    explicit DeckWidget(QWidget *parent, int _row, int _column, Type::DeckI &_deck);
+    explicit DeckWidget(QWidget *parent, int _row, int _column, QSharedPointer<Type::DeckI> _deck);
     ~DeckWidget();
     void paintEvent(QPaintEvent *event);
 
-
-    auto getDeck() -> decltype((deck))
+    Type::DeckI& getDeck()
     {
-        return deck;
+        return *deck;
     }
 
     QSize getCardSize()
@@ -58,17 +57,17 @@ public:
 
     void addCard(quint32 id)
     {
-        deck.append(CardItem(id));
+        deck->append(CardItem(id));
     }
 
     void insertCard(int index, quint32 id)
     {
-        deck.insert(index, CardItem(id));
+        deck->insert(index, CardItem(id));
     }
 
     void clearDeck()
     {
-        deck.clear();
+        deck->clear();
     }
 
     int countCard(quint32 id);
@@ -93,6 +92,8 @@ public:
     std::function<bool(quint32)> extFilter;
     std::function<void()> makeSnapShot;
     bool overlapV;
+    void setDeck(const QSharedPointer<Type::DeckI> value);
+
 signals:
     void currentIdChanged(quint32 id);
     void sizeChanged(int size);

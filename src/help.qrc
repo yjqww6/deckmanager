@@ -25,5 +25,6 @@
         <file>icons/side.png</file>
         <file>icons/back.png</file>
         <file>icons/overlap.png</file>
+        <file>icons/add.png</file>
     </qresource>
 </RCC>

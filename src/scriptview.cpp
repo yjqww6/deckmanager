@@ -94,21 +94,27 @@ static void printCount(QStringList &ls, Type::DeckI &deck, QString key, QString 
     ls << "";
 }
 
-void ScriptView::setDeck(Type::DeckI &main, Type::DeckI &extra, Type::DeckI &side, int mode)
+void ScriptView::setDeck(DeckModel *model, bool hideSide, int mode)
 {
     textEdit->clear();
     QStringList ls;
     if(mode == NORMAL || mode == BRACKET)
     {
-        printTo(ls, main, "main", "主卡组", mode);
-        printTo(ls, extra, "extra", "额外卡组", mode);
-        printTo(ls, side, "side", "副卡组", mode);
+        printTo(ls, *model->mainDeck, "main", "主卡组", mode);
+        printTo(ls, *model->extraDeck, "extra", "额外卡组", mode);
+        if(!hideSide)
+        {
+            printTo(ls, *model->sideDeck, "side", "副卡组", mode);
+        }
     }
     else if(mode == COUNT)
     {
-        printCount(ls, main, "main", "主卡组");
-        printCount(ls, extra, "extra", "额外卡组");
-        printCount(ls, side, "side", "副卡组");
+        printCount(ls, *model->mainDeck, "main", "主卡组");
+        printCount(ls, *model->extraDeck, "extra", "额外卡组");
+        if(!hideSide)
+        {
+            printCount(ls, *model->sideDeck, "side", "副卡组");
+        }
     }
     textEdit->insertPlainText(ls.join('\n'));
     textEdit->setReadOnly(false);

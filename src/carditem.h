@@ -25,7 +25,7 @@ public:
         return pixmap;
     }
 
-    QPoint getPos()
+    QPoint getPos() const
     {
         return pos;
     }
@@ -33,6 +33,26 @@ public:
     void setPos(const QPoint &p)
     {
         pos = p;
+    }
+
+    static int poolSize()
+    {
+        int sum = 0;
+        foreach(auto it, spool)
+        {
+            if(!it.isNull())
+            {
+                sum++;
+            }
+        }
+        foreach(auto it, pool)
+        {
+            if(!it.isNull())
+            {
+                sum++;
+            }
+        }
+        return sum;
     }
 
 private:
