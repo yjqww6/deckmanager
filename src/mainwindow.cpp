@@ -154,6 +154,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto newButton = new QPushButton;
     newButton->setIcon(QIcon(":/icons/add.png"));
     newButton->setToolTip(config->getStr("action", "new", "新建"));
+    newButton->setStyleSheet("font-size:12px");
     newButton->setFixedWidth(32);
     newButton->setFlat(true);
     hboxtop->addWidget(newButton);

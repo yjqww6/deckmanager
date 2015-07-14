@@ -408,6 +408,11 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
 void DeckView::loadDeck(QString lines, QString _name, bool local)
 {
+    if(config->newTab)
+    {
+        addModel();
+        tabbar->setCurrentIndex(tabbar->count() - 1);
+    }
     getCurrentModel().loadDeck(lines, _name, local);
 }
 

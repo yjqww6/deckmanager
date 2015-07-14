@@ -46,6 +46,7 @@ public:
     bool convertPass;
     bool autoSwitch;
     bool bg;
+    bool newTab;
     int limit;
     QString getStr(QString group, QString key, QString defaultStr);
     QString getHelpStr();
@@ -53,6 +54,7 @@ public:
     QList<RemoteConfig> remoteConfigs;
     int remote;
     Map mappings;
+
 signals:
 
 public slots:
@@ -61,6 +63,7 @@ public slots:
     void setLimit(int);
     void setAutoSwitch(bool);
     void setRemote(int);
+    void setNewTab(bool value);
 };
 
 extern Config *config;

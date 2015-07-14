@@ -23,6 +23,7 @@ Config::Config(QObject *parent)
     waitForPass = getStr("pref", "passwait", "0").toInt() == 1;
     convertPass = getStr("pref", "passconvert", "1").toInt() == 1;
     autoSwitch = getStr("pref", "autoswitch", "0").toInt() == 1;
+    newTab = getStr("pref", "newTab", "0").toInt() == 1;
     limit = getStr("pref", "limit", "0").toInt();
     QFileInfo info(QFile(getStr("pref", "bg", "")));
     bg = info.exists();
@@ -199,5 +200,11 @@ Config::~Config()
     settings.setValue("pref/passwait", waitForPass ? 1 : 0);
     settings.setValue("pref/passconvert", convertPass ? 1 : 0);
     settings.setValue("pref/autoswitch", autoSwitch ? 1 : 0);
+    settings.setValue("pref/newTab", newTab ? 1 : 0);
     settings.setValue("pref/limit", limit);
 }
+void Config::setNewTab(bool value)
+{
+    newTab = value;
+}
+
