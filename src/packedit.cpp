@@ -208,6 +208,7 @@ PackEditView::PackEditView(QWidget *parent)
     vbox->addLayout(hbox);
 
     setLayout(vbox);
+    label->changeSize(0);
 }
 void PackEdit::sort()
 {

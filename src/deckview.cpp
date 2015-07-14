@@ -14,16 +14,12 @@
 #include <QScreen>
 #include <QToolButton>
 
-void DeckView::resizeEvent(QResizeEvent *event)
-{
-    QWidget::resizeEvent(event);
-}
-
 static Type::DeckI nullDeck;
 
 DeckView::DeckView(QWidget *parent)
-    : QWidget(parent), timestamp(0), waiting(false), sideHidden(false)
+    : QWidget(parent), sideHidden(false)
 {
+    model.setReady = [this](bool ready) {setReady(ready);};
 
     toolbar = new QToolBar;
     toolbar->setStyleSheet("color: black; font-size: 12px");
@@ -135,7 +131,7 @@ DeckView::DeckView(QWidget *parent)
     toolbar->addAction(helpAction);
 
 
-    mainDeck = new DeckWidget(nullptr, 4, 10);
+    mainDeck = new DeckWidget(nullptr, 4, 10, model.mainDeck);
     mainDeck->overlapV = true;
     auto notExtraFilter = [](quint32 id)
     {
@@ -148,7 +144,7 @@ DeckView::DeckView(QWidget *parent)
     auto t1 = new DeckSizeLabel(config->getStr("label", "main", "主卡组"));
     auto mt = new MainDeckLabel;
 
-    extraDeck = new DeckWidget(nullptr, 1, 10);
+    extraDeck = new DeckWidget(nullptr, 1, 10, model.extraDeck);
     auto extraFilter = [](quint32 id)
     {
         return call_with_def([](Card &card) {
@@ -156,7 +152,7 @@ DeckView::DeckView(QWidget *parent)
         }, false, cardPool->getCard(id));
     };
     extraDeck->filter = extraFilter;
-    sideDeck = new DeckWidget(nullptr, 1, 10);
+    sideDeck = new DeckWidget(nullptr, 1, 10, model.sideDeck);
 
     auto t2 = new DeckSizeLabel(config->getStr("label", "extra", "额外卡组"));
     auto et = new ExtraDeckLabel;
@@ -183,7 +179,7 @@ DeckView::DeckView(QWidget *parent)
     extraDeck->makeSnapShot = snapshotMaker;
     sideDeck->makeSnapShot = snapshotMaker;
 
-
+    connect(&model, &DeckModel::refresh, this, &DeckView::refresh);
 
     connect(mainDeck, &DeckWidget::sizeChanged, t1, &DeckSizeLabel::changeSize);
     connect(mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
@@ -202,12 +198,12 @@ DeckView::DeckView(QWidget *parent)
     connect(extraDeck, &DeckWidget::clickId, this, &DeckView::clickId);
     connect(sideDeck, &DeckWidget::clickId, this, &DeckView::clickId);
 
-    connect(shuffleAction, &QAction::triggered, mainDeck, &DeckWidget::shuffle);
+    connect(shuffleAction, &QAction::triggered, this, &DeckView::shuffle);
 
     connect(undoAction, &QAction::triggered, this, &DeckView::undo);
     connect(redoAction, &QAction::triggered, this, &DeckView::redo);
     connect(saveAction, &QAction::triggered, this, &DeckView::saveSlot);
-    connect(saveAsAction, &QAction::triggered, [this](){emit save(deckStatus.name);});
+    connect(saveAsAction, &QAction::triggered, [this](){emit save(model.deckStatus.name);});
     connect(newAction, &QAction::triggered, this, &DeckView::newDeck);
     connect(deleteAction, &QAction::triggered, this, &DeckView::deleteDeck);
     connect(abortAction, &QAction::triggered, this, &DeckView::abort);
@@ -278,72 +274,31 @@ DeckView::DeckView(QWidget *parent)
     vbox->addWidget(sideDeck, 1);
     setLayout(vbox);
 
-    updateButtons();
+    refresh();
 }
 
 void DeckView::loadDeck(QString lines, QString _name, bool local)
 {
-    if(waiting)
-    {
-        return;
-    }
-    int load = ++timestamp;
-    makeSnapshot(false);
-
-    mainDeck->clearDeck();
-    extraDeck->clearDeck();
-    sideDeck->clearDeck();
-
-
-    deckStatus.name = _name;
-    deckStatus.isLocal = local;
-    deckStatus.modified = !local;
-
-    waiting = true;
-    setReady(false);
-    auto thread = new ItemThread(load, lines, this);
-    connect(thread, &ItemThread::finishLoad, this, &DeckView::loadFinished);
-    connect(thread, &ItemThread::finished, thread, &ItemThread::deleteLater);
-    connect(this, &DeckView::destroyed, thread, &ItemThread::quit);
-    thread->start();
+    model.loadDeck(lines, _name, local);
 }
 
 void DeckView::sort()
 {
-    makeSnapshot();
-    mainDeck->sort();
-    extraDeck->sort();
-    sideDeck->sort();
+    model.sort();
+    refresh();
+}
+
+void DeckView::shuffle()
+{
+    model.shuffle();
+    refresh();
 }
 
 
 void DeckView::saveDeck(QString path)
 {
-    QFile file(path);
-    if(file.open(QFile::WriteOnly | QFile::Text))
-    {
-        QTextStream out(&file);
-        out << "#create by ...\n#main\n";
-        foreach(auto &item, mainDeck->getDeck())
-        {
-            out << item.getId() << "\n";
-        }
-        out << "#extra\n";
-        foreach(auto &item, extraDeck->getDeck())
-        {
-            out << item.getId() << "\n";
-        }
-        out << "!side\n";
-        foreach(auto &item, sideDeck->getDeck())
-        {
-            out << item.getId() << "\n";
-        }
-        file.close();
-        deckStatus.modified = false;
-        deckStatus.isLocal = true;
-        deckStatus.name = QFileInfo(file).completeBaseName();
-        setStatus();
-    }
+    model.saveDeck(path);
+    refresh();
 }
 
 void DeckView::help()
@@ -390,281 +345,84 @@ void DeckView::hideSide()
 
 void DeckView::makeSnapshot(bool mod)
 {
-    if(snapshots.size() > 50)
-    {
-        snapshots.pop_back();
-    }
-    redoSnapshots.clear();
-    snapshots.push_front(currentSnapshot());
-
-    if(mod)
-    {
-        deckStatus.modified = true;
-    }
-    updateButtons();
-    setStatus();
+    model.makeSnapShot(mod);
+    refresh();
 }
 
 void DeckView::undo()
 {
-    if(snapshots.size() >= 1)
-    {
-        if(redoSnapshots.size() > 50)
-        {
-            redoSnapshots.pop_back();
-        }
-
-        redoSnapshots.push_front(currentSnapshot());
-        restoreSnapshot(snapshots.front());
-        snapshots.pop_front();
-        update();
-        updateButtons();
-        setStatus();
-    }
+    model.undo();
+    refresh();
 }
 
 void DeckView::redo()
 {
-    if(redoSnapshots.size() >= 1)
-    {
-        if(snapshots.size() > 50)
-        {
-            snapshots.pop_back();
-        }
-
-        snapshots.push_front(currentSnapshot());
-        restoreSnapshot(redoSnapshots.front());
-        redoSnapshots.pop_front();
-        update();
-        updateButtons();
-        setStatus();
-    }
+    model.redo();
+    refresh();
 }
 
 void DeckView::newDeck()
 {
-    makeSnapshot(false);
-    deckStatus.name = "";
-    deckStatus.isLocal = false;
-    deckStatus.modified = false;
-    mainDeck->clearDeck();
-    extraDeck->clearDeck();
-    sideDeck->clearDeck();
-    mainDeck->update();
-    extraDeck->update();
-    sideDeck->update();
-    setStatus();
+    model.newDeck();
+    refresh();
 }
 
 void DeckView::clearDeck()
 {
-    makeSnapshot();
-    mainDeck->clearDeck();
-    extraDeck->clearDeck();
-    sideDeck->clearDeck();
+    model.clear();
+    refresh();
+}
+
+void DeckView::setStatus()
+{
+    QString stat = "deckmanager - by qww6 ";
+    stat += "[" + (model.deckStatus.isLocal ? config->getStr("label", "local", "本地")
+                                      : config->getStr("label", "temp", "临时")) + "]";
+    stat += model.deckStatus.name;
+    stat += model.deckStatus.modified ? ("[" + config->getStr("label", "modified", "已修改") + "]") : "";
+    emit statusChanged(stat);
+}
+
+void DeckView::refresh()
+{
     mainDeck->update();
     extraDeck->update();
     sideDeck->update();
+
+    undoAction->setEnabled(model.snapshots.size() > 0);
+    redoAction->setEnabled(model.redoSnapshots.size() > 0);
+
     setStatus();
 }
 
-static void toCards(Type::DeckI& items, Type::Deck &shot)
-{
-    Type::DeckI temp;
-    temp.reserve(shot.size());
-    foreach(auto id, shot)
-    {
-        temp.append(CardItem(id));
-    }
-    items.swap(temp);
-}
-
-void DeckView::restoreSnapshot(SnapShot &snap)
-{
-    toCards(mainDeck->getDeck(), snap.shot[0]);
-    toCards(extraDeck->getDeck(), snap.shot[1]);
-    toCards(sideDeck->getDeck(), snap.shot[2]);
-    deckStatus = snap.deckStatus;
-}
-
-static void toShot(Type::Deck &shot, Type::DeckI& items)
-{
-    shot.reserve(items.size());
-    foreach(auto &item, items)
-    {
-        shot.append(item.getId());
-    }
-}
-
-void DeckView::updateButtons()
-{
-    undoAction->setEnabled(snapshots.size() > 0);
-    redoAction->setEnabled(redoSnapshots.size() > 0);
-}
 
 void DeckView::saveSlot()
 {
-    if(deckStatus.isLocal)
+    if(model.deckStatus.isLocal)
     {
-        saveDeck("deck/" + deckStatus.name + ".ydk");
-        deckStatus.modified = false;
+        saveDeck("deck/" + model.deckStatus.name + ".ydk");
+        model.deckStatus.modified = false;
     }
     else
     {
-        emit save(deckStatus.name);
+        emit save(model.deckStatus.name);
     }
 }
 
 void DeckView::deleteDeck()
 {
-    if(deckStatus.isLocal)
+    if(model.deckStatus.isLocal)
     {
         if(QMessageBox::question(nullptr, config->getStr("label", "warning", "警告"),
-                                 config->getStr("label", "delete_p", "是否要删除卡组:") + deckStatus.name + "?",
+                                 config->getStr("label", "delete_p", "是否要删除卡组:") + model.deckStatus.name + "?",
                 QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes)
             == QMessageBox::Yes)
         {
-            QFile file("deck/" + deckStatus.name + ".ydk");
+            QFile file("deck/" + model.deckStatus.name + ".ydk");
             if(file.remove())
             {
                 emit refreshLocals();
             }
         }
     }
-}
-
-DeckView::SnapShot DeckView::currentSnapshot()
-{
-    SnapShot snap;
-    toShot(snap.shot[0], mainDeck->getDeck());
-    toShot(snap.shot[1], extraDeck->getDeck());
-    toShot(snap.shot[2], sideDeck->getDeck());
-    snap.deckStatus = deckStatus;
-    return std::move(snap);
-}
-
-void DeckView::loadFinished(int load, ItemThread::Deck deck)
-{
-    waiting = false;
-    if(load == timestamp)
-    {
-        mainDeck->getDeck().swap((*deck)[0]);
-        extraDeck->getDeck().swap((*deck)[1]);
-        sideDeck->getDeck().swap((*deck)[2]);
-
-        setStatus();
-        mainDeck->update();
-        extraDeck->update();
-        sideDeck->update();
-        setReady(true);
-    }
-}
-
-ItemThread::ItemThread(int _ts, QString _lines, DeckView *parent)
-    : QThread(), ts(_ts), lines(_lines), parent(parent)
-{
-    static auto t = qRegisterMetaType<ItemThread::Deck>();
-    Q_UNUSED(t);
-}
-
-Wrapper<Card> ItemThread::loadNewCard(quint32 id)
-{
-    auto it = parent->map.find(id);
-    if(it != parent->map.end())
-    {
-       return cardPool->getCard(it.value());
-    }
-    QEventLoop loop;
-    QString name;
-    Remote remote;
-    loop.connect(&remote, &Remote::cardName, [&](QString text) {
-        name = text;
-    });
-    loop.connect(&remote, static_cast<void (Remote::*)()>(&Remote::finished), &loop, &QEventLoop::quit);
-    remote.getName(id);
-    loop.exec();
-    auto card = cardPool->getNewCard(name, config->waitForPass);
-    call_with_ref([&](Card &card) {
-        parent->map.insert(id, card.id);
-    }, card.copy());
-    return card;
-}
-
-void ItemThread::run()
-{
-    QTextStream in(&lines);
-    bool side = false;
-
-    for(auto i: range(3))
-    {
-        Q_UNUSED(i);
-        decltype(deck)::value_type temp;
-        deck.append(std::move(temp));
-    }
-
-    for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
-    {
-        if(ts != parent->timestamp || !parent->waiting)
-        {
-            return;
-        }
-        if(line.length() > 0)
-        {
-            if(line[0] == '#')
-            {
-                continue;
-            }
-            else if(line[0] == '!')
-            {
-                side = true;
-                continue;
-            }
-            else
-            {
-                bool ok = true;
-                quint32 id = line.toUInt(&ok);
-
-                Wrapper<Card> card;
-                if(ok)
-                {
-                    card = cardPool->getCard(id);
-                    if(card.isNull() && config->convertPass && id >= 10000)
-                    {
-                        card = loadNewCard(id);
-                    }
-                }
-                else
-                {
-                    card = cardPool->getNewCard(line, config->waitForPass);
-                }
-
-                if(ts != parent->timestamp || !parent->waiting)
-                {
-                    return;
-                }
-
-                call_with_ref([&](Card &card) {
-                    id = card.id;
-                    if(side)
-                    {
-                        deck[2].append(CardItem(id));
-                    }
-                    else
-                    {
-                        if(card.inExtra())
-                        {
-                            deck[1].append(CardItem(id));
-                        }
-                        else
-                        {
-                            deck[0].append(CardItem(id));
-                        }
-                    }
-                }, std::move(card));
-            }
-        }
-    }
-    auto ptr = Deck::create();
-    ptr->swap(deck);
-    emit finishLoad(ts, ptr);
 }

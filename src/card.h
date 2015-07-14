@@ -88,6 +88,7 @@ private:
     void loadCard(QSqlQuery&);
     std::unordered_map<quint32, std::unique_ptr<Card> > pool;
     QHash<QString, quint32> newPool;
+    QHash<quint32, quint32> changedMap;
     QHash<quint32, QString> races;
     QHash<quint32, QString> types;
     QHash<quint32, QString> attrs;
@@ -118,9 +119,14 @@ public:
         return attrs;
     }
 
-    auto getMap() -> decltype((pool))
+    auto getPool() -> decltype((pool))
     {
         return pool;
+    }
+
+    auto getMap() -> decltype((changedMap))
+    {
+        return changedMap;
     }
 
     LoadThread *getThread()

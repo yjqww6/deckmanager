@@ -349,7 +349,7 @@ void CardFilter::searchSet(quint32 id)
             };
         }
 
-        auto &map = cardPool->getMap();
+        auto &map = cardPool->getPool();
         auto ls = Type::DeckP::create();
         for(auto &it : map)
         {
@@ -379,7 +379,7 @@ void CardFilter::searchSet(quint32 id)
 
 void CardFilter::searchAll()
 {
-    auto &map = cardPool->getMap();
+    auto &map = cardPool->getPool();
     call_with_pred([&](Pred &&pred) {
         search(keysBegin(map), keysEnd(map), std::move(pred));
     });

@@ -10,7 +10,6 @@
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
 #include <QMimeData>
-#include <algorithm>
 #include <functional>
 #include "carditem.h"
 #include "card.h"
@@ -25,7 +24,7 @@ protected:
 
     void startDrag(int);
 
-    Type::DeckI deck;
+    Type::DeckI &deck;
     QPoint startPos;
     QSize cardSize;
     int row;
@@ -37,7 +36,7 @@ protected:
     int deckSize;
     int current;
 public:
-    explicit DeckWidget(QWidget *parent, int _row, int _column);
+    explicit DeckWidget(QWidget *parent, int _row, int _column, Type::DeckI &_deck);
     ~DeckWidget();
     void paintEvent(QPaintEvent *event);
 
@@ -101,8 +100,6 @@ signals:
     void clickId(quint32);
     void details(quint32);
 public slots:
-    void shuffle();
-    void sort();
     void checkLeave();
 };
 

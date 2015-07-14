@@ -396,6 +396,8 @@ CardsListView::CardsListView(QWidget *parent)
     vbox->addWidget(toolbar);
     vbox->addLayout(hbox, 1);
     setLayout(vbox);
+    label->changeSize(0);
+    updateButtons();
 }
 
 void CardsListView::makeSnapShot()

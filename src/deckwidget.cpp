@@ -3,8 +3,8 @@
 #include <QDebug>
 #include <QApplication>
 
-DeckWidget::DeckWidget(QWidget *parent, int _row, int _column)
-    : QWidget(parent), row(_row), column(_column), currentCardId(0),
+DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, Type::DeckI &_deck)
+    : QWidget(parent), deck(_deck), row(_row), column(_column), currentCardId(0),
       deckSize(-1), current(-1), overlapV(false)
 {
     offset = QSize(3, 3);
@@ -123,19 +123,6 @@ int DeckWidget::itemAt(const QPoint &pos)
         }
     }
     return -1;
-}
-
-void DeckWidget::shuffle()
-{
-    makeSnapShot();
-    std::random_shuffle(deck.begin(), deck.end());
-    update();
-}
-
-void DeckWidget::sort()
-{
-    qSort(deck.begin(), deck.end(), itemCompare);
-    update();
 }
 
 void DeckWidget::checkLeave()

@@ -20,7 +20,7 @@
 #include <QAction>
 #include "card.h"
 #include "carditem.h"
-#include "deckview.h"
+#include "decklabel.h"
 #include "typing.h"
 
 class CardsList : public QWidget
