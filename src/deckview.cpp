@@ -261,6 +261,7 @@ DeckView::DeckView(QWidget *parent)
 
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
+    vbox->setSpacing(1);
     vbox->addWidget(toolbar);
 
     hbox->addWidget(t1);

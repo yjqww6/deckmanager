@@ -17,6 +17,7 @@
 #include <QScrollBar>
 #include <QWheelEvent>
 #include <QtSql/QSqlQuery>
+#include <QAction>
 #include "card.h"
 #include "carditem.h"
 #include "deckview.h"
@@ -93,6 +94,8 @@ class CardsListView : public QWidget
     Q_OBJECT
 private:
     CardsList *cl;
+    QAction *undoAction, *redoAction;
+    QList<Type::Deck> undoSnapShots, redoSnapShots;
 public:
     CardsListView(QWidget *parent);
     auto getList() -> decltype((cl->getList()))
@@ -111,10 +114,7 @@ signals:
     void details(quint32);
 public slots:
 
-    void setCards(Type::DeckP cards)
-    {
-        cl->setCards(cards);
-    }
+    void setCards(Type::DeckP cards);
 
     void setCurrentCardId(quint32 id)
     {
@@ -131,6 +131,11 @@ private slots:
     {
         emit currentIdChanged(id);
     }
+
+    void updateButtons();
+    void makeSnapShot();
+    void undo();
+    void redo();
 };
 
 #endif // CARDSVIEW_H

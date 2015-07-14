@@ -34,14 +34,6 @@ MainWindow::MainWindow(QWidget *parent)
     auto deckListView = new DeckListView;
     auto deckView = new DeckView(nullptr);
     auto cardListView = new CardsListView(nullptr);
-    if(config->bg)
-    {
-        cardListView->setStyleSheet("color: white; font-size: 15px");
-    }
-    else
-    {
-        cardListView->setStyleSheet("font-size: 15px");
-    }
 
     auto cardDetails = new CardDetails;
     auto localList = new LocalList;

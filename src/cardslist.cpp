@@ -2,6 +2,7 @@
 #include "limitcards.h"
 #include "draghelper.h"
 #include "range.h"
+#include <QToolBar>
 #include <QDebug>
 
 CardsList::CardsList(QWidget *parent)
@@ -349,8 +350,25 @@ CardsListView::CardsListView(QWidget *parent)
     cl = new CardsList(nullptr);
     auto sb = new QScrollBar;
 
+    auto toolbar = new QToolBar;
+    undoAction = new QAction(this);
+    undoAction->setToolTip(config->getStr("action", "undo", ""));
+    undoAction->setIcon(QIcon(":/icons/left.png"));
+    redoAction = new QAction(this);
+    redoAction->setToolTip(config->getStr("action", "redo", ""));
+    redoAction->setIcon(QIcon(":/icons/right.png"));
+
+    toolbar->addAction(undoAction);
+    toolbar->addAction(redoAction);
+
     auto label = new DeckSizeLabel(config->getStr("label", "number", "数目"));
-    label->setAlignment(Qt::AlignRight);
+    label->setAlignment(Qt::AlignVCenter |  Qt::AlignRight);
+
+    toolbar->addSeparator();
+    auto spacer = new QWidget;
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    toolbar->addWidget(spacer);
+    toolbar->addWidget(label);
 
     cl->setScrollBar(sb);
 
@@ -358,11 +376,83 @@ CardsListView::CardsListView(QWidget *parent)
     connect(cl, &CardsList::sizeChanged, label, &DeckSizeLabel::changeSize);
     connect(cl, &CardsList::clickId, this, &CardsListView::clickId);
     connect(cl, &CardsList::details, this, &CardsListView::details);
+    connect(undoAction, &QAction::triggered, this, &CardsListView::undo);
+    connect(redoAction, &QAction::triggered, this, &CardsListView::redo);
+
+    toolbar->setStyleSheet("color: black; font-size: 12px");
+    if(config->bg)
+    {
+        cl->setStyleSheet("color: white; font-size: 15px");
+        label->setStyleSheet("color: white; font-size: 15px");
+    }
+    else
+    {
+        cl->setStyleSheet("font-size: 15px");
+        label->setStyleSheet("color: white; font-size: 15px");
+    }
 
     hbox->addWidget(cl);
     hbox->addWidget(sb);
-    vbox->addWidget(label);
+    vbox->addWidget(toolbar);
     vbox->addLayout(hbox, 1);
     setLayout(vbox);
 }
 
+void CardsListView::makeSnapShot()
+{
+    redoSnapShots.clear();
+    if(undoSnapShots.size() >= 5)
+    {
+        undoSnapShots.pop_front();
+    }
+    undoSnapShots.append(cl->getList());
+}
+
+void CardsListView::updateButtons()
+{
+    undoAction->setEnabled(undoSnapShots.size() > 0);
+    redoAction->setEnabled(redoSnapShots.size() > 0);
+}
+
+void CardsListView::setCards(Type::DeckP cards)
+{
+    makeSnapShot();
+    cl->setCards(cards);
+    updateButtons();
+}
+
+void CardsListView::undo()
+{
+    if(undoSnapShots.size() == 0)
+    {
+        return;
+    }
+    Type::Deck temp;
+    temp.swap(cl->getList());
+    redoSnapShots.append(std::move(temp));
+
+    auto ptr = Type::DeckP::create();
+    ptr->swap(undoSnapShots.back());
+    undoSnapShots.pop_back();
+
+    cl->setCards(ptr);
+    updateButtons();
+}
+
+void CardsListView::redo()
+{
+    if(redoSnapShots.size() == 0)
+    {
+        return;
+    }
+    Type::Deck temp;
+    temp.swap(cl->getList());
+    undoSnapShots.append(std::move(temp));
+
+    auto ptr = Type::DeckP::create();
+    ptr->swap(redoSnapShots.back());
+    redoSnapShots.pop_back();
+
+    cl->setCards(ptr);
+    updateButtons();
+}
