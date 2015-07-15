@@ -165,7 +165,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     tabbar->setStyleSheet("QTabBar::tab{height: "
                           + QString::number(fh) +
                           "px; color: black; font-size: 12px;"
-                          "min-width: 120px}"
+                          "min-width: 120px; height: 24px}"
                           "QTabBar{background: rgba(255, 255, 255, 180)}");
     tabbar->setElideMode(Qt::ElideMiddle);
     tabbar->setMovable(true);
