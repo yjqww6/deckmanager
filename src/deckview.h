@@ -100,7 +100,7 @@ public slots:
 
     void abort()
     {
-        getCurrentModel().waiting = false;
+        getCurrentModel().abort();
         setReady(true);
     }
 
@@ -112,6 +112,7 @@ public slots:
     }
 
     void newTab();
+    void loadRemoteDeck(QString, QString);
 private slots:
 
     void setReady(bool t)

@@ -46,8 +46,7 @@ public:
     DeckListView(QWidget *parent = 0);
 
 signals:
-    void deckStream(QString, QString, bool);
-
+    void selectDeck(QString, QString);
 public slots:
     void setList(Type::DeckL);
     void getList()

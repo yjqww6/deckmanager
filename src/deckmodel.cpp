@@ -14,6 +14,7 @@ DeckModel::DeckModel(QObject *parent)
     extraDeck = QSharedPointer<Type::DeckI>::create();
     sideDeck = QSharedPointer<Type::DeckI>::create();
     id = ++counter;
+    connect(&remote, &Remote::deckStream, this, &DeckModel::loadDeckInternal);
 }
 
 static void toShot(Type::Deck &shot, Type::DeckI& items)
@@ -132,12 +133,46 @@ void DeckModel::shuffle()
     std::random_shuffle(mainDeck->begin(), mainDeck->end());
 }
 
+void DeckModel::abort()
+{
+    waiting = false;
+    remote.abort();
+}
+
+void DeckModel::loadRemoteDeck(QString _id, QString name)
+{
+    if(waiting)
+    {
+        return;
+    }
+    waiting = true;
+    emit ready(id, false);
+    remote.getDeck(_id, name);
+}
+
+QString DeckModel::status()
+{
+
+    QString stat;
+    stat += "[" + (deckStatus.isLocal ? config->getStr("label", "local", "本地")
+                                      : config->getStr("label", "temp", "临时")) + "]";
+    stat += deckStatus.name;
+    stat += deckStatus.modified ? ("[" + config->getStr("label", "modified", "已修改") + "]") : "";
+    return stat;
+}
+
 void DeckModel::loadDeck(QString lines, QString _name, bool local)
 {
     if(waiting)
     {
         return;
     }
+    loadDeckInternal(lines, _name, local);
+}
+
+void DeckModel::loadDeckInternal(QString lines, QString _name, bool local)
+{
+
     int ts = ++timestamp;
     makeSnapShot(false);
 

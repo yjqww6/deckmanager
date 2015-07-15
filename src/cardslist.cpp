@@ -379,16 +379,16 @@ CardsListView::CardsListView(QWidget *parent)
     connect(undoAction, &QAction::triggered, this, &CardsListView::undo);
     connect(redoAction, &QAction::triggered, this, &CardsListView::redo);
 
-    toolbar->setStyleSheet("color: black; font-size: 12px");
+    toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
     if(config->bg)
     {
-        cl->setStyleSheet("color: white; font-size: 15px");
-        label->setStyleSheet("color: white; font-size: 15px");
+        cl->setStyleSheet("QWidget{color: white; font-size: 15px}");
+        label->setStyleSheet("QLabel{color: white; font-size: 15px}");
     }
     else
     {
-        cl->setStyleSheet("font-size: 15px");
-        label->setStyleSheet("color: white; font-size: 15px");
+        cl->setStyleSheet("QWidget{font-size: 15px}");
+        label->setStyleSheet("QLabel{color: white; font-size: 15px}");
     }
 
     hbox->addWidget(cl);

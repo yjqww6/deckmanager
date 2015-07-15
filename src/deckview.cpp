@@ -34,6 +34,24 @@ void DeckView::modelRefresh(int modelId)
         {
             refresh();
         }
+        else
+        {
+            QString stat;
+            foreach(auto it, models)
+            {
+                if(it->id == modelId)
+                {
+                    stat = it->status();
+                    break;
+                }
+            }
+
+            int i = getTabIndexById(modelId);
+            if(i != -1)
+            {
+                tabbar->setTabText(i, stat);
+            }
+        }
     }
 }
 
@@ -102,6 +120,11 @@ void DeckView::newTab()
     refresh();
 }
 
+void DeckView::loadRemoteDeck(QString id, QString name)
+{
+    getCurrentModel().loadRemoteDeck(id, name);
+}
+
 void DeckView::closeTab(int index)
 {
     if(tabbar->count() <= 1)
@@ -141,12 +164,14 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     int fh = tabbar->fontMetrics().height() + 5;
     tabbar->setStyleSheet("QTabBar::tab{height: "
                           + QString::number(fh) +
-                          "px; color: black; font-size: 12px}");
+                          "px; color: black; font-size: 12px;"
+                          "min-width: 120px}"
+                          "QTabBar{background: rgba(255, 255, 255, 180)}");
+    tabbar->setElideMode(Qt::ElideMiddle);
     tabbar->setMovable(true);
-    tabbar->setDrawBase(false);
 
     toolbar = new QToolBar;
-    toolbar->setStyleSheet("color: black; font-size: 12px");
+    toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
 
     undoAction = new QAction(toolbar);
     undoAction->setIcon(QIcon(":/icons/undo.png"));
@@ -366,11 +391,11 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     if(config->bg)
     {
 
-        ss = "color: white; font-size: 16px}";
+        ss = "QWidget{color: white; font-size: 16px}";
     }
     else
     {
-        ss = "font-size: 16px";
+        ss = "QWidget{font-size: 16px}";
     }
 
     mainDeck->setStyleSheet(ss);
@@ -511,12 +536,7 @@ void DeckView::setStatus()
 {
     auto &model = getCurrentModel();
     QString prefix = "deckmanager - by qww6 ";
-    QString stat;
-    stat += "[" + (model.deckStatus.isLocal ? config->getStr("label", "local", "本地")
-                                      : config->getStr("label", "temp", "临时")) + "]";
-    stat += model.deckStatus.name;
-    stat += model.deckStatus.modified ? ("[" + config->getStr("label", "modified", "已修改") + "]") : "";
-
+    QString stat = model.status();
     int i = getTabIndexById(model.id);
     if(i != -1)
     {
@@ -535,7 +555,7 @@ void DeckView::refresh()
 
     undoAction->setEnabled(model.snapshots.size() > 0);
     redoAction->setEnabled(model.redoSnapshots.size() > 0);
-
+    setReady(!model.waiting);
     setStatus();
 }
 

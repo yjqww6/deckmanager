@@ -136,11 +136,9 @@ DeckListView::DeckListView(QWidget *parent)
     connect(prevButton, &IconButton::clicked, this, &DeckListView::prevPage);
     connect(goButton, &IconButton::clicked, this, &DeckListView::goPage);
 
-    connect(decklist, &DeckList::selectDeck, &remote, &Remote::getDeck);
-    connect(&remote, &Remote::deckStream, this, &DeckListView::deckStream);
-
     connect(&remote, &Remote::list, decklist, &DeckList::setList);
     connect(&remote, &Remote::ready, abortButton, &IconButton::setDisabled);
+    connect(decklist, &DeckList::selectDeck, this, &DeckListView::selectDeck);
     connect(abortButton, &IconButton::clicked, &remote, &Remote::abort);
 
 

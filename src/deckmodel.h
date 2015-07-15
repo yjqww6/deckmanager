@@ -3,6 +3,7 @@
 #include <QObject>
 #include "typing.h"
 #include "card.h"
+#include "remote.h"
 #include <functional>
 
 
@@ -88,14 +89,20 @@ public:
     void newDeck();
     void sort();
     void shuffle();
+    void abort();
+
+    void loadRemoteDeck(QString id, QString name);
     void loadDeck(QString lines, QString _name, bool local);
+    void loadDeckInternal(QString lines, QString _name, bool local);
     void saveDeck(QString path);
+    QString status();
 
     int id;
     QSharedPointer<Type::DeckI> mainDeck, extraDeck, sideDeck;
     QList<SnapShot> snapshots, redoSnapshots;
     int timestamp;
     bool waiting;
+    Remote remote;
 
     static int counter;
 signals:

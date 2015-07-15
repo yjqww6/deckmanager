@@ -68,8 +68,8 @@ MainWindow::MainWindow(QWidget *parent)
     dialog = new ScriptView(this);
 
     tab = new MTabWidget;
-    tab->setStyleSheet("font-size: 13px;");
-    cardDetails->setStyleSheet("font-size: 15px");
+    tab->setStyleSheet("QWidget{font-size: 13px}");
+    cardDetails->setStyleSheet("QWidget{font-size: 15px}");
 
     connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
     connect(deckView, &DeckView::clickId, filter, &CardFilter::searchSet);
@@ -89,7 +89,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
 
-    connect(deckListView, &DeckListView::deckStream, deckView, &DeckView::loadDeck);
+    connect(deckListView, &DeckListView::selectDeck, deckView, &DeckView::loadRemoteDeck);
     connect(localList, &LocalList::deckStream, deckView, &DeckView::loadDeck);
     connect(localList, &LocalList::saveDeck, deckView, &DeckView::saveDeck);
     connect(filter, &CardFilter::result, cardListView, &CardsListView::setCards);
@@ -154,7 +154,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto newButton = new QPushButton;
     newButton->setIcon(QIcon(":/icons/add.png"));
     newButton->setToolTip(config->getStr("action", "new", "新建"));
-    newButton->setStyleSheet("font-size:12px");
+    newButton->setStyleSheet("QToolTip{font-size:12px}");
     newButton->setFixedWidth(32);
     newButton->setFlat(true);
     hboxtop->addWidget(newButton);
@@ -168,6 +168,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto widgettop = new QWidget;
     vboxtop->setMargin(0);
     vboxtop->setSpacing(0);
+    hboxtop->setSpacing(0);
 
     widgettop->setLayout(vboxtop);
     setCentralWidget(widgettop);
