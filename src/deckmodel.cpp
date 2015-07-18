@@ -8,7 +8,7 @@
 int DeckModel::counter = 0;
 
 DeckModel::DeckModel(QObject *parent)
-    : QObject(parent), timestamp(0), waiting(false)
+    : QObject(parent), timestamp(0), waiting(false), fresh(false)
 {
     mainDeck = QSharedPointer<Type::DeckI>::create();
     extraDeck = QSharedPointer<Type::DeckI>::create();
@@ -64,6 +64,7 @@ void DeckModel::makeSnapShot(bool mod)
     redoSnapshots.clear();
     snapshots.push_front(currentSnapshot());
 
+    fresh = false;
     if(mod)
     {
         deckStatus.modified = true;
@@ -102,18 +103,6 @@ void DeckModel::redo()
 void DeckModel::clear()
 {
     makeSnapShot();
-    mainDeck->clear();
-    extraDeck->clear();
-    sideDeck->clear();
-}
-
-void DeckModel::newDeck()
-{
-
-    makeSnapShot(false);
-    deckStatus.name = "";
-    deckStatus.isLocal = false;
-    deckStatus.modified = false;
     mainDeck->clear();
     extraDeck->clear();
     sideDeck->clear();
@@ -183,7 +172,7 @@ void DeckModel::loadDeckInternal(QString lines, QString _name, bool local)
 
     deckStatus.name = _name;
     deckStatus.isLocal = local;
-    deckStatus.modified = !local;
+    deckStatus.modified = false;
 
     waiting = true;
     emit ready(id, false);

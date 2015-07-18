@@ -151,17 +151,24 @@ MainWindow::MainWindow(QWidget *parent)
     auto vboxtop = new QVBoxLayout;
     hboxtop->addWidget(modelTabBar);
 
-    auto newButton = new QPushButton;
-    newButton->setIcon(QIcon(":/icons/add.png"));
-    newButton->setToolTip(config->getStr("action", "new", "新建"));
-    newButton->setStyleSheet("QToolTip{font-size:12px}");
-    newButton->setFixedWidth(32);
-    newButton->setFlat(true);
-    hboxtop->addWidget(newButton);
+
+    auto toolbar = new QToolBar;
+
+    auto newAction = new QAction(toolbar);
+    newAction->setIcon(QIcon(":/icons/add.png"));
+    newAction->setToolTip(config->getStr("action", "new", "新建"));
+
+    toolbar->setStyleSheet("QToolTip{font-size:12px}QToolBar{background: rgba(255, 255, 255, 200)}");
+    toolbar->setFixedHeight(24);
+    toolbar->addAction(newAction);
+
+    connect(newAction, &QAction::triggered, deckView, &DeckView::newTab);
+
     auto spacer = new QWidget;
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    hboxtop->addWidget(spacer);
-    connect(newButton, &QPushButton::clicked, deckView, &DeckView::newTab);
+    toolbar->addWidget(spacer);
+
+    hboxtop->addWidget(toolbar);
 
     vboxtop->addLayout(hboxtop);
     vboxtop->addWidget(sp, 1);

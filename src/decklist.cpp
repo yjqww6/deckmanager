@@ -9,10 +9,14 @@ DeckList::DeckList(QWidget *parent)
 {
     popup = new QMenu(this);
     auto sameAction = new QAction(popup);
+    auto newTabAction = new QAction(popup);
     sameAction->setText(config->getStr("action", "same", "同类卡组"));
+    newTabAction->setText(config->getStr("action", "newtab", "在新标签页打开"));
     popup->addAction(sameAction);
+    popup->addAction(newTabAction);
 
     connect(sameAction, &QAction::triggered, this, &DeckList::same);
+    connect(newTabAction, &QAction::triggered, this, &DeckList::newTab);
     connect(this, &DeckList::itemClicked, this, &DeckList::onItem);
     connect(this, &DeckList::itemDoubleClicked, this, &DeckList::openURL);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -66,7 +70,7 @@ void DeckList::onItem(QListWidgetItem *item)
 {
     QVariantList vls = item->data(Qt::UserRole).toList();
     QString id = vls[0].toString();
-    emit selectDeck(id, item->text());
+    emit selectDeck(id, item->text(), false);
 }
 
 void DeckList::openURL(QListWidgetItem* item)
@@ -74,6 +78,18 @@ void DeckList::openURL(QListWidgetItem* item)
     QString id = item->data(Qt::UserRole).toList()[0].toString();
     QUrl url(config->getCurrentRemote().openurl.replace("~0", id));
     QDesktopServices::openUrl(url);
+}
+
+void DeckList::newTab()
+{
+    auto item = menuItem;
+    if(!item)
+    {
+        return;
+    }
+    QVariantList vls = item->data(Qt::UserRole).toList();
+    QString id = vls[0].toString();
+    emit selectDeck(id, item->text(), true);
 }
 
 DeckListView::DeckListView(QWidget *parent)

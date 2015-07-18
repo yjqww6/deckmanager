@@ -76,7 +76,8 @@ signals:
 
 public slots:
 
-    void loadDeck(QString, QString, bool);
+    void loadDeck(QString, QString, bool, bool);
+    void loadRemoteDeck(QString, QString, bool);
     void saveDeck(QString);
     void saveSlot();
 
@@ -92,7 +93,6 @@ public slots:
     void makeSnapShot(bool mod = true);
     void undo();
     void redo();
-    void newDeck();
     void deleteDeck();
 
     void setStatus();
@@ -112,7 +112,6 @@ public slots:
     }
 
     void newTab();
-    void loadRemoteDeck(QString, QString);
 private slots:
 
     void setReady(bool t)

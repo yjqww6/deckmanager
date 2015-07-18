@@ -1,6 +1,7 @@
 #include "locallist.h"
 #include "iconbutton.h"
 #include "config.h"
+#include <QMessageBox>
 #include <QDebug>
 
 LocalList::LocalList(QWidget *parent)
@@ -14,6 +15,13 @@ LocalList::LocalList(QWidget *parent)
     buttonSave = new IconButton(":/icons/saveas.png", config->getStr("action", "saveas", "另存为"));
     buttonRefresh = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
 
+    popup = new QMenu(this);
+    auto newTabAction = new QAction(popup);
+    newTabAction->setText(config->getStr("action", "newtab", "在新标签页打开"));
+    auto deleteAction = new QAction(popup);
+    deleteAction->setText(config->getStr("action", "delete", "删除卡组"));
+    popup->addAction(newTabAction);
+    popup->addAction(deleteAction);
 
     vbox->addWidget(listWidget);
     hbox->addWidget(pathEdit);
@@ -23,10 +31,29 @@ LocalList::LocalList(QWidget *parent)
     setLayout(vbox);
 
     connect(buttonRefresh, &IconButton::clicked, this, &LocalList::refresh);
-    connect(listWidget, &QListWidget::itemClicked, this, &LocalList::deckStreamTrans);
+    connect(listWidget, &QListWidget::itemClicked, [=](QListWidgetItem *item) {
+        sendDeck(item, false);
+    });
     connect(listWidget, &QListWidget::itemClicked, this, &LocalList::itemName);
     connect(buttonSave, &IconButton::clicked, this, &LocalList::saveDeckTrans);
+    connect(newTabAction, &QAction::triggered, [=]() {
+        if(menuItem)
+        {
+            sendDeck(menuItem, true);
+        }
+    });
+    connect(deleteAction, &QAction::triggered, this, &LocalList::deleteDeck);
 }
+
+void LocalList::contextMenuEvent(QContextMenuEvent *)
+{
+    menuItem = listWidget->itemAt(listWidget->mapFromGlobal(QCursor::pos()));
+    if(menuItem)
+    {
+        popup->exec(QCursor::pos());
+    }
+}
+
 
 void LocalList::refresh()
 {
@@ -49,18 +76,37 @@ void LocalList::itemName(QListWidgetItem *item)
     pathEdit->setText(path);
 }
 
-void LocalList::deckStreamTrans(QListWidgetItem *item)
+void LocalList::sendDeck(QListWidgetItem *item, bool newTab)
 {
     QString path = item->data(Qt::UserRole).toString();
     QFile file(path);
     if(file.open(QFile::ReadOnly))
     {
         QString str = file.readAll();
-        emit deckStream(str, QFileInfo(file).completeBaseName(), true);
+        emit deckStream(str, QFileInfo(file).completeBaseName(), true, newTab);
         file.close();
     }
 }
 
+void LocalList::deleteDeck()
+{
+    if(menuItem)
+    {
+        QString path = menuItem->data(Qt::UserRole).toString();
+        QFile file(path);
+        if(QMessageBox::question(nullptr, config->getStr("label", "warning", "警告"),
+                                 config->getStr("label", "delete_p", "是否要删除卡组:")
+                                 + QFileInfo(file).completeBaseName() + "?",
+                                 QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes)
+                == QMessageBox::Yes)
+        {
+            if(file.remove())
+            {
+                refresh();
+            }
+        }
+    }
+}
 
 void LocalList::saveDeckTrans()
 {

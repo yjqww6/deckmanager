@@ -25,7 +25,7 @@ public:
     ~DeckList();
     void contextMenuEvent(QContextMenuEvent *);
 signals:
-    void selectDeck(QString, QString);
+    void selectDeck(QString, QString, bool);
     void deckType(QString);
 public slots:
     void setList(Type::DeckL);
@@ -33,6 +33,7 @@ private slots:
     void onItemChanged();
     void onItem(QListWidgetItem *);
     void openURL(QListWidgetItem*);
+    void newTab();
     void same();
 private:
     QMenu *popup;
@@ -46,7 +47,7 @@ public:
     DeckListView(QWidget *parent = 0);
 
 signals:
-    void selectDeck(QString, QString);
+    void selectDeck(QString, QString, bool);
 public slots:
     void setList(Type::DeckL);
     void getList()

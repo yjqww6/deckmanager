@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QTextStream>
+#include <QMenu>
 #include <QDir>
 
 class LocalList : public QWidget
@@ -17,8 +18,9 @@ public:
     explicit LocalList(QWidget *parent = 0);
     ~LocalList();
 
+    void contextMenuEvent(QContextMenuEvent *);
 signals:
-    void deckStream(QString, QString, bool);
+    void deckStream(QString, QString, bool, bool);
     void saveDeck(QString);
 public slots:
     void refresh();
@@ -30,14 +32,17 @@ public slots:
     }
 
 private slots:
-    void deckStreamTrans(QListWidgetItem *);
+    void sendDeck(QListWidgetItem *, bool);
     void saveDeckTrans();
     void itemName(QListWidgetItem *);
+    void deleteDeck();
 private:
     QListWidget *listWidget;
     QLineEdit *pathEdit;
     QPushButton *buttonSave;
     QPushButton *buttonRefresh;
+    QListWidgetItem *menuItem;
+    QMenu *popup;
 };
 
 #endif // LOCALLIST_H

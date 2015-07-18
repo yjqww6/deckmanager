@@ -120,16 +120,11 @@ void DeckView::newTab()
     refresh();
 }
 
-void DeckView::loadRemoteDeck(QString id, QString name)
-{
-    getCurrentModel().loadRemoteDeck(id, name);
-}
-
 void DeckView::closeTab(int index)
 {
     if(tabbar->count() <= 1)
     {
-        return;
+        addModel();
     }
     int id = tabbar->tabData(index).toInt();
 
@@ -166,7 +161,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
                           + QString::number(fh) +
                           "px; color: black; font-size: 12px;"
                           "min-width: 120px; height: 24px}"
-                          "QTabBar{background: rgba(255, 255, 255, 180)}");
+                          "QTabBar{background: rgba(255, 255, 255, 200)}");
     tabbar->setElideMode(Qt::ElideMiddle);
     tabbar->setMovable(true);
 
@@ -185,11 +180,6 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
     toolbar->addSeparator();
 
-    auto newAction = new QAction(toolbar);
-    newAction->setIcon(QIcon(":/icons/new.png"));
-    newAction->setToolTip(config->getStr("action", "new", "新建"));
-    toolbar->addAction(newAction);
-
     auto saveAction = new QAction(toolbar);
     saveAction->setIcon(QIcon(":/icons/save.png"));
     saveAction->setToolTip(config->getStr("action", "save", "保存"));
@@ -200,22 +190,21 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     saveAsAction->setToolTip(config->getStr("action", "saveas", "另存为"));
     toolbar->addAction(saveAsAction);
 
-    auto printAction = new QAction(toolbar);
-    printAction->setIcon(QIcon(":/icons/print.png"));
-    printAction->setToolTip(config->getStr("action", "print", "截图"));
-    toolbar->addAction(printAction);
 
     auto menu = new QMenu;
-    auto textAction1 = new QAction("A", this);
+
+    auto printAction = new QAction(config->getStr("action", "print", "截图"), menu);
+    menu->addAction(printAction);
+
+    auto textAction1 = new QAction(config->getStr("action", "text", "文字卡表") + " A", menu);
     menu->addAction(textAction1);
-    auto textAction2 = new QAction("[A]", this);
+    auto textAction2 = new QAction(config->getStr("action", "text", "文字卡表") + " [A]", menu);
     menu->addAction(textAction2);
-    auto textAction3 = new QAction("n A", this);
+    auto textAction3 = new QAction(config->getStr("action", "text", "文字卡表") + " n A", menu);
     menu->addAction(textAction3);
 
     auto toolButton = new QToolButton();
-    toolButton->setIcon(QIcon(":/icons/text.png"));
-    toolButton->setToolTip(config->getStr("action", "text", "文字卡表"));
+    toolButton->setIcon(QIcon(":/icons/print.png"));
     toolButton->setMenu(menu);
     toolButton->setPopupMode(QToolButton::InstantPopup);
     toolbar->addWidget(toolButton);
@@ -356,7 +345,6 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     connect(saveAsAction, &QAction::triggered, [this]() {
         emit save(getCurrentModel().deckStatus.name);
     });
-    connect(newAction, &QAction::triggered, this, &DeckView::newDeck);
     connect(deleteAction, &QAction::triggered, this, &DeckView::deleteDeck);
     connect(abortAction, &QAction::triggered, this, &DeckView::abort);
     connect(homeAction, &QAction::triggered, this, &DeckView::home);
@@ -409,6 +397,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
+    vbox->setContentsMargins(5, 0, 5, 5);
     vbox->setSpacing(2);
 
     tabbar->setTabsClosable(true);
@@ -431,9 +420,19 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     refresh();
 }
 
-void DeckView::loadDeck(QString lines, QString _name, bool local)
+void DeckView::loadRemoteDeck(QString id, QString name, bool newTab)
 {
-    if(config->newTab)
+    if(newTab || config->newTab)
+    {
+        addModel();
+        tabbar->setCurrentIndex(tabbar->count() - 1);
+    }
+    getCurrentModel().loadRemoteDeck(id, name);
+}
+
+void DeckView::loadDeck(QString lines, QString _name, bool local, bool newTab)
+{
+    if(newTab || config->newTab)
     {
         addModel();
         tabbar->setCurrentIndex(tabbar->count() - 1);
@@ -517,12 +516,6 @@ void DeckView::undo()
 void DeckView::redo()
 {
     getCurrentModel().redo();
-    refresh();
-}
-
-void DeckView::newDeck()
-{
-    getCurrentModel().newDeck();
     refresh();
 }
 

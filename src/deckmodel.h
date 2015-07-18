@@ -38,11 +38,11 @@ public:
     class DeckStatus
     {
     public:
-        DeckStatus() : isLocal(false), modified(false) {}
+        DeckStatus() : isLocal(false), modified(false), fresh(false) {}
         DeckStatus(const DeckStatus &other)
-            : isLocal(other.isLocal), modified(other.modified), name(other.name)
+            : isLocal(other.isLocal), modified(other.modified), fresh(other.fresh), name(other.name)
         {}
-        bool isLocal, modified;
+        bool isLocal, modified, fresh;
         QString name;
     } deckStatus;
 
@@ -86,7 +86,6 @@ public:
     void undo();
     void redo();
     void clear();
-    void newDeck();
     void sort();
     void shuffle();
     void abort();
@@ -102,6 +101,7 @@ public:
     QList<SnapShot> snapshots, redoSnapshots;
     int timestamp;
     bool waiting;
+    bool fresh;
     Remote remote;
 
     static int counter;
