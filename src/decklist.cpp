@@ -76,7 +76,8 @@ void DeckList::onItem(QListWidgetItem *item)
 void DeckList::openURL(QListWidgetItem* item)
 {
     QString id = item->data(Qt::UserRole).toList()[0].toString();
-    QUrl url(config->getCurrentRemote().openurl.replace("~0", id));
+    QString openurl = config->getCurrentRemote().openurl;
+    QUrl url(openurl.replace("~0", id));
     QDesktopServices::openUrl(url);
 }
 
