@@ -422,7 +422,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
 void DeckView::loadRemoteDeck(QString id, QString name, bool newTab)
 {
-    if(newTab || config->newTab)
+    if(newTab || (!getCurrentModel().fresh && config->newTab))
     {
         addModel();
         tabbar->setCurrentIndex(tabbar->count() - 1);
@@ -432,7 +432,7 @@ void DeckView::loadRemoteDeck(QString id, QString name, bool newTab)
 
 void DeckView::loadDeck(QString lines, QString _name, bool local, bool newTab)
 {
-    if(newTab || config->newTab)
+    if(newTab || (!getCurrentModel().fresh && config->newTab))
     {
         addModel();
         tabbar->setCurrentIndex(tabbar->count() - 1);

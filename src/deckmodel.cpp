@@ -8,7 +8,7 @@
 int DeckModel::counter = 0;
 
 DeckModel::DeckModel(QObject *parent)
-    : QObject(parent), timestamp(0), waiting(false), fresh(false)
+    : QObject(parent), timestamp(0), waiting(false), fresh(true)
 {
     mainDeck = QSharedPointer<Type::DeckI>::create();
     extraDeck = QSharedPointer<Type::DeckI>::create();

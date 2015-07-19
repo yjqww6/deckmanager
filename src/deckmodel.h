@@ -4,6 +4,7 @@
 #include "typing.h"
 #include "card.h"
 #include "remote.h"
+#include <QAtomicInt>
 #include <functional>
 
 
@@ -99,7 +100,7 @@ public:
     int id;
     QSharedPointer<Type::DeckI> mainDeck, extraDeck, sideDeck;
     QList<SnapShot> snapshots, redoSnapshots;
-    int timestamp;
+    QAtomicInt timestamp;
     bool waiting;
     bool fresh;
     Remote remote;
