@@ -3,14 +3,13 @@
 #include <QDebug>
 
 Config *config = nullptr;
-RemoteConfig tempRemoteConfig("Temp");
 
 Config::Config(QObject *parent)
-    : QObject(parent), remote(0)
+    : QObject(parent)
 {
     QSettings settings("dmconfig.ini", QSettings::IniFormat);
     settings.setIniCodec("utf8");
-    QStringList groups = settings.value("remote/groups", QStringList()).toStringList();
+
     foreach(auto group, settings.childGroups())
     {
         settings.beginGroup(group);
@@ -27,55 +26,40 @@ Config::Config(QObject *parent)
     limit = getStr("pref", "limit", "0").toInt();
     QFileInfo info(QFile(getStr("pref", "bg", "")));
     bg = info.exists();
+    deckType = 0;
+    Flt = 0;
 
-    foreach(auto group, groups)
+    settings.beginGroup("Flt");
+    foreach(QString key, settings.childKeys())
     {
-        QString parent = getStr(group, "parent", "");
-        if(parent.isEmpty())
+        Flts.append(qMakePair(key.toInt(), settings.value(key).toString()));
+    }
+
+    remoteConfig.set(mappings, "remote");
+
+    QFile file("decktype.ini");
+    if(file.open(QFile::ReadOnly))
+    {
+        QTextStream in(&file);
+        for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
         {
-            remoteConfigs.append(RemoteConfig(mappings, group, nullptr));
-        }
-        else
-        {
-            RemoteConfig rc(parent);
-            auto it = qFind(remoteConfigs.begin(), remoteConfigs.end(), rc);
-            if(it != remoteConfigs.end())
+            int i = line.indexOf('=');
+            if(i >= 0 && line.length() > (i + 1))
             {
-                remoteConfigs.append(RemoteConfig(mappings, group, &(*it)));
+                int deckType = line.left(i).toInt();
+                QString name = line.mid(i + 1);
+                deckTypes.append(qMakePair(deckType, name));
             }
         }
     }
 }
 
-RemoteConfig::RemoteConfig(QString group)
+RemoteConfig::RemoteConfig()
 {
-    id = group;
-    str = group;
+
 }
 
-RemoteConfig& RemoteConfig::operator =(const RemoteConfig &other)
-{
-    id = other.id;
-    str = other.str;
-    codec = other.codec;
-    getlist = other.getlist;
-    getlistparam = other.getlistparam;
-    finishlist = other.finishlist;
-    deckname = other.deckname;
-    deckid = other.deckid;
-    decktype = other.decktype;
-    decktooltip = other.decktooltip;
-    getdeck = other.getdeck;
-    finishdeck = other.finishdeck;
-    deck = other.deck;
-    getname = other.getname;
-    finishname = other.finishname;
-    name = other.name;
-    openurl = other.openurl;
-    return *this;
-}
-
-RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
+void RemoteConfig::set(Map &mappings, QString group)
 {
     auto finder = [&](QString key) -> QString {
         QString ckey = group + "/" + key;
@@ -92,25 +76,13 @@ RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
 
 #define FILL(field) \
     do {\
-        QString found = finder(#field);\
-        if(found.isNull() || found.isEmpty())\
-        {\
-            if(parent)\
-            {\
-                field = parent->field;\
-            }\
-        }\
-        else\
-        {\
-            field = found;\
-        }\
+        field = finder(#field);\
     } while(false)
 
-    id = group;
-    FILL(str);
     FILL(codec);
     FILL(getlist);
     FILL(getlistparam);
+    FILL(getlistparamwithdecktype);
     FILL(finishlist);
     FILL(deckname);
     FILL(deckid);
@@ -125,22 +97,9 @@ RemoteConfig::RemoteConfig(Map &mappings, QString group, RemoteConfig *parent)
     FILL(openurl);
 }
 
-RemoteConfig bad("bad");
-
 RemoteConfig& Config::getCurrentRemote()
 {
-    if(remote >= 0 && remote < remoteConfigs.size())
-    {
-        return remoteConfigs[remote];
-    }
-    else if(remote == -1)
-    {
-        return tempRemoteConfig;
-    }
-    else
-    {
-        return bad;
-    }
+    return remoteConfig;
 }
 
 QString Config::getStr(QString group, QString key, QString defaultStr)
@@ -181,11 +140,6 @@ void Config::setConvertPass(bool t)
 void Config::setLimit(int i)
 {
     limit = i;
-}
-
-void Config::setRemote(int i)
-{
-    remote = i;
 }
 
 void Config::setAutoSwitch(bool t)

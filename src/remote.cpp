@@ -54,6 +54,35 @@ void Remote::error(QNetworkReply::NetworkError err)
     qDebug() << err << reply->errorString();
 }
 
+static QString request(int decktype, int flt)
+{
+    QString param;
+    if(flt == -1)
+    {
+        return config->tempConfig;
+    }
+    else if(decktype == 0)
+    {
+        param = config->remoteConfig.getlistparam;
+    }
+    else
+    {
+        param = config->remoteConfig.getlistparamwithdecktype;
+    }
+    QStringList querys;
+    if(decktype != 0)
+    {
+        querys << "DeckType=" + QString::number(decktype);
+    }
+    if(flt != 0)
+    {
+        querys << "Flt=" + QString::number(flt);
+    }
+    QString query = querys.join('&');
+
+    return param + query;
+}
+
 void Remote::getList(int page)
 {
     if(waiting)
@@ -61,10 +90,11 @@ void Remote::getList(int page)
         return;
     }
     waiting = true;
-    QString getlist = config->getCurrentRemote().getlist;
+    QString param = request(config->deckType, config->Flt);
+    QString getlist = config->remoteConfig.getlist;
     QStringList args;
     args << QString::number(page);
-    args << config->getCurrentRemote().getlistparam;
+    args << param;
     currentUrl = arg(getlist, args);
     waitingFor = 1;
     get();

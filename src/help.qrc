@@ -4,7 +4,6 @@
         <file>icons/clear.png</file>
         <file>icons/delete.png</file>
         <file>icons/edit.png</file>
-        <file>icons/goto.png</file>
         <file>icons/help.png</file>
         <file>icons/left.png</file>
         <file>icons/redo.png</file>
@@ -21,7 +20,6 @@
         <file>icons/home.png</file>
         <file>icons/print.png</file>
         <file>icons/side.png</file>
-        <file>icons/back.png</file>
         <file>icons/overlap.png</file>
         <file>icons/add.png</file>
     </qresource>

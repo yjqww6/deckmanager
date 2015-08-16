@@ -10,13 +10,12 @@ typedef QHash<QString, QVariant> Map;
 class RemoteConfig
 {
 public:
-    RemoteConfig(Map&, QString, RemoteConfig *);
-    RemoteConfig(QString);
-    QString id;
-    QString str;
+    RemoteConfig();
+    void set(Map &mappings, QString group);
     QString codec;
     QString getlist;
     QString getlistparam;
+    QString getlistparamwithdecktype;
     QString finishlist;
     QString deckname;
     QString deckid;
@@ -29,11 +28,6 @@ public:
     QString finishname;
     QString name;
     QString openurl;
-    bool operator ==(const RemoteConfig &other)
-    {
-        return id == other.id;
-    }
-    RemoteConfig& operator =(const RemoteConfig &other);
 };
 
 class Config : public QObject
@@ -51,10 +45,13 @@ public:
     QString getStr(QString group, QString key, QString defaultStr);
     QString getHelpStr();
     RemoteConfig& getCurrentRemote();
-    QList<RemoteConfig> remoteConfigs;
-    int remote;
+    RemoteConfig remoteConfig;
     Map mappings;
-
+    QList<QPair<int, QString> > deckTypes;
+    QList<QPair<int, QString> > Flts;
+    int deckType;
+    int Flt;
+    QString tempConfig;
 signals:
 
 public slots:
@@ -62,10 +59,8 @@ public slots:
     void setConvertPass(bool);
     void setLimit(int);
     void setAutoSwitch(bool);
-    void setRemote(int);
     void setNewTab(bool value);
 };
 
 extern Config *config;
-extern RemoteConfig tempRemoteConfig;
 #endif // CONFIG_H

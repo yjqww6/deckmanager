@@ -3,6 +3,7 @@
 #include "config.h"
 #include <QDebug>
 #include <QComboBox>
+#include <QCompleter>
 
 DeckList::DeckList(QWidget *parent)
     : QListWidget(parent), menuItem(nullptr)
@@ -98,110 +99,106 @@ DeckListView::DeckListView(QWidget *parent)
 {
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
+    hbox->setMargin(2);
     decklist = new DeckList;
-
     vbox->addWidget(decklist);
 
     auto cata = new QComboBox;
-    int index = 0;
-    foreach(auto &remoteConfig, config->remoteConfigs)
+    foreach(auto it, config->Flts)
     {
-        cata->addItem(remoteConfig.str, index++);
+        cata->addItem(it.second, it.first);
     }
-    cata->addItem(tempRemoteConfig.str, -1);
-    if(cata->count() > 0) {
-        cata->setCurrentIndex(0);
-    }
+    cata->addItem("Temp", -1);
 
-    auto switchButton = new QPushButton("...");
-    auto backButton = new IconButton(":/icons/back.png", config->getStr("action", "back", "返回"));
+    auto typeCata = new QComboBox;
+    QStringList words;
+    typeCata->addItem("-", 0);
+    foreach(auto it, config->deckTypes)
+    {
+        typeCata->addItem(it.second, it.first);
+        words << it.second;
+    }
+    auto completer = new QCompleter(words, this);
+    typeCata->setEditable(true);
+    typeCata->setCompleter(completer);
+
     hbox = new QHBoxLayout;
+    hbox->setMargin(2);
     hbox->addWidget(cata);
-    hbox->addWidget(switchButton);
-    hbox->addWidget(backButton);
+    hbox->addWidget(typeCata);
     vbox->addLayout(hbox);
 
     auto buttom = new QWidget;
 
-    pageEdit = new QLineEdit(tr("1"));
-    auto goButton = new IconButton(":/icons/goto.png", config->getStr("action", "goto", "跳转"));
-    auto nextButton = new IconButton(":/icons/right.png", config->getStr("action", "next", "下一页"));
-    auto prevButton = new IconButton(":/icons/left.png", config->getStr("action", "prev", "上一页"));
-    auto abortButton = new IconButton(":/icons/abort.png", config->getStr("action", "abort", "中止"));
-    abortButton->setEnabled(false);
+
+    auto switchButton = new QPushButton("...");
+    pageBox = new QSpinBox();
+    pageBox->setMinimum(1);
+    pageBox->setKeyboardTracking(false);
 
     hbox = new QHBoxLayout;
-    hbox->addWidget(pageEdit, 1);
-    hbox->addWidget(goButton);
-    hbox->addWidget(prevButton);
-    hbox->addWidget(nextButton);
-
+    hbox->setMargin(2);
+    hbox->addWidget(pageBox);
+    hbox->addWidget(switchButton);
     buttom->setLayout(hbox);
 
     vbox->addWidget(buttom);
+
+    auto abortButton = new IconButton(":/icons/abort.png", config->getStr("action", "abort", "中止"));
     auto refreshButton = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
     connect(refreshButton, &IconButton::clicked, this, &DeckListView::getList);
 
+    abortButton->setEnabled(false);
     hbox = new QHBoxLayout;
+    hbox->setMargin(2);
     hbox->addWidget(refreshButton);
     hbox->addWidget(abortButton);
     vbox->addLayout(hbox);
 
     setLayout(vbox);
 
-    connect(nextButton, &IconButton::clicked, this, &DeckListView::nextPage);
-    connect(prevButton, &IconButton::clicked, this, &DeckListView::prevPage);
-    connect(goButton, &IconButton::clicked, this, &DeckListView::goPage);
+    connect(pageBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &DeckListView::goPage);
 
     connect(&remote, &Remote::list, decklist, &DeckList::setList);
-    connect(&remote, &Remote::ready, abortButton, &IconButton::setDisabled);
+    connect(&remote, &Remote::ready, [=] (bool e) {
+        abortButton->setEnabled(!e);
+        pageBox->setEnabled(e);
+    });
     connect(decklist, &DeckList::selectDeck, this, &DeckListView::selectDeck);
-    connect(abortButton, &IconButton::clicked, &remote, &Remote::abort);
+    connect(abortButton, &IconButton::clicked,
+            [=] () {
+        remote.abort();
+        pageBox->setEnabled(true);
+    });
 
 
     connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index) {
-        config->setRemote(cata->itemData(index).toInt());
+        config->Flt = cata->itemData(index).toInt();
+    });
+    connect(typeCata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index) {
+        config->deckType = typeCata->itemData(index).toInt();
     });
 
     connect(decklist, &DeckList::deckType, [=] (QString type) {
-        if(config->remote != -1)
-        {
-            lastConfig = config->remote;
-            lastPage = page;
-        }
-        tempRemoteConfig = config->getCurrentRemote();
-        tempRemoteConfig.getlistparam = type;
+        config->tempConfig = type;
+        config->Flt = -1;
         page = 1;
         cata->setCurrentIndex(cata->count() - 1);
-        config->setRemote(-1);
         getList();
     });
 
     connect(switchButton, &QPushButton::clicked, [=] () {
         bool ok;
         QString text = QInputDialog::getText(this, "getlistparam", "", QLineEdit::Normal,
-                                             config->getCurrentRemote().getlistparam, &ok);
+                                             config->tempConfig, &ok);
         if(ok)
         {
-            if(config->remote != -1)
-            {
-                lastConfig = config->remote;
-                lastPage = page;
-            }
-            tempRemoteConfig = config->getCurrentRemote();
-            tempRemoteConfig.getlistparam = text;
+            config->tempConfig = text;
             page = 1;
+            config->Flt = -1;
             cata->setCurrentIndex(cata->count() - 1);
-            config->setRemote(-1);
             getList();
         }
-    });
-    connect(backButton, &IconButton::clicked, [=] () {
-        config->setRemote(lastConfig);
-        cata->setCurrentIndex(lastConfig);
-        page = lastPage;
-        pageEdit->setText(QString::number(page));
-        getList();
     });
 }
 
@@ -210,27 +207,8 @@ void DeckListView::setList(Type::DeckL ls)
     decklist->setList(ls);
 }
 
-void DeckListView::nextPage()
+void DeckListView::goPage(int newPage)
 {
-    if(!remote.is_waiting())
-    {
-        page++;
-        getList();
-    }
-}
-
-void DeckListView::prevPage()
-{
-    if(!remote.is_waiting() && page > 1)
-    {
-        page--;
-        getList();
-    }
-}
-
-void DeckListView::goPage()
-{
-    int newPage = pageEdit->text().toInt();
     if(newPage > 0)
     {
         page = newPage;

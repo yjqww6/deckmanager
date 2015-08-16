@@ -388,7 +388,7 @@ CardsListView::CardsListView(QWidget *parent)
     else
     {
         cl->setStyleSheet("QWidget{font-size: 15px}");
-        label->setStyleSheet("QLabel{color: white; font-size: 15px}");
+        label->setStyleSheet("QLabel{color: black; font-size: 15px}");
     }
 
     hbox->addWidget(cl);

@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QLineEdit>
+#include <QSpinBox>
 #include <QDesktopServices>
 #include <QInputDialog>
 #include <QCheckBox>
@@ -52,19 +53,18 @@ public slots:
     void setList(Type::DeckL);
     void getList()
     {
-        pageEdit->setText(QString::number(page));
+        pageBox->setValue(page);
+        pageBox->setEnabled(false);
         remote.getList(page);
     }
 
 private slots:
-    void nextPage();
-    void prevPage();
-    void goPage();
+    void goPage(int);
 private:
     DeckList *decklist;
     Remote remote;
     int page;
-    QLineEdit *pageEdit;
+    QSpinBox *pageBox;
     int lastConfig;
     int lastPage;
 };
