@@ -14,6 +14,8 @@ LocalList::LocalList(QWidget *parent)
     pathEdit = new QLineEdit;
     buttonSave = new IconButton(":/icons/saveas.png", config->getStr("action", "saveas", "另存为"));
     buttonRefresh = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
+    includeAI = new QCheckBox("AI");
+    includeAI->setChecked(false);
 
     popup = new QMenu(this);
     auto newTabAction = new QAction(popup);
@@ -27,7 +29,11 @@ LocalList::LocalList(QWidget *parent)
     hbox->addWidget(pathEdit);
     hbox->addWidget(buttonSave);
     vbox->addLayout(hbox);
-    vbox->addWidget(buttonRefresh);
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(includeAI);
+    hbox->addWidget(buttonRefresh, 1);
+    vbox->addLayout(hbox);
     setLayout(vbox);
 
     connect(buttonRefresh, &IconButton::clicked, this, &LocalList::refresh);
@@ -43,6 +49,9 @@ LocalList::LocalList(QWidget *parent)
         }
     });
     connect(deleteAction, &QAction::triggered, this, &LocalList::deleteDeck);
+    connect(includeAI, &QCheckBox::toggled, [=](bool) {
+        refresh();
+    });
 }
 
 void LocalList::contextMenuEvent(QContextMenuEvent *)
@@ -63,8 +72,13 @@ void LocalList::refresh()
     listWidget->clear();
     foreach(QFileInfo info, qdir.entryInfoList(filter))
     {
+        QString name = info.completeBaseName();
+        if(!includeAI->isChecked() && name.startsWith("AI"))
+        {
+            continue;
+        }
         auto item = new QListWidgetItem;
-        item->setText(info.completeBaseName());
+        item->setText(name);
         item->setData(Qt::UserRole, info.filePath());
         listWidget->addItem(item);
     }

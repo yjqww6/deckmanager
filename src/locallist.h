@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QTextStream>
 #include <QMenu>
+#include <QCheckBox>
 #include <QDir>
 
 class LocalList : public QWidget
@@ -42,6 +43,7 @@ private:
     QPushButton *buttonSave;
     QPushButton *buttonRefresh;
     QListWidgetItem *menuItem;
+    QCheckBox *includeAI;
     QMenu *popup;
 };
 

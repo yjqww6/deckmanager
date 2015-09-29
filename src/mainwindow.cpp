@@ -30,6 +30,26 @@ MainWindow::MainWindow(QWidget *parent)
         setStyleSheet("QMainWindow{border-image: url(" + bg + ")}");
     }
 
+    qint32 max = config->getStr("pref", "max", "0").toInt();
+    qint32 width = config->getStr("pref", "width", "0").toInt();
+    qint32 height = config->getStr("pref", "height", "0").toInt();
+
+    if (width == 0)
+    {
+        width = size().width();
+    }
+
+    if (height == 0)
+    {
+        height = size().height();
+    }
+
+    resize(width, height);
+
+    if (max > 0) {
+        setWindowState(Qt::WindowMaximized);
+    }
+
     auto modelTabBar = new QTabBar;
     auto sp = new QSplitter(Qt::Horizontal, this);
     sp->setHandleWidth(3);
