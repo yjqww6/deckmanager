@@ -1,5 +1,6 @@
 #include "deckwidget.h"
 #include "draghelper.h"
+#include "signaltower.h"
 #include <QDebug>
 #include <QApplication>
 
@@ -189,7 +190,7 @@ void DeckWidget::mousePressEvent(QMouseEvent *event)
         if(index >= 0)
         {
             quint32 id = deck->at(index).getId();
-            emit details(id);
+            tower->cardDetails(id);
         }
     }
     QWidget::mousePressEvent(event);
@@ -204,7 +205,7 @@ void DeckWidget::mouseMoveEvent(QMouseEvent *event)
         if(currentCardId != id)
         {
             currentCardId = id;
-            emit currentIdChanged(id);
+            tower->changeCurrentId(id);
         }
     }
 
@@ -362,7 +363,7 @@ void DeckWidget::mouseDoubleClickEvent(QMouseEvent *event)
     {
         if(itemAt(mapFromGlobal(QCursor::pos())) >= 0)
         {
-            emit clickId(currentCardId);
+            tower->IdClick(currentCardId);
         }
     }
     QWidget::mouseDoubleClickEvent(event);

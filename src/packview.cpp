@@ -27,8 +27,6 @@ PackView::PackView(QWidget *parent)
     connect(packEdit, &PackEditView::saved, packList, &PackList::refresh);
     connect(refreshButton, &IconButton::clicked, packList, &PackList::refresh);
     connect(editButton, &IconButton::clicked, packList, &PackList::readPackEdit);
-    connect(packEdit, &PackEditView::details, this, &PackView::details);
-    connect(packEdit, &PackEditView::clickId, this, &PackView::clickId);
     connect(this, &PackView::checkLeave, packEdit, &PackEditView::checkLeave);
 
     tab->addTab(widget, config->getStr("tab", "list", "列表"));

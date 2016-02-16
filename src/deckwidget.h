@@ -95,11 +95,8 @@ public:
     void setDeck(const QSharedPointer<Type::DeckI> value);
 
 signals:
-    void currentIdChanged(quint32 id);
     void sizeChanged(int size);
     void deckChanged(Type::DeckI&);
-    void clickId(quint32);
-    void details(quint32);
 public slots:
     void checkLeave();
 };

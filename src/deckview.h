@@ -66,9 +66,6 @@ public:
         return deck;
     }
 signals:
-    void currentIdChanged(int);
-    void clickId(int);
-    void details(int);
     void save(QString);
     void statusChanged(QString);
     void refreshLocals();

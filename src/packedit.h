@@ -52,11 +52,8 @@ public:
         pe->refresh();
     }
 signals:
-    void currentIdChanged(quint32 id);
-    void clickId(quint32);
     void refreshPack();
     void saved();
-    void details(quint32);
 public slots:
 
     void setCards(Type::DeckP cards)
@@ -80,16 +77,6 @@ public slots:
         nameEdit->setText(name);
     }
 private slots:
-    void changeId(quint32 id)
-    {
-        emit currentIdChanged(id);
-    }
-
-    void idClicked(quint32 id)
-    {
-        emit clickId(id);
-    }
-
     void saveList()
     {
         pe->saveList(nameEdit->text());

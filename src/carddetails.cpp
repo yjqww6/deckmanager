@@ -41,18 +41,18 @@ void CardDetails::setId(quint32 id)
         QString ot;
         if((card.ot & 0x3) == 1)
         {
-            ot = tr("[OCG]");
+            ot = "[OCG]";
         }
         else if((card.ot & 0x3) == 2)
         {
-            ot = tr("[TCG]");
+            ot = "[TCG]";
         }
 
         if(card.type & Const::TYPE_MONSTER)
         {
             str << ("[" + card.cardType() + "]"
                     + card.cardRace() + "/" + card.cardAttr());
-            QString level = (card.type & Const::TYPE_XYZ) ? tr("R") : tr("L");
+            QString level = (card.type & Const::TYPE_XYZ) ? "R" : "L";
             level = "[" + level + QString::number(card.level) + "]";
             str << (level + card.cardAD() + ot);
         }
@@ -71,7 +71,7 @@ void CardDetails::setId(quint32 id)
             setcodeStr << cur;
             setcode = setcode >> 16;
         }
-        str << (config->getStr("label", "setcode", "系列") + ":[" + setcodeStr.join(tr("|")) + "]");
+        str << (config->getStr("label", "setcode", "系列") + ":[" + setcodeStr.join("|") + "]");
         str << card.effect;
         effect->clear();
         effect->insertPlainText(str.join('\n'));

@@ -114,9 +114,15 @@ void Yrp::loadDecks(quint8 *data)
 
     p += 4 * sizeof(qint32);
 
-    for(int i : range(players))
+    for(int i : range(2))
     {
         p += readDeck(data, p, decks[i].second);
+    }
+
+    if(players == 4)
+    {
+        p += readDeck(data, p, decks[3].second);
+        p += readDeck(data, p, decks[2].second);
     }
 }
 

@@ -41,7 +41,7 @@ void CardPool::loadCard(QSqlQuery &query)
     pool.insert(std::make_pair(id, std::move(card)));
 }
 
-CardPool::CardPool(QStringList paths)
+CardPool::CardPool(QStringList paths) : loadThread(nullptr, this)
 {
 #define INSERT(container, field, str) \
     do { \
@@ -113,7 +113,6 @@ CardPool::CardPool(QStringList paths)
 
     cdbPath = paths;
     newPool.reserve(10000);
-    loadThread = QSharedPointer<LoadThread>::create(nullptr, this);
     foreach(auto &path, cdbPath)
     {
         QSqlDatabase db;
@@ -181,7 +180,7 @@ QString CardPool::getRace(quint32 race)
             return it.value();
         }
     }
-    return QObject::tr("?");
+    return "?";
 }
 
 
@@ -230,7 +229,7 @@ QString CardPool::getAttr(quint32 attribute)
             return it.value();
         }
     }
-    return QObject::tr("?");
+    return "?";
 }
 
 
@@ -238,10 +237,10 @@ Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
 {
     name = nameConv(name);
     auto it = newPool.find(name);
-    if(it == newPool.end() && loadThread && !otherNamesDone && wait)
+    if(it == newPool.end() && !otherNamesDone && wait)
     {
         acc = true;
-        loadThread->wait();
+        loadThread.wait();
         it = newPool.find(name);
     }
     if(it == newPool.end())
@@ -253,7 +252,7 @@ Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
 
 void CardPool::loadNames()
 {
-    loadThread->start();
+    loadThread.start();
 }
 
 QString Card::cardType()

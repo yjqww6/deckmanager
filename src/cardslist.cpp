@@ -2,6 +2,7 @@
 #include "limitcards.h"
 #include "draghelper.h"
 #include "range.h"
+#include "signaltower.h"
 #include <QToolBar>
 #include <QDebug>
 
@@ -11,7 +12,7 @@ CardsList::CardsList(QWidget *parent)
 {
     setMouseTracking(true);
     setAcceptDrops(true);
-    setMinimumWidth(cardSize.width() + fontMetrics().width(tr("宽")) * 10);
+    setMinimumWidth(cardSize.width() + fontMetrics().width("宽") * 10);
     auto family = font().family();
     setFont(QFont(family, 11));
 }
@@ -116,7 +117,7 @@ void CardsList::paintEvent(QPaintEvent *)
 
                 painter.drawText(cardWidth + 5, y + fmHeight, card.name);
                 QString ot;
-                QString level = (card.type & Const::TYPE_XYZ) ? tr("R") : tr("L");
+                QString level = (card.type & Const::TYPE_XYZ) ? "R" : "L";
                 level = "[" + level + QString::number(card.level) + "]";
                 if((card.ot & 0x3) == 1)
                 {
@@ -130,10 +131,10 @@ void CardsList::paintEvent(QPaintEvent *)
                 if(card.type & Const::TYPE_MONSTER)
                 {
                     painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
-                                     card.cardRace() + tr("/") + card.cardAttr() + level);
+                                     card.cardRace() + "/" + card.cardAttr() + level);
 
                     painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3,
-                                     adToString(card.atk) + tr("/") +
+                                     adToString(card.atk) + "/" +
                                      adToString(card.def) + ot);
                 }
                 else if(card.type & (Const::TYPE_SPELL | Const::TYPE_TRAP))
@@ -165,7 +166,7 @@ void CardsList::mousePressEvent(QMouseEvent *event)
         int index = itemAt(event->pos());
         if(index >= 0)
         {
-            emit details(ls[index]);
+            tower->cardDetails(ls[index]);
         }
     }
     QWidget::mousePressEvent(event);
@@ -202,7 +203,7 @@ void CardsList::refreshCurrentId()
         if(currentCardId != id)
         {
             currentCardId = id;
-            emit currentIdChanged(ls[index]);
+            tower->changeCurrentId(ls[index]);
         }
     }
 }
@@ -216,7 +217,7 @@ void CardsList::mouseMoveEvent(QMouseEvent *event)
         if(currentCardId != id)
         {
             currentCardId = id;
-            emit currentIdChanged(ls[index]);
+            tower->changeCurrentId(ls[index]);
         }
         needRefreshId = false;
     }
@@ -330,7 +331,7 @@ void CardsList::mouseDoubleClickEvent(QMouseEvent *event)
     {
         if(itemAt(mapFromGlobal(QCursor::pos())) >= 0)
         {
-            emit clickId(currentCardId);
+            tower->IdClick(currentCardId);
         }
     }
     QWidget::mouseDoubleClickEvent(event);
@@ -372,10 +373,7 @@ CardsListView::CardsListView(QWidget *parent)
 
     cl->setScrollBar(sb);
 
-    connect(cl, &CardsList::currentIdChanged, this, &CardsListView::changeId);
     connect(cl, &CardsList::sizeChanged, label, &DeckSizeLabel::changeSize);
-    connect(cl, &CardsList::clickId, this, &CardsListView::clickId);
-    connect(cl, &CardsList::details, this, &CardsListView::details);
     connect(undoAction, &QAction::triggered, this, &CardsListView::undo);
     connect(redoAction, &QAction::triggered, this, &CardsListView::redo);
 

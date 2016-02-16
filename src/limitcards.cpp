@@ -28,6 +28,7 @@ LimitCards::LimitCards()
     if(lflist.open(QFile::Text | QFile::ReadOnly))
     {
         QTextStream in(&lflist);
+        in.setCodec("utf-8");
         QString name("N/A");
         Table table;
 

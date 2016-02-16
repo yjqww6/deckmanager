@@ -91,6 +91,7 @@ private:
     QLineEdit *setEdit;
     QLineEdit *nameEdit;
     QCheckBox *inverseMode;
+    QCheckBox *noSortMode;
 };
 
 #endif // CARDFILTER_H

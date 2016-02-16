@@ -14,7 +14,8 @@ public:
 
     QByteArray open(QString path);
 private:
-    QStringList zips;
+    //QStringList zips;
+    QList<QSharedPointer<QuaZip> > zips;
 };
 
 

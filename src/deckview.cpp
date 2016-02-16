@@ -168,34 +168,25 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     toolbar = new QToolBar;
     toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
 
-    undoAction = new QAction(toolbar);
-    undoAction->setIcon(QIcon(":/icons/undo.png"));
-    undoAction->setToolTip(config->getStr("action", "undo", "撤销"));
-    toolbar->addAction(undoAction);
+    auto action = [&](const char* path, const char* name, const char* str)
+    {
+        auto act = new QAction(toolbar);
+        act->setIcon(QIcon(path));
+        act->setToolTip(config->getStr("action", name, str));
+        toolbar->addAction(act);
+        return act;
+    };
 
-    redoAction = new QAction(toolbar);
-    redoAction->setIcon(QIcon(":/icons/redo.png"));
-    redoAction->setToolTip(config->getStr("action", "redo", "重做"));
-    toolbar->addAction(redoAction);
+    undoAction = action(":/icons/undo.png", "undo", "撤销");
+    redoAction = action(":/icons/redo.png", "redo", "重做");
 
     toolbar->addSeparator();
-
-    auto saveAction = new QAction(toolbar);
-    saveAction->setIcon(QIcon(":/icons/save.png"));
-    saveAction->setToolTip(config->getStr("action", "save", "保存"));
-    toolbar->addAction(saveAction);
-
-    auto saveAsAction = new QAction(toolbar);
-    saveAsAction->setIcon(QIcon(":/icons/saveas.png"));
-    saveAsAction->setToolTip(config->getStr("action", "saveas", "另存为"));
-    toolbar->addAction(saveAsAction);
-
+    auto saveAction = action(":/icons/save.png", "save", "保存");
+    auto saveAsAction = action(":/icons/saveas.png", "saveas", "另存为");
 
     auto menu = new QMenu;
-
     auto printAction = new QAction(config->getStr("action", "print", "截图"), menu);
     menu->addAction(printAction);
-
     auto textAction1 = new QAction(config->getStr("action", "text", "文字卡表") + " A", menu);
     menu->addAction(textAction1);
     auto textAction2 = new QAction(config->getStr("action", "text", "文字卡表") + " [A]", menu);
@@ -211,28 +202,15 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
     toolbar->addSeparator();
 
-    auto deleteAction = new QAction(toolbar);
-    deleteAction->setIcon(QIcon(":/icons/delete.png"));
-    deleteAction->setToolTip(config->getStr("action", "delete", "删除卡组"));
-    toolbar->addAction(deleteAction);
+    auto deleteAction = action(":/icons/delete.png", "delete", "删除卡组");
 
     toolbar->addSeparator();
 
-    abortAction = new QAction(toolbar);
-    abortAction->setIcon(QIcon(":/icons/abort.png"));
-    abortAction->setToolTip(config->getStr("action", "abort", "中止"));
+    abortAction = action(":/icons/abort.png", "abort", "中止");
     abortAction->setEnabled(false);
-    toolbar->addAction(abortAction);
 
-    auto hideAction = new QAction(toolbar);
-    hideAction->setToolTip(config->getStr("action", "hide", "隐藏副卡组"));
-    hideAction->setIcon(QIcon(":/icons/side.png"));
-    toolbar->addAction(hideAction);
-
-    auto overlapAction = new QAction(toolbar);
-    overlapAction->setToolTip(config->getStr("action", "overlap", "垂直方向重叠"));
-    overlapAction->setIcon(QIcon(":/icons/overlap.png"));
-    toolbar->addAction(overlapAction);
+    auto hideAction = action(":/icons/side.png", "hide", "隐藏副卡组");
+    auto overlapAction = action(":/icons/overlap.png", "overlap", "垂直方向重叠");
 
     auto spacer = new QWidget;
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -240,33 +218,14 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
     toolbar->addSeparator();
 
-    auto sortAction = new QAction(toolbar);
-    sortAction->setIcon(QIcon(":/icons/sort.png"));
-    sortAction->setToolTip(config->getStr("action", "sort", "排序"));
-    toolbar->addAction(sortAction);
-
-    auto shuffleAction = new QAction(toolbar);
-    shuffleAction->setIcon(QIcon(":/icons/shuffle.png"));
-    shuffleAction->setToolTip(config->getStr("action", "shuffle", "打乱"));
-    toolbar->addAction(shuffleAction);
-
-
-    auto clearAction = new QAction(toolbar);
-    clearAction->setIcon(QIcon(":/icons/clear.png"));
-    clearAction->setToolTip(config->getStr("action", "clear", "清空"));
-    toolbar->addAction(clearAction);
+    auto sortAction = action(":/icons/sort.png", "sort", "排序");
+    auto shuffleAction = action(":/icons/shuffle.png", "shuffle", "打乱");
+    auto clearAction = action(":/icons/clear.png", "clear", "清空");
 
     toolbar->addSeparator();
 
-    auto homeAction = new QAction(toolbar);
-    homeAction->setIcon(QIcon(":/icons/home.png"));
-    homeAction->setToolTip(config->getStr("action", "home", "主页"));
-    toolbar->addAction(homeAction);
-
-    auto helpAction = new QAction(toolbar);
-    helpAction->setIcon(QIcon(":/icons/help.png"));
-    helpAction->setToolTip(config->getStr("action", "help", "帮助"));
-    toolbar->addAction(helpAction);
+    auto homeAction = action(":/icons/home.png", "home", "主页");
+    auto helpAction = action(":/icons/help.png", "help", "帮助");
 
 
     auto &model = addModel();
@@ -322,20 +281,14 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
     connect(mainDeck, &DeckWidget::sizeChanged, t1, &DeckSizeLabel::changeSize);
     connect(mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
-    connect(mainDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
     connect(extraDeck, &DeckWidget::sizeChanged, t2, &DeckSizeLabel::changeSize);
     connect(extraDeck, &DeckWidget::deckChanged, et, &ExtraDeckLabel::deckChanged);
-    connect(extraDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
     connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
-    connect(sideDeck, &DeckWidget::currentIdChanged, this, &DeckView::currentIdChanged);
 
     connect(sortAction, &QAction::triggered, this, &DeckView::sort);
     connect(clearAction, &QAction::triggered, this, &DeckView::clearDeck);
     connect(helpAction, &QAction::triggered, this, &DeckView::help);
-    connect(mainDeck, &DeckWidget::clickId, this, &DeckView::clickId);
-    connect(extraDeck, &DeckWidget::clickId, this, &DeckView::clickId);
-    connect(sideDeck, &DeckWidget::clickId, this, &DeckView::clickId);
 
     connect(shuffleAction, &QAction::triggered, this, &DeckView::shuffle);
 
@@ -366,10 +319,6 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     connect(textAction3, &QAction::triggered, [=]() {
        emit deckText(&getCurrentModel(), sideHidden, ScriptView::COUNT);
     });
-
-    connect(mainDeck, &DeckWidget::details, this, &DeckView::details);
-    connect(extraDeck, &DeckWidget::details, this, &DeckView::details);
-    connect(sideDeck, &DeckWidget::details, this, &DeckView::details);
 
     connect(tabbar, &QTabBar::currentChanged, this, &DeckView::switchTab);
     connect(tabbar, &QTabBar::tabCloseRequested, this, &DeckView::closeTab);

@@ -37,7 +37,12 @@ void PackList::refresh()
                 auto pack = new QTreeWidgetItem;
                 pack->setText(0, subDir.dirName());
                 items.append(pack);
-                foreach(QuaZipFileInfo itemInfo, subDir.entryInfoList())
+                auto ls = subDir.entryInfoList();
+                std::sort(ls.begin(), ls.end(), [](const QuaZipFileInfo &a, const QuaZipFileInfo &b)
+                {
+                    return a.name < b.name;
+                });
+                foreach(QuaZipFileInfo itemInfo, ls)
                 {
                     auto item = new QTreeWidgetItem;
                     QFileInfo temp(itemInfo.name);

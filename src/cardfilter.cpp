@@ -90,7 +90,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     auto grid = new QGridLayout;
     cardType = new QComboBox;
     cardType->setEditable(false);
-    cardType->addItem(tr("N/A"), QVariant(-1));
+    cardType->addItem("N/A", QVariant(-1));
     for(auto t : cardTypes)
     {
         cardType->addItem(cardPool->getType(t), t);
@@ -98,7 +98,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
 
     cardTypeSub = new QComboBox;
     cardTypeSub->setEditable(false);
-    cardTypeSub->addItem(tr("N/A"), QVariant(-1));
+    cardTypeSub->addItem("N/A", QVariant(-1));
 
 
     int y = 0;
@@ -125,10 +125,10 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
 
     cardRace = new QComboBox;
     cardRace->setEditable(false);
-    cardRace->addItem(tr("N/A"), QVariant(-1));
+    cardRace->addItem("N/A", QVariant(-1));
     cardAttr = new QComboBox;
     cardAttr->setEditable(false);
-    cardAttr->addItem(tr("N/A"), QVariant(-1));
+    cardAttr->addItem("N/A", QVariant(-1));
 
     passEdit = new QLineEdit;
     atkEdit = new QLineEdit;
@@ -237,8 +237,11 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     y++;
     inverseMode = new QCheckBox;
     inverseMode->setText(config->getStr("label", "inverse", "反选模式"));
-    grid->addWidget(inverseMode, y, 0, 1, 2);
+    grid->addWidget(inverseMode, y, 0);
 
+    noSortMode = new QCheckBox;
+    noSortMode->setText(config->getStr("label", "nosort", "不排序"));
+    grid->addWidget(noSortMode, y, 1);
     setLayout(grid);
 
     connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -252,11 +255,11 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
 void CardFilter::setCardTypeSub(int index)
 {
     cardTypeSub->clear();
-    cardTypeSub->addItem(tr("N/A"), ~0U);
+    cardTypeSub->addItem("N/A", ~0U);
     cardAttr->clear();
-    cardAttr->addItem(tr("N/A"), ~0U);
+    cardAttr->addItem("N/A", ~0U);
     cardRace->clear();
-    cardRace->addItem(tr("N/A"), ~0U);
+    cardRace->addItem("N/A", ~0U);
 
     switch(index)
     {
@@ -639,8 +642,10 @@ void CardFilter::search(T &&begin, T &&end, Pred &&predicate)
         }, cardPool->getCard(*it));
     }
 
-
-    qSort(ls->begin(), ls->end(), idCompare);
+    if(!noSortMode->isChecked())
+    {
+        qSort(ls->begin(), ls->end(), idCompare);
+    }
 
     emit result(ls);
 

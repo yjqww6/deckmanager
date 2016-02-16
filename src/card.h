@@ -14,10 +14,8 @@
 #include <memory>
 #include <unordered_map>
 
-class Card
+struct Card
 {
-public:
-    friend class CardPool;
     bool inExtra()
     {
         return (type & (Const::TYPE_XYZ | Const::TYPE_SYNCHRO | Const::TYPE_FUSION)) != 0;
@@ -52,9 +50,8 @@ public:
     }
 
     Card() {}
-private:
 
-    QString adToString(int ad)
+    static QString adToString(int ad)
     {
         if(ad == -2)
         {
@@ -94,7 +91,7 @@ private:
     QHash<quint32, QString> attrs;
     bool otherNamesDone;
     bool acc;
-    QSharedPointer<LoadThread> loadThread;
+    LoadThread loadThread;
 
 public:
     friend class LoadThread;
@@ -131,7 +128,7 @@ public:
 
     LoadThread *getThread()
     {
-        return loadThread.data();
+        return &loadThread;
     }
 
     QString getType(quint32);

@@ -51,6 +51,7 @@ Config::Config(QObject *parent)
                 deckTypes.append(qMakePair(deckType, name));
             }
         }
+        std::reverse(deckTypes.begin(), deckTypes.end());
     }
 }
 

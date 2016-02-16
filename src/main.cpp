@@ -9,7 +9,11 @@
 #include "card.h"
 #include "carditem.h"
 #include "wrapper.h"
+#include "draghelper.h"
+#include "signaltower.h"
 
+SignalTower *tower;
+DragHelper dragHelper;
 
 int main(int argc, char *argv[])
 {
@@ -48,9 +52,15 @@ int main(int argc, char *argv[])
         LimitCards limitCardsR;
         limitCards = &limitCardsR;
 
+        SignalTower sig;
+        tower = &sig;
         MainWindow w;
         w.show();
-        cardPool->loadNames();
+
+        if(config->getStr("pref", "scanscript", "1") == "1")
+        {
+            cardPool->loadNames();
+        }
 
         ret =  a.exec();
     }

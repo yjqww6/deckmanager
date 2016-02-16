@@ -1,23 +1,11 @@
 #ifndef DRAGHELPER_H
 #define DRAGHELPER_H
 
-#include <QObject>
-#include <QHash>
-#include "carditem.h"
-
-class DragHelper : public QObject
+struct DragHelper
 {
-    Q_OBJECT
-public:
-    explicit DragHelper(QObject *parent = 0);
+    explicit DragHelper() : moved(false), atomic(false) {}
     bool moved;
     bool atomic;
-
-signals:
-
-public slots:
-
-protected:
 };
 
 extern DragHelper dragHelper;

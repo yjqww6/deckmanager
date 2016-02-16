@@ -15,7 +15,7 @@ public:
 public slots:
     void changeSize(int size)
     {
-        setText(name + tr(" : ") + QString::number(size));
+        setText(name + " : " + QString::number(size));
         adjustSize();
         updateGeometry();
     }

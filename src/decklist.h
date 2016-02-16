@@ -33,7 +33,7 @@ public slots:
 private slots:
     void onItemChanged();
     void onItem(QListWidgetItem *);
-    void openURL(QListWidgetItem*);
+    void openURL();
     void newTab();
     void same();
 private:

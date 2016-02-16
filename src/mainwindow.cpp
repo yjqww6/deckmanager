@@ -13,6 +13,7 @@
 #include "packview.h"
 #include "pref.h"
 #include "deckview.h"
+#include "signaltower.h"
 #include <QDebug>
 #include <QSqlQuery>
 #include <QSplitter>
@@ -66,7 +67,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto packView = new PackView(nullptr);
     auto pref = new Pref;
-    auto widget = new QWidget;
+    auto replayWidget = new QWidget;
     auto vbox = new QVBoxLayout;
 
     auto getCurrentResults = [=]() -> Type::Deck&
@@ -83,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     vbox->addWidget(replayList);
     vbox->addWidget(replayRefresh);
-    widget->setLayout(vbox);
+    replayWidget->setLayout(vbox);
 
     dialog = new ScriptView(this);
 
@@ -92,15 +93,12 @@ MainWindow::MainWindow(QWidget *parent)
     cardDetails->setStyleSheet("QWidget{font-size: 15px}");
 
     connect(cardDetails, &CardDetails::clickId, dialog, &ScriptView::setId);
-    connect(deckView, &DeckView::clickId, filter, &CardFilter::searchSet);
-    connect(cardListView, &CardsListView::clickId, filter, &CardFilter::searchSet);
-    connect(packView, &PackView::clickId, filter, &CardFilter::searchSet);
+    connect(tower, &SignalTower::clickId, filter, &CardFilter::searchSet);
     connect(deckView, &DeckView::deckText, dialog, &ScriptView::setDeck);
 
     connect(replayRefresh, &IconButton::clicked, replayList, &ReplayList::refresh);
 
-    connect(deckView, &DeckView::currentIdChanged, this, &MainWindow::changeId);
-    connect(cardListView, &CardsListView::currentIdChanged, this, &MainWindow::changeId);
+    connect(tower, &SignalTower::currentIdChanged, this, &MainWindow::changeId);
 
     connect(this, &MainWindow::currentIdChanged, [=](quint32 id) {
         cardDetails->setId(id);
@@ -124,9 +122,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(pref, &Pref::lfList, cardListView, &CardsListView::setCards);
 
-    connect(cardListView, &CardsListView::details, this, &MainWindow::toDetails);
-    connect(packView, &PackView::details, this, &MainWindow::toDetails);
-    connect(deckView, &DeckView::details, this, &MainWindow::toDetails);
+    connect(tower, &SignalTower::details, this, &MainWindow::toDetails);
 
     connect(deckView, &DeckView::save, [=](QString name){
         tab->setCurrentIndex(1, 0);
@@ -151,7 +147,7 @@ MainWindow::MainWindow(QWidget *parent)
     tab->addTabBar();
     tab->addWidget(1, localList, config->getStr("tab", "local", "本地"));
     tab->addWidget(1, deckListView, config->getStr("tab", "remote", "远程"));
-    tab->addWidget(1, widget, config->getStr("tab", "replay", "录像"));
+    tab->addWidget(1, replayWidget, config->getStr("tab", "replay", "录像"));
     tab->addWidget(0, cardDetails, config->getStr("tab", "card", "卡"));
     tab->addWidget(0, filter, config->getStr("tab", "search", "卡池"));
     tab->addWidget(0, packView, config->getStr("tab", "pack", "卡包"));

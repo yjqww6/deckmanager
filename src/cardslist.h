@@ -77,9 +77,6 @@ public:
 
 signals:
     void sizeChanged(int);
-    void currentIdChanged(quint32 id);
-    void clickId(quint32);
-    void details(quint32);
 public slots:
     void setCards(Type::DeckP);
     void checkLeave();
@@ -109,9 +106,6 @@ public:
     }
 
 signals:
-    void currentIdChanged(quint32 id);
-    void clickId(quint32);
-    void details(quint32);
 public slots:
 
     void setCards(Type::DeckP cards);
@@ -127,11 +121,6 @@ public slots:
     }
 
 private slots:
-    void changeId(quint32 id)
-    {
-        emit currentIdChanged(id);
-    }
-
     void updateButtons();
     void makeSnapShot();
     void undo();

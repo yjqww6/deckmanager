@@ -183,14 +183,11 @@ PackEditView::PackEditView(QWidget *parent)
     auto sortButton = new IconButton(":/icons/sort.png", config->getStr("action", "sort", "排序"));
     auto clearButton = new IconButton(":/icons/clear.png", config->getStr("action", "clear", "清空"));
 
-    connect(pe, &PackEdit::currentIdChanged, this, &PackEditView::changeId);
     connect(pe, &PackEdit::sizeChanged, label, &DeckSizeLabel::changeSize);
-    connect(pe, &PackEdit::clickId, this, &PackEditView::idClicked);
     connect(saveButton, &IconButton::clicked, this, &PackEditView::saveList);
     connect(clearButton, &IconButton::clicked, pe, &PackEdit::clearList);
     connect(sortButton, &IconButton::clicked, pe, &PackEdit::sort);
     connect(pe, &PackEdit::saved, this, &PackEditView::saved);
-    connect(pe, &PackEdit::details, this, &PackEditView::details);
 
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;

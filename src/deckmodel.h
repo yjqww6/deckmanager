@@ -47,35 +47,8 @@ public:
         QString name;
     } deckStatus;
 
-    class SnapShot
+    struct SnapShot
     {
-    public:
-        SnapShot() {}
-        SnapShot(SnapShot&& other)
-        {
-            shot[0] = std::move(other.shot[0]);
-            shot[1] = std::move(other.shot[1]);
-            shot[2] = std::move(other.shot[2]);
-            deckStatus = other.deckStatus;
-        }
-
-        SnapShot(const SnapShot& other)
-        {
-            shot[0] = other.shot[0];
-            shot[1] = other.shot[1];
-            shot[2] = other.shot[2];
-            deckStatus = other.deckStatus;
-        }
-
-        SnapShot& operator=(const SnapShot& other)
-        {
-            shot[0] = other.shot[0];
-            shot[1] = other.shot[1];
-            shot[2] = other.shot[2];
-            deckStatus = other.deckStatus;
-            return *this;
-        }
-
         Type::Deck shot[3];
         DeckStatus deckStatus;
     };
