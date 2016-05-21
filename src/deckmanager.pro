@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui sql network
+QT       += core gui network
 CONFIG   += c++11
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -16,8 +16,8 @@ DEFINES   += QUAZIP_STATIC
 
 win32:{
 INCLUDEPATH += D:\Qt\quazip-static\include
-LIBS += -LD:\Qt\quazip-static\lib -lquazip
-LIBS += -LD:\Qt\zlib-1.2.8 -lz
+LIBS += -LD:\Qt\build-quazip-Desktop_Qt_5_6_0_MinGW_32bit_1e8aa2-Release\quazip\release -lquazip
+LIBS += -LD:\Qt\zlib-1.2.8\build -lzlibstatic
 }
 
 SOURCES += main.cpp\
@@ -45,7 +45,8 @@ SOURCES += main.cpp\
     config.cpp \
     remote.cpp \
     mtabwidget.cpp \
-    deckmodel.cpp
+    deckmodel.cpp \
+    sqlite3/sqlite3.c
 
 HEADERS  += mainwindow.h \
     carditem.h \
@@ -79,7 +80,9 @@ HEADERS  += mainwindow.h \
     wrapper.h \
     decklabel.h \
     deckmodel.h \
-    signaltower.h
+    signaltower.h \
+    sqlite3/sqlite3.h \
+    arrange.h
 
 RESOURCES += \
     help.qrc

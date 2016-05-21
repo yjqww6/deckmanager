@@ -233,7 +233,7 @@ ItemThread::ItemThread(int _ts, QString _lines, DeckModel *_model)
 
 Wrapper<Card> ItemThread::loadNewCard(quint32 id)
 {
-    auto &map = cardPool->getMap();
+    auto &map = cardPool->changedMap;
     auto it = map.find(id);
     if(it != map.end())
     {

@@ -1,6 +1,7 @@
 #include "decklist.h"
 #include "iconbutton.h"
 #include "config.h"
+#include "arrange.h"
 #include <QDebug>
 #include <QComboBox>
 #include <QCompleter>
@@ -102,13 +103,13 @@ void DeckList::newTab()
 }
 
 DeckListView::DeckListView(QWidget *parent)
-    : QWidget(parent), page(1), lastConfig(0), lastPage(1)
+    : QWidget(parent), lastConfig(0), lastPage(1)
 {
     auto vbox = new QVBoxLayout;
-    auto hbox = new QHBoxLayout;
-    hbox->setMargin(2);
-    decklist = new DeckList;
-    vbox->addWidget(decklist);
+    auto grid = new QGridLayout;
+    arrange arr("a.ab.b1c", grid);
+
+    grid->setMargin(2);
 
     auto cata = new QComboBox;
     foreach(auto it, config->Flts)
@@ -129,38 +130,38 @@ DeckListView::DeckListView(QWidget *parent)
     typeCata->setEditable(true);
     typeCata->setCompleter(completer);
 
-    hbox = new QHBoxLayout;
+    auto switchButton = new QPushButton("...");
+    switchButton->setMaximumWidth(20);
+
+    auto refreshOrAbortButton = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
+    refreshOrAbortButton->setStyleSheet("QPushButton {border: none;} QPushButton:hover {border-width: 1px;border-style: solid; border-radius: 4px; border-color: white}");
+    arr.set('a', cata);
+    arr.set('b', typeCata);
+    arr.set('c', refreshOrAbortButton);
+    arr.set('1', switchButton);
+    vbox->addLayout(grid);
+
+    decklist = new DeckList;
+    vbox->addWidget(decklist);
+
+    auto hbox = new QHBoxLayout;
     hbox->setMargin(2);
-    hbox->addWidget(cata);
-    hbox->addWidget(typeCata);
-    vbox->addLayout(hbox);
 
     auto buttom = new QWidget;
 
-
-    auto switchButton = new QPushButton("...");
     pageBox = new QSpinBox();
     pageBox->setMinimum(1);
     pageBox->setKeyboardTracking(false);
 
-    hbox = new QHBoxLayout;
-    hbox->setMargin(2);
+    auto left = new IconButton(":/icons/left.png");
+    auto right = new IconButton(":/icons/right.png");
+
     hbox->addWidget(pageBox);
-    hbox->addWidget(switchButton);
+    hbox->addWidget(left);
+    hbox->addWidget(right);
     buttom->setLayout(hbox);
 
     vbox->addWidget(buttom);
-
-    auto abortButton = new IconButton(":/icons/abort.png", config->getStr("action", "abort", "中止"));
-    auto refreshButton = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
-    connect(refreshButton, &IconButton::clicked, this, &DeckListView::getList);
-
-    abortButton->setEnabled(false);
-    hbox = new QHBoxLayout;
-    hbox->setMargin(2);
-    hbox->addWidget(refreshButton);
-    hbox->addWidget(abortButton);
-    vbox->addLayout(hbox);
 
     setLayout(vbox);
 
@@ -168,16 +169,37 @@ DeckListView::DeckListView(QWidget *parent)
 
     connect(&remote, &Remote::list, decklist, &DeckList::setList);
     connect(&remote, &Remote::ready, [=] (bool e) {
-        abortButton->setEnabled(!e);
         pageBox->setEnabled(e);
-    });
-    connect(decklist, &DeckList::selectDeck, this, &DeckListView::selectDeck);
-    connect(abortButton, &IconButton::clicked,
-            [=] () {
-        remote.abort();
-        pageBox->setEnabled(true);
+        left->setEnabled(e);
+        right->setEnabled(e);
+        if(e)
+        {
+            refreshOrAbortButton->setIcon(QIcon(":/icons/refresh.png"));
+        }
+        else
+        {
+            refreshOrAbortButton->setIcon(QIcon(":/icons/abort.png"));
+        }
     });
 
+    connect(decklist, &DeckList::selectDeck, this, &DeckListView::selectDeck);
+
+    connect(refreshOrAbortButton, &IconButton::clicked, [=]()
+    {
+        if(remote.is_waiting())
+        {
+            remote.abort();
+            refreshOrAbortButton->setIcon(QIcon(":/icons/refresh.png"));
+            pageBox->setEnabled(true);
+            left->setEnabled(true);
+            right->setEnabled(true);
+        }
+        else
+        {
+            getList(pageBox->value());
+            refreshOrAbortButton->setIcon(QIcon(":/icons/abort.png"));
+        }
+    });
 
     connect(cata, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index) {
         config->Flt = cata->itemData(index).toInt();
@@ -186,12 +208,22 @@ DeckListView::DeckListView(QWidget *parent)
         config->deckType = typeCata->itemData(index).toInt();
     });
 
+
+    connect(right, &IconButton::clicked, [=]()
+    {
+        goPage(pageBox->value() + 1);
+    });
+    connect(left, &IconButton::clicked, [=]()
+    {
+
+        goPage(pageBox->value() - 1);
+    });
+
     connect(decklist, &DeckList::deckType, [=] (QString type) {
         config->tempConfig = type;
         config->Flt = -1;
-        page = 1;
         cata->setCurrentIndex(cata->count() - 1);
-        getList();
+        goPage(1);
     });
 
     connect(switchButton, &QPushButton::clicked, [=] () {
@@ -201,10 +233,9 @@ DeckListView::DeckListView(QWidget *parent)
         if(ok)
         {
             config->tempConfig = text;
-            page = 1;
             config->Flt = -1;
             cata->setCurrentIndex(cata->count() - 1);
-            getList();
+            goPage(1);
         }
     });
 }
@@ -214,11 +245,16 @@ void DeckListView::setList(Type::DeckL ls)
     decklist->setList(ls);
 }
 
+void DeckListView::getList(int newPage)
+{
+    pageBox->setValue(newPage);
+    remote.getList(newPage);
+}
+
 void DeckListView::goPage(int newPage)
 {
     if(newPage > 0)
     {
-        page = newPage;
-        getList();
+        getList(newPage);
     }
 }

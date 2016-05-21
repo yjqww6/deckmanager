@@ -24,6 +24,7 @@ Config::Config(QObject *parent)
     autoSwitch = getStr("pref", "autoswitch", "0").toInt() == 1;
     newTab = getStr("pref", "newTab", "0").toInt() == 1;
     limit = getStr("pref", "limit", "0").toInt();
+    usesetname = getStr("pref", "usesetname", "1").toInt() == 1;
     QFileInfo info(QFile(getStr("pref", "bg", "")));
     bg = info.exists();
     deckType = 0;
@@ -157,9 +158,15 @@ Config::~Config()
     settings.setValue("pref/autoswitch", autoSwitch ? 1 : 0);
     settings.setValue("pref/newTab", newTab ? 1 : 0);
     settings.setValue("pref/limit", limit);
+    settings.setValue("pref/usesetname", usesetname ? 1 : 0);
 }
 void Config::setNewTab(bool value)
 {
     newTab = value;
+}
+
+void Config::setUseSetName(bool val)
+{
+    usesetname = val;
 }
 

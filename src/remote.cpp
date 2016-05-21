@@ -1,5 +1,6 @@
 #include "remote.h"
 #include <QTextDocument>
+#include <QFile>
 #include "config.h"
 #include "range.h"
 
@@ -79,7 +80,10 @@ static QString request(int decktype, int flt)
         querys << "Flt=" + QString::number(flt);
     }
     QString query = querys.join('&');
-
+    if(query.length() > 0)
+    {
+        query.append('&');
+    }
     return param + query;
 }
 
@@ -129,6 +133,20 @@ void Remote::listFinished(QNetworkReply *reply)
             codec = QTextCodec::codecForName("utf8");
         }
         QString page = codec->toUnicode(reply->readAll());
+
+        QFile file("dm.log");
+        if(file.open(QFile::WriteOnly | QFile::Text))
+        {
+            QTextStream out(&file);
+            out << reply->url().toString();
+            for(auto header : reply->rawHeaderPairs())
+            {
+                out << header.first << " : " << header.second << "\n";
+            }
+            out << QString::number(page.length());
+            out << page;
+            file.close();
+        }
         QRegExp regexp(config->getCurrentRemote().finishlist);
 
         QString idI = config->getCurrentRemote().deckid;
@@ -272,7 +290,12 @@ void Remote::get()
             break;
         }
     }
-    reply = manager->get(QNetworkRequest(currentUrl));
+    QSslConfiguration config;
+    config.setPeerVerifyMode(QSslSocket::VerifyNone);
+    config.setProtocol(QSsl::TlsV1SslV3);
+    QNetworkRequest request(currentUrl);
+    request.setSslConfiguration(config);
+    reply = manager->get(request);
     connect(reply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
             this, &Remote::error);
 }

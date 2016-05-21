@@ -51,19 +51,13 @@ signals:
     void selectDeck(QString, QString, bool);
 public slots:
     void setList(Type::DeckL);
-    void getList()
-    {
-        pageBox->setValue(page);
-        pageBox->setEnabled(false);
-        remote.getList(page);
-    }
+    void getList(int);
 
 private slots:
     void goPage(int);
 private:
     DeckList *decklist;
     Remote remote;
-    int page;
     QSpinBox *pageBox;
     int lastConfig;
     int lastPage;

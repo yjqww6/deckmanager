@@ -411,7 +411,11 @@ void DeckView::saveDeck(QString path)
 void DeckView::help()
 {
     QString helpStr = config->getHelpStr();
-    QMessageBox::information(nullptr, config->getStr("action", "help", "帮助"), helpStr);
+    QMessageBox msg;
+    msg.setTextFormat(Qt::RichText);
+    msg.setWindowTitle(config->getStr("action", "help", "帮助"));
+    msg.setText(helpStr);
+    msg.exec();
 }
 
 void DeckView::home()

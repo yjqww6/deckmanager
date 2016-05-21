@@ -64,12 +64,34 @@ void CardDetails::setId(quint32 id)
 
         quint64 setcode = card.setcode;
         QStringList setcodeStr;
-        while(setcode)
+        bool useSetName = config->usesetname;
+        auto &setnames = cardPool->setnames;
+        for(; setcode; setcode = setcode >> 16)
         {
-            QString cur;
-            cur.setNum(setcode & 0xffff, 16);
-            setcodeStr << cur;
-            setcode = setcode >> 16;
+            if(useSetName)
+            {
+                quint32 mainSetCode = setcode & 0x0fff;
+                quint32 subSetCode = setcode & 0xffff;
+                auto it = setnames.find(subSetCode);
+                if(it != setnames.end())
+                {
+                    setcodeStr << it.value();
+                }
+                if(mainSetCode != subSetCode)
+                {
+                    auto it = setnames.find(mainSetCode);
+                    if(it != setnames.end())
+                    {
+                        setcodeStr << it.value();
+                    }
+                }
+            }
+            else
+            {
+                QString cur;
+                cur.setNum(setcode & 0xffff, 16);
+                setcodeStr << cur;
+            }
         }
         str << (config->getStr("label", "setcode", "系列") + ":[" + setcodeStr.join("|") + "]");
         str << card.effect;

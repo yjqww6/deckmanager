@@ -4,7 +4,9 @@
 #include "limitcards.h"
 #include "range.h"
 #include "wrapper.h"
+#include "arrange.h"
 #include <QApplication>
+#include <QCompleter>
 
 const quint32 CardFilter::cardTypes[] =
 {
@@ -88,6 +90,8 @@ const quint32 CardFilter::monsterAttrs[] =
 CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
 {
     auto grid = new QGridLayout;
+    arrange arr("ab|cd|ee|"
+                "f.|..|..|..|.f|gh|ij|kk|ll|mn|", grid);
     cardType = new QComboBox;
     cardType->setEditable(false);
     cardType->addItem("N/A", QVariant(-1));
@@ -100,11 +104,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     cardTypeSub->setEditable(false);
     cardTypeSub->addItem("N/A", QVariant(-1));
 
-
-    int y = 0;
-
-    grid->addWidget(cardType, y, 0);
-    grid->addWidget(cardTypeSub, y, 1);
+    arr.set2('a', cardType, 'b', cardTypeSub);
 
 
     auto tab = new QTabWidget;
@@ -137,15 +137,22 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     rankEdit = new QLineEdit;
     scaleEdit = new QLineEdit;
 
+    setEdit = new QComboBox;
+    setEdit->setEditable(true);
+    QStringList words;
+    setEdit->addItem("");
+    foreach(auto &it, cardPool->setnames)
+    {
+        words << it;
+        setEdit->addItem(it);
+    }
+    auto completer = new QCompleter(words, this);
+    setEdit->setCompleter(completer);
 
-    setEdit = new QLineEdit;
     nameEdit = new QLineEdit;
 
-    y++;
-    grid->addWidget(passL, y, 0);
-    grid->addWidget(passEdit, y, 1);
+    arr.set2('c', passL, 'd', passEdit);
 
-    y++;
     auto hbox1 = new QHBoxLayout;
     limit = new QComboBox;
     limit->addItem("N/A", -1);
@@ -161,37 +168,17 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     ot->addItem("TCG", 2);
     hbox1->addWidget(ot);
 
-    grid->addLayout(hbox1, y, 0, 1, 2);
+    arr.set('e', hbox1);
 
+    arrange arrM("ab|cd|ef|gh|ij|kl|mn", gridM);
 
-    int y1 = y;
-    y1++;
-    gridM->addWidget(raceL, y1, 0);
-    gridM->addWidget(cardRace, y1, 1);
-
-    y1++;
-    gridM->addWidget(attrL, y1, 0);
-    gridM->addWidget(cardAttr, y1, 1);
-
-    y1++;
-    gridM->addWidget(atkL, y1, 0);
-    gridM->addWidget(atkEdit, y1, 1);
-
-    y1++;
-    gridM->addWidget(defL, y1, 0);
-    gridM->addWidget(defEdit, y1, 1);
-
-    y1++;
-    gridM->addWidget(levelL, y1, 0);
-    gridM->addWidget(levelEdit, y1, 1);
-
-    y1++;
-    gridM->addWidget(rankL, y1, 0);
-    gridM->addWidget(rankEdit, y1, 1);
-
-    y1++;
-    gridM->addWidget(scaleL, y1, 0);
-    gridM->addWidget(scaleEdit, y1, 1);
+    arrM.set2('a', raceL, 'b', cardRace);
+    arrM.set2('c', attrL, 'd', cardAttr);
+    arrM.set2('e', atkL, 'f', atkEdit);
+    arrM.set2('g', defL, 'h', defEdit);
+    arrM.set2('i', levelL, 'j', levelEdit);
+    arrM.set2('k', rankL, 'l', rankEdit);
+    arrM.set2('m', scaleL, 'n', scaleEdit);
 
     auto wM = new QWidget;
     wM->setLayout(gridM);
@@ -209,39 +196,30 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     wE->setLayout(gridE);
     tab->addTab(wE, config->getStr("label", "effect", "效果"));
 
-    y++;
-    grid->addWidget(tab, y, 0, 5, 2);
-
-    y += 5;
-    grid->addWidget(setL, y, 0);
-    grid->addWidget(setEdit, y, 1);
-    y++;
-    grid->addWidget(nameL, y, 0);
-    grid->addWidget(nameEdit, y, 1);
+    arr.set('f', tab);
+    arr.set2('g', setL, 'h', setEdit);
+    arr.set2('i', nameL, 'j', nameEdit);
 
     auto searchButton = new IconButton(":/icons/searchall.png", config->getStr("action", "searchall", "搜索"));
     auto searchThisButton = new IconButton(":/icons/search.png", config->getStr("action", "searchthis", "在结果中搜索"));
     auto searchDeckButton = new IconButton(":/icons/search.png", config->getStr("action", "searchdeck", "在卡组中搜索"));
     auto revertButton = new IconButton(":/icons/revert.png", config->getStr("action", "revert", "复位"));
-    y++;
-    grid->addWidget(searchButton, y, 0, 1, 2);
+    arr.set('k', searchButton);
 
     auto hbox = new QHBoxLayout;
     hbox->addWidget(revertButton);
     hbox->addWidget(searchDeckButton);
     hbox->addWidget(searchThisButton);
 
-    y++;
-    grid->addLayout(hbox, y, 0, 1, 2);
+    arr.set('l', hbox);
 
-    y++;
     inverseMode = new QCheckBox;
     inverseMode->setText(config->getStr("label", "inverse", "反选模式"));
-    grid->addWidget(inverseMode, y, 0);
 
     noSortMode = new QCheckBox;
     noSortMode->setText(config->getStr("label", "nosort", "不排序"));
-    grid->addWidget(noSortMode, y, 1);
+
+    arr.set2('m', inverseMode, 'n', noSortMode);
     setLayout(grid);
 
     connect(cardType, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -352,7 +330,7 @@ void CardFilter::searchSet(quint32 id)
             };
         }
 
-        auto &map = cardPool->getPool();
+        auto &map = cardPool->pool;
         auto ls = Type::DeckP::create();
         for(auto &it : map)
         {
@@ -382,7 +360,7 @@ void CardFilter::searchSet(quint32 id)
 
 void CardFilter::searchAll()
 {
-    auto &map = cardPool->getPool();
+    auto &map = cardPool->pool;
     call_with_pred([&](Pred &&pred) {
         search(keysBegin(map), keysEnd(map), std::move(pred));
     });
@@ -439,7 +417,16 @@ void CardFilter::call_with_pred(Ctx &&ctx)
         subtype |= type;
     }
 
-    quint64 set_code = setEdit->text().toULongLong(nullptr, 16);
+    bool ok;
+    quint64 set_code = setEdit->currentText().toULongLong(&ok, 16);
+    if(!ok)
+    {
+        auto it = cardPool->setnamesR.find(setEdit->currentText());
+        if(it != cardPool->setnamesR.end())
+        {
+            set_code = it.value();
+        }
+    }
     QString name = nameEdit->text();
     bool expr = false;
     QList<QStringList> exprs;
@@ -723,6 +710,7 @@ void CardFilter::revert()
     cardTypeSub->setCurrentIndex(0);
     cardRace->setCurrentIndex(0);
     cardAttr->setCurrentIndex(0);
+    setEdit->setCurrentIndex(0);
 
 
     passEdit->clear();
@@ -731,7 +719,6 @@ void CardFilter::revert()
     levelEdit->clear();
     rankEdit->clear();
     scaleEdit->clear();
-    setEdit->clear();
     nameEdit->clear();
 
     for(auto effect : effects)

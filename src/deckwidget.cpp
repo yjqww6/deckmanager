@@ -34,6 +34,7 @@ void DeckWidget::paintEvent(QPaintEvent *)
 {
 
     QPainter painter(this);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
     if(deckSize != deck->size())
     {
         emit sizeChanged(deck->size());

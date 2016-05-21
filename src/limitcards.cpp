@@ -8,7 +8,7 @@ LimitCards *limitCards = nullptr;
 LimitCards::LimitCards()
 {
     QImage img;
-    img.load("textures/lim.png");
+    img.load("textures/lim.png", "1");
 
     int w = img.width() / 2, h = img.height() / 2;
 

@@ -10,6 +10,7 @@ CardPicture::CardPicture(QWidget *parent)
 void CardPicture::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
     if(item.getId() && item.getPixmap())
     {
         painter.drawPixmap(QRect(QPoint(0, 0), cardSize), *item.getPixmap().data());

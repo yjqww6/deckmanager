@@ -3,6 +3,7 @@
 #include "config.h"
 #include "range.h"
 #include <QDebug>
+#include "sqlite3/sqlite3.h"
 
 CardPool *cardPool = nullptr;
 
@@ -16,29 +17,64 @@ Wrapper<Card> CardPool::getCard(quint32 id)
     return Wrapper<Card>(it->second.get());
 }
 
-void CardPool::loadCard(QSqlQuery &query)
+
+static bool sqlError(sqlite3 *db, sqlite3_stmt *stmt = nullptr)
 {
-    std::unique_ptr<Card> card(new Card);
+    if (stmt)
+    {
+        sqlite3_finalize(stmt);
+    }
+    sqlite3_close(db);
 
-#define ASSIGN(field, index) card->field = query.value(index).toUInt();
-    ASSIGN(id, 0);
-    ASSIGN(ot, 1);
-    ASSIGN(alias, 2);
-    card->setcode = query.value(3).toULongLong();
-    ASSIGN(type, 4);
-    card->atk = query.value(5).toInt();
-    card->def = query.value(6).toInt();
-    ASSIGN(level, 7);
-    ASSIGN(race, 8);
-    ASSIGN(attribute, 9);
-    ASSIGN(category, 10);
-    card->scale = (card->level & 0xff0000) >> 16;
-    card->level = card->level & 0xffff;
-    card->name = query.value(11).toString();
-    card->effect = query.value(12).toString();
+    return false;
+}
 
-    quint32 id = card->id;
-    pool.insert(std::make_pair(id, std::move(card)));
+static bool loadDataBase(const QString &fileName, std::unordered_map<quint32, std::unique_ptr<Card>> &pool)
+{
+    sqlite3 *DB = nullptr;
+    if (sqlite3_open(fileName.toLatin1().data(), &DB) != SQLITE_OK)
+    {
+        return sqlError(DB);
+    }
+
+    sqlite3_stmt* stmt = nullptr;
+    const char *sql = "select * from datas,texts where datas.id=texts.id";
+
+    if (sqlite3_prepare_v2(DB, sql, -1, &stmt, 0) != SQLITE_OK)
+    {
+        return sqlError(DB, stmt);
+    }
+
+    int step = 0;
+    do {
+        step = sqlite3_step(stmt);
+        if (step == SQLITE_BUSY || step == SQLITE_ERROR || step == SQLITE_MISUSE)
+            return sqlError(DB, stmt);
+        else if (step == SQLITE_ROW) {
+            uint32_t code = sqlite3_column_int(stmt, 0);
+            Card &cd = *pool.emplace(std::piecewise_construct,
+                std::forward_as_tuple(code), std::forward_as_tuple(new Card)).first->second;
+
+            cd.id = code;
+            cd.ot = sqlite3_column_int(stmt, 1);
+            cd.alias = sqlite3_column_int(stmt, 2);
+            cd.setcode = sqlite3_column_int64(stmt, 3);
+            cd.type = sqlite3_column_int(stmt, 4);
+            cd.atk = sqlite3_column_int(stmt, 5);
+            cd.def = sqlite3_column_int(stmt, 6);
+            unsigned int level = sqlite3_column_int(stmt, 7);
+            cd.level = level & 0xff;
+            cd.scale = (level >> 24) & 0xff;
+            cd.race = sqlite3_column_int(stmt, 8);
+            cd.attribute = sqlite3_column_int(stmt, 9);
+            cd.category = sqlite3_column_int(stmt, 10);
+            cd.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+            cd.effect = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 13));
+        }
+    } while (step != SQLITE_DONE);
+    sqlite3_finalize(stmt);
+    sqlite3_close(DB);
+    return true;
 }
 
 CardPool::CardPool(QStringList paths) : loadThread(nullptr, this)
@@ -110,35 +146,13 @@ CardPool::CardPool(QStringList paths) : loadThread(nullptr, this)
     otherNamesDone = false;
     acc = false;
 
+    loadSetNames();
 
     cdbPath = paths;
     newPool.reserve(10000);
     foreach(auto &path, cdbPath)
     {
-        QSqlDatabase db;
-        if(QSqlDatabase::contains("qt_sql_default_connection"))
-        {
-            db = QSqlDatabase::database("qt_sql_default_connection");
-        }
-        else
-        {
-            db = QSqlDatabase::addDatabase("QSQLITE");
-        }
-
-        db.setDatabaseName(path);
-        db.open();
-
-        QSqlQuery query;
-        query.exec("select datas.* , texts.name, texts.desc from datas left join texts on datas.id = texts.id");
-        if(query.first())
-        {
-            do
-            {
-                loadCard(query);
-            } while(query.next());
-        }
-
-        db.close();
+        loadDataBase(path, pool);
     }
 }
 
@@ -147,7 +161,6 @@ QString CardPool::getType(quint32 type)
     QList<QPair<int, QString> > ls;
     QStringList str;
 
-    auto types = getTypes();
     for(auto it = types.begin(); it != types.end(); ++it)
     {
         if(type & it.key())
@@ -172,7 +185,6 @@ QString CardPool::getType(quint32 type)
 
 QString CardPool::getRace(quint32 race)
 {
-    auto races = getRaces();
     for(auto it = races.begin(); it != races.end(); ++it)
     {
         if(race & it.key())
@@ -221,7 +233,6 @@ static QString nameConv(QString name)
 
 QString CardPool::getAttr(quint32 attribute)
 {
-    auto attrs = CardPool::getAttrs();
     for(auto it = attrs.begin(); it != attrs.end(); ++it)
     {
         if(attribute & it.key())
@@ -236,11 +247,14 @@ QString CardPool::getAttr(quint32 attribute)
 Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
 {
     name = nameConv(name);
+    QMutexLocker locker(&mutex);
     auto it = newPool.find(name);
     if(it == newPool.end() && !otherNamesDone && wait)
     {
         acc = true;
+        locker.unlock();
         loadThread.wait();
+        locker.relock();
         it = newPool.find(name);
     }
     if(it == newPool.end())
@@ -253,6 +267,67 @@ Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
 void CardPool::loadNames()
 {
     loadThread.start();
+}
+
+void CardPool::loadSetNames()
+{
+    QFile file("setcode.conf");
+    if(file.open(QFile::ReadOnly | QFile::Text))
+    {
+        QTextStream stream(&file);
+        stream.setCodec(QTextCodec::codecForName("gbk"));
+        QString line;
+        while(stream.readLineInto(&line))
+        {
+            if(!line.startsWith("0x"))
+            {
+                continue;
+            }
+            int it = line.indexOf(' ', 2);
+            if(it == -1)
+            {
+                continue;
+            }
+            bool ok = false;
+            quint32 setcode = line.mid(2, it - 2).toULong(&ok, 16);
+            if(ok)
+            {
+                QString setname = line.mid(it + 1);
+                setnames[setcode] = setname;
+                setnamesR[setname] = setcode;
+            }
+        }
+        return;
+    }
+
+    QFile conf("strings.conf");
+    if(conf.open(QFile::ReadOnly | QFile::Text))
+    {
+        QTextStream stream(&conf);
+        stream.setCodec(QTextCodec::codecForName("utf8"));
+        QString line;
+        while(stream.readLineInto(&line))
+        {
+            if(!line.startsWith("!setname 0x"))
+            {
+                continue;
+            }
+            int it = line.indexOf(' ', 11);
+            if(it == -1)
+            {
+                continue;
+            }
+            bool ok = false;
+            quint32 setcode = line.mid(11, it - 11).toULong(&ok, 16);
+            if(ok)
+            {
+                int it2 = line.indexOf('\t', it + 1);
+                QString setname = line.mid(it + 1, it2 - it - 1);
+                setnames[setcode] = setname;
+                setnamesR[setname] = setcode;
+            }
+        }
+    }
 }
 
 QString Card::cardType()
@@ -279,64 +354,51 @@ LoadThread::LoadThread(QObject *parent, CardPool *_thePool)
 void LoadThread::run()
 {
     sleep(3);
-    foreach(auto &path, thePool->cdbPath)
+    QList<quint32> ls;
+    for(auto &it : cardPool->pool)
     {
-        QSqlDatabase db;
-        if(QSqlDatabase::contains("qt_sql_default_connection"))
+        ls.append(it.first);
+    }
+    qSort(ls);
+    for(quint32 id : ls)
+    {
+        if(!thePool->acc)
         {
-            db = QSqlDatabase::database("qt_sql_default_connection");
+            msleep(10);
+        }
+
+        QFile file("script/c" + QString::number(id) + ".lua");
+        if(file.open(QFile::ReadOnly | QFile::Text))
+        {
+            QString line = file.readLine();
+            line = line.trimmed();
+            if(line.length() <= 2)
+            {
+                continue;
+            }
+            QString name = line.mid(2);
+
+            QMutexLocker locker(&thePool->mutex);
+            thePool->newPool.insert(nameConv(name), id);
         }
         else
         {
-            db = QSqlDatabase::addDatabase("QSQLITE");
-        }
-        db.setDatabaseName(path);
-        db.open();
-
-        QSqlQuery query;
-        query.exec("select id from datas");
-        if(query.first())
-        {
-            do
+            QByteArray arr = expansions->open("script/c" + QString::number(id) + ".lua");
+            if(arr.isEmpty())
             {
-                if(!thePool->acc)
-                {
-                    msleep(10);
-                }
-                quint32 id = query.value(0).toUInt();
-                QFile file("script/c" + QString::number(id) + ".lua");
-                if(file.open(QFile::ReadOnly | QFile::Text))
-                {
-                    QString line = file.readLine();
-                    line = line.trimmed();
-                    if(line.length() <= 2)
-                    {
-                        continue;
-                    }
-                    QString name = line.mid(2);
-                    thePool->newPool.insert(nameConv(name), id);
-                }
-                else
-                {
-                    QByteArray arr = expansions->open("script/c" + QString::number(id) + ".lua");
-                    if(arr.isEmpty())
-                    {
-                        continue;
-                    }
-                    QString str(arr);
-                    QTextStream in(&str);
-                    QString line = in.readLine();
-                    line = line.trimmed();
-                    if(line.length() <= 2)
-                    {
-                        continue;
-                    }
-                    QString name = line.mid(2);
-                    thePool->newPool.insert(nameConv(name), id);
-                }
-            }while(query.next());
+                continue;
+            }
+            QTextStream in(&arr);
+            QString line = in.readLine();
+            line = line.trimmed();
+            if(line.length() <= 2)
+            {
+                continue;
+            }
+            QString name = line.mid(2);
+            QMutexLocker locker(&thePool->mutex);
+            thePool->newPool.insert(nameConv(name), id);
         }
-        db.close();
     }
     thePool->otherNamesDone = true;
 }

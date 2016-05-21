@@ -41,6 +41,7 @@ public:
     bool autoSwitch;
     bool bg;
     bool newTab;
+    bool usesetname;
     int limit;
     QString getStr(QString group, QString key, QString defaultStr);
     QString getHelpStr();
@@ -60,6 +61,7 @@ public slots:
     void setLimit(int);
     void setAutoSwitch(bool);
     void setNewTab(bool value);
+    void setUseSetName(bool);
 };
 
 extern Config *config;

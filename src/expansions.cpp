@@ -1,8 +1,13 @@
 #include "expansions.h"
 #include <QDebug>
 #include <QPixmap>
+#include <QMutex>
+#include <QMutexLocker>
 
 Expansions *expansions = nullptr;
+
+static QMutex mutex;
+
 Expansions::Expansions(QStringList zipFiles)
 {
     foreach(QString fileName, zipFiles)
@@ -17,26 +22,20 @@ Expansions::Expansions(QStringList zipFiles)
 
 QByteArray Expansions::open(QString path)
 {
-    bool found = false;
     QByteArray arr;
+    QMutexLocker locker(&mutex);
     foreach(auto zipFile, zips)
     {
-        if(found)
-        {
-            break;
-        }
         if(zipFile->setCurrentFile(path))
         {
             QuaZipFile file(zipFile.data());
 
             if(file.open(QIODevice::ReadOnly))
             {
-                found = true;
                 arr = file.readAll();
-
+                break;
             }
-            file.close();
         }
     }
-    return arr;
+    return std::move(arr);
 }

@@ -15,7 +15,6 @@
 #include "deckview.h"
 #include "signaltower.h"
 #include <QDebug>
-#include <QSqlQuery>
 #include <QSplitter>
 #include <QTimer>
 #include <QTabBar>
@@ -197,7 +196,7 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(widgettop);
 
     deckView->setStatus();
-    deckListView->getList();
+    deckListView->getList(1);
     localList->refresh();
     cardListView->refresh();
     replayList->refresh();

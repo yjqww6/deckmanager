@@ -3,14 +3,12 @@
 
 #include <QString>
 #include <QHash>
-#include <QtSql/QSqlRecord>
-#include <QtSql/QSqlDatabase>
-#include <QtSql/QSqlQuery>
 #include <QFile>
 #include <QThread>
 #include "constant.h"
 #include "wrapper.h"
 #include <QDebug>
+#include <QMutex>
 #include <memory>
 #include <unordered_map>
 
@@ -82,18 +80,20 @@ class CardPool
 {
 private:
     QStringList cdbPath;
-    void loadCard(QSqlQuery&);
-    std::unordered_map<quint32, std::unique_ptr<Card> > pool;
+    bool otherNamesDone;
+    bool acc;
+    LoadThread loadThread;
+    QMutex mutex;
+public:
+    std::unordered_map<quint32, std::unique_ptr<Card>> pool;
     QHash<QString, quint32> newPool;
     QHash<quint32, quint32> changedMap;
     QHash<quint32, QString> races;
     QHash<quint32, QString> types;
     QHash<quint32, QString> attrs;
-    bool otherNamesDone;
-    bool acc;
-    LoadThread loadThread;
+    QHash<quint32, QString> setnames;
+    QHash<QString, quint32> setnamesR;
 
-public:
     friend class LoadThread;
 
     CardPool(QStringList paths);
@@ -102,29 +102,7 @@ public:
     Wrapper<Card> getNewCard(QString name, bool wait = true);
 
     void loadNames();
-    auto getTypes() -> decltype((types))
-    {
-        return types;
-    }
-
-    auto getRaces() -> decltype((races))
-    {
-        return races;
-    }
-    auto getAttrs() -> decltype((attrs))
-    {
-        return attrs;
-    }
-
-    auto getPool() -> decltype((pool))
-    {
-        return pool;
-    }
-
-    auto getMap() -> decltype((changedMap))
-    {
-        return changedMap;
-    }
+    void loadSetNames();
 
     LoadThread *getThread()
     {

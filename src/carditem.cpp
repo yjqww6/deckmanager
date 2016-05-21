@@ -3,12 +3,14 @@
 #include "card.h"
 #include <QDebug>
 #include <QFile>
+#include <QMutex>
 
 CardItem::Pool CardItem::pool;
 CardItem::Pool CardItem::spool;
 QString CardItem::bigPics = "pics/";
 QString CardItem::smallPics = "pics/thumbnail/";
 QString CardItem::unknown = "textures/unknown.jpg";
+static QMutex mutex;
 
 static QSharedPointer<QPixmap> readPic(QString path)
 {
@@ -24,6 +26,7 @@ static QSharedPointer<QPixmap> readPic(QString path)
 CardItem::CardItem(quint32 _id, bool small)
     : id(_id)
 {
+    QMutexLocker locker(&mutex);
     auto &thePool = small ? spool : pool;
     auto it = thePool.find(id);
     if(it == thePool.end() || it.value().isNull())

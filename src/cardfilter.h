@@ -88,7 +88,7 @@ private:
 
     QCheckBox *effects[32];
 
-    QLineEdit *setEdit;
+    QComboBox *setEdit;
     QLineEdit *nameEdit;
     QCheckBox *inverseMode;
     QCheckBox *noSortMode;
