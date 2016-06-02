@@ -1,20 +1,19 @@
 #include "deckmodel.h"
-#include "remote.h"
 #include "range.h"
 #include "config.h"
+#include "engine.h"
 #include <algorithm>
 #include <QDebug>
 
 int DeckModel::counter = 0;
 
 DeckModel::DeckModel(QObject *parent)
-    : QObject(parent), timestamp(0), waiting(false), fresh(true)
+    : QObject(parent), timestamp(0), waiting(false), fresh(true), netwoking(make_networking())
 {
     mainDeck = QSharedPointer<Type::DeckI>::create();
     extraDeck = QSharedPointer<Type::DeckI>::create();
     sideDeck = QSharedPointer<Type::DeckI>::create();
     id = ++counter;
-    connect(&remote, &Remote::deckStream, this, &DeckModel::loadDeckInternal);
 }
 
 static void toShot(Type::Deck &shot, Type::DeckI& items)
@@ -125,7 +124,7 @@ void DeckModel::shuffle()
 void DeckModel::abort()
 {
     waiting = false;
-    remote.abort();
+    netwoking->abort();
 }
 
 void DeckModel::loadRemoteDeck(QString _id, QString name)
@@ -136,7 +135,14 @@ void DeckModel::loadRemoteDeck(QString _id, QString name)
     }
     waiting = true;
     emit ready(id, false);
-    remote.getDeck(_id, name);
+
+    disconnect(netwoking.get());
+    connect(netwoking.get(), &NetWorking::deck, this, [this, name](QString deck)
+    {
+        loadDeckInternal(deck, name, false);
+    }, Qt::QueuedConnection);
+
+    netwoking->getDeck(_id);
 }
 
 QString DeckModel::status()
@@ -242,13 +248,20 @@ Wrapper<Card> ItemThread::loadNewCard(quint32 id)
 
     QEventLoop loop;
     QString name;
-    Remote remote;
-    loop.connect(&remote, &Remote::cardName, [&](QString text) {
+    auto networking = make_networking();
+    loop.connect(networking.get(), &NetWorking::name, [&](QString text) {
         name = text;
     });
-    loop.connect(&remote, static_cast<void (Remote::*)()>(&Remote::finished), &loop, &QEventLoop::quit);
 
-    remote.getName(id);
+    loop.connect(networking.get(), &NetWorking::ready, this, [&](bool ready)
+    {
+        if(ready)
+        {
+            loop.quit();
+        }
+    }, Qt::QueuedConnection);
+
+    networking->getName(id);
     loop.exec();
 
     auto card = cardPool->getNewCard(name, config->waitForPass);
@@ -260,79 +273,88 @@ Wrapper<Card> ItemThread::loadNewCard(quint32 id)
 
 void ItemThread::run()
 {
-    QTextStream in(&lines);
-    bool side = false;
-
-    for(auto i: range(3))
+    SchemeThreadActivator act;
+    try
     {
-        Q_UNUSED(i);
-        decltype(deck)::value_type temp;
-        deck.append(std::move(temp));
-    }
 
-    for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
-    {
-        if(ts != model->timestamp || !model->waiting)
+        QTextStream in(&lines);
+        bool side = false;
+        for(auto i: range(3))
         {
-            return;
+            Q_UNUSED(i);
+            decltype(deck)::value_type temp;
+            deck.append(std::move(temp));
         }
-        if(line.length() > 0)
-        {
-            if(line[0] == '#')
-            {
-                continue;
-            }
-            else if(line[0] == '!')
-            {
-                side = true;
-                continue;
-            }
-            else
-            {
-                bool ok = true;
-                quint32 id = line.toUInt(&ok);
 
-                Wrapper<Card> card;
-                if(ok)
+        for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
+        {
+            if(ts != model->timestamp || !model->waiting)
+            {
+                return;
+            }
+            if(line.length() > 0)
+            {
+                if(line[0] == '#')
                 {
-                    card = cardPool->getCard(id);
-                    if(card.isNull() && config->convertPass && id >= 10000)
-                    {
-                        card = loadNewCard(id);
-                    }
+                    continue;
+                }
+                else if(line[0] == '!')
+                {
+                    side = true;
+                    continue;
                 }
                 else
                 {
-                    card = cardPool->getNewCard(line, config->waitForPass);
-                }
+                    bool ok = true;
+                    quint32 id = line.toUInt(&ok);
 
-                if(ts != model->timestamp || !model->waiting)
-                {
-                    return;
-                }
-
-                call_with_ref([&](Card &card) {
-                    id = card.id;
-                    if(side)
+                    Wrapper<Card> card;
+                    if(ok)
                     {
-                        deck[2].append(CardItem(id));
+                        card = cardPool->getCard(id);
+                        if(card.isNull() && config->convertPass && id >= 10000)
+                        {
+                            card = loadNewCard(id);
+                        }
                     }
                     else
                     {
-                        if(card.inExtra())
+                        card = cardPool->getNewCard(line, config->waitForPass);
+                    }
+
+                    if(ts != model->timestamp || !model->waiting)
+                    {
+                        return;
+                    }
+
+                    call_with_ref([&](Card &card) {
+                        id = card.id;
+                        if(side)
                         {
-                            deck[1].append(CardItem(id));
+                            deck[2].append(CardItem(id));
                         }
                         else
                         {
-                            deck[0].append(CardItem(id));
+                            if(card.inExtra())
+                            {
+                                deck[1].append(CardItem(id));
+                            }
+                            else
+                            {
+                                deck[0].append(CardItem(id));
+                            }
                         }
-                    }
-                }, std::move(card));
+                    }, std::move(card));
+                }
             }
         }
+
+        auto ptr = Deck::create();
+        ptr->swap(deck);
+        emit finishLoad(ts, ptr);
     }
-    auto ptr = Deck::create();
-    ptr->swap(deck);
-    emit finishLoad(ts, ptr);
+    catch(...)
+    {
+
+    }
 }

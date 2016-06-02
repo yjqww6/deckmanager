@@ -26,7 +26,7 @@ static QSharedPointer<QPixmap> readPic(QString path)
 CardItem::CardItem(quint32 _id, bool small)
     : id(_id)
 {
-    QMutexLocker locker(&mutex);
+    //QMutexLocker locker(&mutex);
     auto &thePool = small ? spool : pool;
     auto it = thePool.find(id);
     if(it == thePool.end() || it.value().isNull())

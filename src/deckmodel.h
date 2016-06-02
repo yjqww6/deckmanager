@@ -3,7 +3,7 @@
 #include <QObject>
 #include "typing.h"
 #include "card.h"
-#include "remote.h"
+#include "networking.h"
 #include <QAtomicInt>
 #include <functional>
 
@@ -76,7 +76,7 @@ public:
     QAtomicInt timestamp;
     bool waiting;
     bool fresh;
-    Remote remote;
+    std::shared_ptr<NetWorking> netwoking;
 
     static int counter;
 signals:

@@ -2,6 +2,7 @@
 #include "expansions.h"
 #include "config.h"
 #include "range.h"
+#include "engine.h"
 #include <QDebug>
 #include "sqlite3/sqlite3.h"
 
@@ -77,7 +78,7 @@ static bool loadDataBase(const QString &fileName, std::unordered_map<quint32, st
     return true;
 }
 
-CardPool::CardPool(QStringList paths) : loadThread(nullptr, this)
+CardPool::CardPool(QStringList paths)
 {
 #define INSERT(container, field, str) \
     do { \
@@ -143,9 +144,6 @@ CardPool::CardPool(QStringList paths) : loadThread(nullptr, this)
     INSERT(attrs, ATTRIBUTE_WIND, "风");
     INSERT(attrs, ATTRIBUTE_DEVINE, "神");
 
-    otherNamesDone = false;
-    acc = false;
-
     loadSetNames();
 
     cdbPath = paths;
@@ -158,29 +156,12 @@ CardPool::CardPool(QStringList paths) : loadThread(nullptr, this)
 
 QString CardPool::getType(quint32 type)
 {
-    QList<QPair<int, QString> > ls;
-    QStringList str;
-
-    for(auto it = types.begin(); it != types.end(); ++it)
+    return with_scheme([type]()
     {
-        if(type & it.key())
-        {
-            ls.append(qMakePair(it.key(), it.value()));
-        }
-    }
 
-    qSort(ls.begin(), ls.end(),
-          [&](QPair<int, QString> &a, QPair<int, QString> &b)
-    {
-        return a.first < b.first;
+        ptr str = engine->call("type-string", Sfixnum(type));
+        return QString::fromUtf8(engine->getString(str).c_str());
     });
-
-    foreach(auto &pair, ls)
-    {
-        str << pair.second;
-    }
-
-    return str.join('|');
 }
 
 QString CardPool::getRace(quint32 race)
@@ -193,42 +174,6 @@ QString CardPool::getRace(quint32 race)
         }
     }
     return "?";
-}
-
-
-static QString nameConv(QString name)
-{
-    QString conv;
-    conv.reserve(name.length());
-    for(int i : range(name.length()))
-    {
-        ushort unicode = name[i].unicode();
-        if(unicode >= 65296 && unicode <= 65305)
-        {
-            conv.append(QChar(unicode - 65296));
-        }
-        else if(unicode >= 65313 && unicode <= 65338)
-        {
-            conv.append(QChar(unicode - 65313 + 'A'));
-        }
-        else if(unicode >= 65345 && unicode <= 65370)
-        {
-            conv.append(QChar(unicode - 65345 + 'a'));
-        }
-        else if(unicode == 8722)
-        {
-            conv.append(65293);
-        }
-        else if(unicode == ' ')
-        {
-            continue;
-        }
-        else
-        {
-            conv.append(name[i]);
-        }
-    }
-    return conv;
 }
 
 QString CardPool::getAttr(quint32 attribute)
@@ -246,88 +191,20 @@ QString CardPool::getAttr(quint32 attribute)
 
 Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
 {
-    name = nameConv(name);
-    QMutexLocker locker(&mutex);
-    auto it = newPool.find(name);
-    if(it == newPool.end() && !otherNamesDone && wait)
+    return with_scheme([&]()
     {
-        acc = true;
-        locker.unlock();
-        loadThread.wait();
-        locker.relock();
-        it = newPool.find(name);
-    }
-    if(it == newPool.end())
-    {
-        return Wrapper<Card>();
-    }
-    return Wrapper<Card>(getCard(it.value()));
-}
-
-void CardPool::loadNames()
-{
-    loadThread.start();
+        ptr str = engine->call("utf8->string", engine->bytevector(name.toUtf8()));
+        ptr id = engine->call("orig->id", str, Sboolean(wait));
+        return Wrapper<Card>(getCard(Sfixnum_value(id)));
+    });
 }
 
 void CardPool::loadSetNames()
 {
-    QFile file("setcode.conf");
-    if(file.open(QFile::ReadOnly | QFile::Text))
+    with_scheme([&]()
     {
-        QTextStream stream(&file);
-        stream.setCodec(QTextCodec::codecForName("gbk"));
-        QString line;
-        while(stream.readLineInto(&line))
-        {
-            if(!line.startsWith("0x"))
-            {
-                continue;
-            }
-            int it = line.indexOf(' ', 2);
-            if(it == -1)
-            {
-                continue;
-            }
-            bool ok = false;
-            quint32 setcode = line.mid(2, it - 2).toULong(&ok, 16);
-            if(ok)
-            {
-                QString setname = line.mid(it + 1);
-                setnames[setcode] = setname;
-                setnamesR[setname] = setcode;
-            }
-        }
-        return;
-    }
-
-    QFile conf("strings.conf");
-    if(conf.open(QFile::ReadOnly | QFile::Text))
-    {
-        QTextStream stream(&conf);
-        stream.setCodec(QTextCodec::codecForName("utf8"));
-        QString line;
-        while(stream.readLineInto(&line))
-        {
-            if(!line.startsWith("!setname 0x"))
-            {
-                continue;
-            }
-            int it = line.indexOf(' ', 11);
-            if(it == -1)
-            {
-                continue;
-            }
-            bool ok = false;
-            quint32 setcode = line.mid(11, it - 11).toULong(&ok, 16);
-            if(ok)
-            {
-                int it2 = line.indexOf('\t', it + 1);
-                QString setname = line.mid(it + 1, it2 - it - 1);
-                setnames[setcode] = setname;
-                setnamesR[setname] = setcode;
-            }
-        }
-    }
+        engine->call("load-setnames");
+    });
 }
 
 QString Card::cardType()
@@ -343,62 +220,4 @@ QString Card::cardRace()
 QString Card::cardAttr()
 {
     return cardPool->getAttr(attribute);
-}
-
-LoadThread::LoadThread(QObject *parent, CardPool *_thePool)
-    : QThread(parent), thePool(_thePool)
-{
-
-}
-
-void LoadThread::run()
-{
-    sleep(3);
-    QList<quint32> ls;
-    for(auto &it : cardPool->pool)
-    {
-        ls.append(it.first);
-    }
-    qSort(ls);
-    for(quint32 id : ls)
-    {
-        if(!thePool->acc)
-        {
-            msleep(10);
-        }
-
-        QFile file("script/c" + QString::number(id) + ".lua");
-        if(file.open(QFile::ReadOnly | QFile::Text))
-        {
-            QString line = file.readLine();
-            line = line.trimmed();
-            if(line.length() <= 2)
-            {
-                continue;
-            }
-            QString name = line.mid(2);
-
-            QMutexLocker locker(&thePool->mutex);
-            thePool->newPool.insert(nameConv(name), id);
-        }
-        else
-        {
-            QByteArray arr = expansions->open("script/c" + QString::number(id) + ".lua");
-            if(arr.isEmpty())
-            {
-                continue;
-            }
-            QTextStream in(&arr);
-            QString line = in.readLine();
-            line = line.trimmed();
-            if(line.length() <= 2)
-            {
-                continue;
-            }
-            QString name = line.mid(2);
-            QMutexLocker locker(&thePool->mutex);
-            thePool->newPool.insert(nameConv(name), id);
-        }
-    }
-    thePool->otherNamesDone = true;
 }

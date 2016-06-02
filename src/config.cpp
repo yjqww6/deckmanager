@@ -1,4 +1,5 @@
 #include "config.h"
+#include "engine.h"
 #include <QFileInfo>
 #include <QDebug>
 
@@ -25,6 +26,10 @@ Config::Config(QObject *parent)
     newTab = getStr("pref", "newTab", "0").toInt() == 1;
     limit = getStr("pref", "limit", "0").toInt();
     usesetname = getStr("pref", "usesetname", "1").toInt() == 1;
+    with_scheme([&]()
+    {
+       Sset_top_level_value(Sstring_to_symbol("use-setname?"), Sboolean(usesetname));
+    });
     QFileInfo info(QFile(getStr("pref", "bg", "")));
     bg = info.exists();
     deckType = 0;
@@ -35,8 +40,6 @@ Config::Config(QObject *parent)
     {
         Flts.append(qMakePair(key.toInt(), settings.value(key).toString()));
     }
-
-    remoteConfig.set(mappings, "remote");
 
     QFile file("decktype.ini");
     if(file.open(QFile::ReadOnly))
@@ -54,54 +57,6 @@ Config::Config(QObject *parent)
         }
         std::reverse(deckTypes.begin(), deckTypes.end());
     }
-}
-
-RemoteConfig::RemoteConfig()
-{
-
-}
-
-void RemoteConfig::set(Map &mappings, QString group)
-{
-    auto finder = [&](QString key) -> QString {
-        QString ckey = group + "/" + key;
-        auto it = mappings.find(ckey);
-        if(it != mappings.end())
-        {
-            return it.value().toString();
-        }
-        else
-        {
-            return QString("");
-        }
-    };
-
-#define FILL(field) \
-    do {\
-        field = finder(#field);\
-    } while(false)
-
-    FILL(codec);
-    FILL(getlist);
-    FILL(getlistparam);
-    FILL(getlistparamwithdecktype);
-    FILL(finishlist);
-    FILL(deckname);
-    FILL(deckid);
-    FILL(decktype);
-    FILL(decktooltip);
-    FILL(getdeck);
-    FILL(finishdeck);
-    FILL(deck);
-    FILL(getname);
-    FILL(finishname);
-    FILL(name);
-    FILL(openurl);
-}
-
-RemoteConfig& Config::getCurrentRemote()
-{
-    return remoteConfig;
 }
 
 QString Config::getStr(QString group, QString key, QString defaultStr)
@@ -168,5 +123,9 @@ void Config::setNewTab(bool value)
 void Config::setUseSetName(bool val)
 {
     usesetname = val;
+    with_scheme([&]()
+    {
+       Sset_top_level_value(Sstring_to_symbol("use-setname?"), Sboolean(val));
+    });
 }
 

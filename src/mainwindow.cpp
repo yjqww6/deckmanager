@@ -6,7 +6,6 @@
 #include "cardslist.h"
 #include "decklist.h"
 #include "carddetails.h"
-#include "remote.h"
 #include "locallist.h"
 #include "cardfilter.h"
 #include "replaylist.h"
@@ -130,8 +129,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(deckView, &DeckView::statusChanged, this, &MainWindow::setWindowTitle);
     connect(deckView, &DeckView::refreshLocals, localList, &LocalList::refresh);
-
-    connect(this, &MainWindow::destroyed, cardPool->getThread(), &LoadThread::terminate);
 
     auto timer = new QTimer(this);
     connect(timer, &QTimer::timeout, [=]() {

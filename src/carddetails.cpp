@@ -1,6 +1,7 @@
 #include "carddetails.h"
 #include "config.h"
 #include "wrapper.h"
+#include "engine.h"
 #include <QVBoxLayout>
 
 CardDetails::CardDetails(QWidget *parent)
@@ -33,75 +34,21 @@ void CardDetails::resizeEvent(QResizeEvent *event)
 
 void CardDetails::setId(quint32 id)
 {
-    QStringList str;
-    call_with_ref([&] (Card& card) {
-        str << card.name + "[" + QString::number(id) + "]";
+    if(id != currentId)
+    {
         currentId = id;
 
-        QString ot;
-        if((card.ot & 0x3) == 1)
+        with_scheme([=]()
         {
-            ot = "[OCG]";
-        }
-        else if((card.ot & 0x3) == 2)
-        {
-            ot = "[TCG]";
-        }
+            ptr str = engine->call("detail-string", Sunsigned32(id));
 
-        if(card.type & Const::TYPE_MONSTER)
-        {
-            str << ("[" + card.cardType() + "]"
-                    + card.cardRace() + "/" + card.cardAttr());
-            QString level = (card.type & Const::TYPE_XYZ) ? "R" : "L";
-            level = "[" + level + QString::number(card.level) + "]";
-            str << (level + card.cardAD() + ot);
-        }
-        else
-        {
-            str << ("[" + card.cardType() + "]");
-            str << (ot);
-        }
+            effect->clear();
+            effect->insertPlainText(QString::fromUtf8(engine->getString(str).c_str()));
+        });
 
-        quint64 setcode = card.setcode;
-        QStringList setcodeStr;
-        bool useSetName = config->usesetname;
-        auto &setnames = cardPool->setnames;
-        for(; setcode; setcode = setcode >> 16)
-        {
-            if(useSetName)
-            {
-                quint32 mainSetCode = setcode & 0x0fff;
-                quint32 subSetCode = setcode & 0xffff;
-                auto it = setnames.find(subSetCode);
-                if(it != setnames.end())
-                {
-                    setcodeStr << it.value();
-                }
-                if(mainSetCode != subSetCode)
-                {
-                    auto it = setnames.find(mainSetCode);
-                    if(it != setnames.end())
-                    {
-                        setcodeStr << it.value();
-                    }
-                }
-            }
-            else
-            {
-                QString cur;
-                cur.setNum(setcode & 0xffff, 16);
-                setcodeStr << cur;
-            }
-        }
-        str << (config->getStr("label", "setcode", "系列") + ":[" + setcodeStr.join("|") + "]");
-        str << card.effect;
-        effect->clear();
-        effect->insertPlainText(str.join('\n'));
         cp->setId(id, effect->width());
-        vbox->removeWidget(effect);
-        vbox->addWidget(effect, 1);
-        updateGeometry();
-    }, cardPool->getCard(id));
+    }
+    updateGeometry();
 }
 
 CardDetails::~CardDetails()

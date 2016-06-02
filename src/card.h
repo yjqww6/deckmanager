@@ -62,28 +62,10 @@ struct Card
     }
 };
 
-class CardPool;
-
-class LoadThread : public QThread
-{
-    Q_OBJECT
-public:
-    LoadThread(QObject *parent, CardPool *thePool);
-    void run();
-
-private:
-    CardPool *thePool;
-};
-
-
 class CardPool
 {
 private:
     QStringList cdbPath;
-    bool otherNamesDone;
-    bool acc;
-    LoadThread loadThread;
-    QMutex mutex;
 public:
     std::unordered_map<quint32, std::unique_ptr<Card>> pool;
     QHash<QString, quint32> newPool;
@@ -91,23 +73,13 @@ public:
     QHash<quint32, QString> races;
     QHash<quint32, QString> types;
     QHash<quint32, QString> attrs;
-    QHash<quint32, QString> setnames;
-    QHash<QString, quint32> setnamesR;
-
-    friend class LoadThread;
 
     CardPool(QStringList paths);
 
     Wrapper<Card> getCard(quint32 id);
     Wrapper<Card> getNewCard(QString name, bool wait = true);
 
-    void loadNames();
     void loadSetNames();
-
-    LoadThread *getThread()
-    {
-        return &loadThread;
-    }
 
     QString getType(quint32);
     QString getRace(quint32);

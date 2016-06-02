@@ -13,6 +13,7 @@
 #include <QVector>
 #include "card.h"
 #include "typing.h"
+#include "engine.h"
 #include <functional>
 
 class CardFilter : public QWidget
@@ -36,31 +37,10 @@ private slots:
     void searchThis();
     void searchDeck();
 private:
-    class Matcher
-    {
-    private:
-        std::function<bool(int)> pred;
-        bool valid;
-    public:
-        template<typename T>
-        Matcher(T _pred, bool _valid = true) : pred(_pred), valid(_valid) {}
-        bool isValid() const
-        {
-            return valid;
-        }
-        bool operator ()(int p) const
-        {
-            return pred(p);
-        }
-    };
-
-    typedef std::function<bool(Card&)> Pred;
-    typedef std::function<void(Pred&&)> Ctx;
-
-    void call_with_pred(Ctx &&ctx);
+    ptr make_pred();
 
     template<typename T>
-    void search(T &&begin, T &&end, Pred &&predicate);
+    void search(T &&begin, T &&end);
 
     static const quint32 cardTypes[];
     static const quint32 monsterTypes[];
@@ -69,7 +49,6 @@ private:
     static const quint32 monsterRaces[];
     static const quint32 monsterAttrs[];
 
-    Matcher rangeMatcher(QString);
     QComboBox *cardType;
     QComboBox *cardTypeSub;
 

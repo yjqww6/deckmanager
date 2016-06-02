@@ -23,7 +23,7 @@ Expansions::Expansions(QStringList zipFiles)
 QByteArray Expansions::open(QString path)
 {
     QByteArray arr;
-    QMutexLocker locker(&mutex);
+    //QMutexLocker locker(&mutex);
     foreach(auto zipFile, zips)
     {
         if(zipFile->setCurrentFile(path))

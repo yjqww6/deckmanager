@@ -2,6 +2,8 @@
 #include <QApplication>
 #include <QFileInfo>
 #include <QDir>
+#include <QDebug>
+#include <iostream>
 #include "yrp.h"
 #include "expansions.h"
 #include "limitcards.h"
@@ -11,7 +13,11 @@
 #include "wrapper.h"
 #include "draghelper.h"
 #include "signaltower.h"
+#include "engine.h"
+#include "curl/curl.h"
+#include <thread>
 
+Engine *engine;
 SignalTower *tower;
 DragHelper dragHelper;
 
@@ -21,6 +27,11 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     try
     {
+        Engine eng(argv[0], "./pack/petite.boot", "./pack/scheme.boot");
+        engine = &eng;
+        eng.init();
+        Sdeactivate_thread();
+
         Config configR;
         config = &configR;
 
@@ -54,12 +65,18 @@ int main(int argc, char *argv[])
 
         SignalTower sig;
         tower = &sig;
+
+        curl_global_init(CURL_GLOBAL_ALL);
+
         MainWindow w;
         w.show();
 
         if(config->getStr("pref", "scanscript", "1") == "1")
         {
-            cardPool->loadNames();
+            with_scheme([&]()
+            {
+                eng.call("start-load-orig-names");
+            });
         }
 
         ret =  a.exec();

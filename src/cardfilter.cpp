@@ -5,6 +5,7 @@
 #include "range.h"
 #include "wrapper.h"
 #include "arrange.h"
+#include "engine.h"
 #include <QApplication>
 #include <QCompleter>
 
@@ -141,11 +142,23 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     setEdit->setEditable(true);
     QStringList words;
     setEdit->addItem("");
-    foreach(auto &it, cardPool->setnames)
+
+    with_scheme([&]()
     {
-        words << it;
-        setEdit->addItem(it);
-    }
+       ptr v = engine->call("hashtable-values", Stop_level_value(Sstring_to_symbol("setnames")));
+       if(Svectorp(v))
+       {
+           Slock_object(v);
+           size_t len = Svector_length(v);
+           for(size_t i = 0; i < len; ++i)
+           {
+               auto name = QString::fromUtf8(engine->getString(Svector_ref(v, i)).c_str());
+               words << name;
+               setEdit->addItem(name);
+           }
+           Sunlock_object(v);
+       }
+    });
     auto completer = new QCompleter(words, this);
     setEdit->setCompleter(completer);
 
@@ -278,124 +291,58 @@ void CardFilter::setCardTypeSub(int index)
 
 void CardFilter::searchSet(quint32 id)
 {
-    call_with_ref([&](Card &card) {
-        quint64 setcode1 = card.setcode;
-        Pred predicate;
-        if(QApplication::keyboardModifiers() & Qt::ControlModifier)
-        {
-            predicate = [=](Card &card2) {
-                quint64 set_code = setcode1;
-                while(set_code)
-                {
-                    quint64 setcode2 = card2.setcode;
-                    quint64 settype = set_code & 0xffff;
-                    bool found = false;
-                    while(setcode2)
-                    {
-                        if((setcode2 & 0xffff) == settype)
-                        {
-                            found = true;
-                            break;
-                        }
-                        setcode2 = setcode2 >> 16;
-                    }
-                    if(!found)
-                    {
-                        return false;
-                    }
-                    set_code = set_code >> 16;
-                }
-                return true;
-            };
-        }
-        else
-        {
-            predicate = [=](Card &card2) {
-                quint64 set_code = setcode1;
-                while(set_code)
-                {
-                    quint64 setcode2 = card2.setcode;
-                    quint64 settype = set_code & 0x0fff;
-                    while(setcode2)
-                    {
-                        if((setcode2 & 0x0fff) == settype)
-                        {
-                            return true;
-                        }
-                        setcode2 = setcode2 >> 16;
-                    }
-                    set_code = set_code >> 16;
-                }
-                return false;
-            };
-        }
+    auto list = Type::DeckP::create();
+    with_scheme([&]()
+    {
+        ptr res = engine->call("search-set", Sunsigned(id),
+                               Sboolean(QApplication::keyboardModifiers() & Qt::ControlModifier));
 
-        auto &map = cardPool->pool;
-        auto ls = Type::DeckP::create();
-        for(auto &it : map)
+        for(; res != Snil; res = Scdr(res))
         {
-            call_with_ref([&](Card &card2) {
-                if(card2.type & Const::TYPE_TOKEN)
-                {
-                    return;
-                }
-                if(predicate(card2))
-                {
-                    ls->append(card2.id);
-                }
-            }, wrap(it.second.get()));
+            list->append(Sunsigned_value(Scar(res)));
         }
-        if(!ls->empty())
-        {
-            qSort(ls->begin(), ls->end(), idCompare);
-            emit result(ls);
-        }
-        else
-        {
-            ls->append(id);
-            emit result(ls);
-        }
-    }, cardPool->getCard(id));
+    });
+
+    if(!noSortMode->isChecked())
+    {
+        qSort(list->begin(), list->end(), idCompare);
+    }
+
+    emit result(list);
 }
 
 void CardFilter::searchAll()
 {
     auto &map = cardPool->pool;
-    call_with_pred([&](Pred &&pred) {
-        search(keysBegin(map), keysEnd(map), std::move(pred));
-    });
+    search(keysBegin(map), keysEnd(map));
 }
 
 void CardFilter::searchThis()
 {
     auto &t = getCurrent();
-    call_with_pred([&](Pred &&pred) {
-        search(t.begin(), t.end(), std::move(pred));
-    });
+    search(t.begin(), t.end());
 }
 
 void CardFilter::searchDeck()
 {
     auto deck = getDeck();
-    call_with_pred([&](Pred &&pred) {
-        search(deck->begin(), deck->end(), std::move(pred));
-    });
+    search(deck->begin(), deck->end());
 }
 
-void CardFilter::call_with_pred(Ctx &&ctx)
+ptr CardFilter::make_pred()
 {
 
-    quint32 type = cardType->currentData().toUInt();
-    quint32 subtype = cardTypeSub->currentData().toUInt();
-    quint32 race = cardRace->currentData().toUInt();
-    quint32 attr = cardAttr->currentData().toUInt();
+    int type = cardType->currentData().toInt();
+    int subtype = cardTypeSub->currentData().toInt();
+    int race = cardRace->currentData().toInt();
+    int attr = cardAttr->currentData().toInt();
 
-    auto passPred = rangeMatcher(passEdit->text());
-    auto atkPred = rangeMatcher(atkEdit->text());
-    auto defPred = rangeMatcher(defEdit->text());
-    auto levelPred = rangeMatcher(levelEdit->text());
-    auto rankPred = rangeMatcher(rankEdit->text());
-    auto scalePred = rangeMatcher(scaleEdit->text());
+    QString pass = passEdit->text();
+    QString atk = atkEdit->text();
+    QString def = defEdit->text();
+    QString level = levelEdit->text();
+    QString rank = rankEdit->text();
+    QString scale = scaleEdit->text();
 
     quint32 category = 0;
 
@@ -410,298 +357,71 @@ void CardFilter::call_with_pred(Ctx &&ctx)
     }
 
     int limitC = limit->currentData().toInt();
-    quint32 otC = ot->currentData().toUInt();
+    int otC = ot->currentData().toInt();
 
     if(type == Const::TYPE_SPELL || type == Const::TYPE_TRAP)
     {
         subtype |= type;
     }
 
-    bool ok;
-    quint64 set_code = setEdit->currentText().toULongLong(&ok, 16);
-    if(!ok)
-    {
-        auto it = cardPool->setnamesR.find(setEdit->currentText());
-        if(it != cardPool->setnamesR.end())
-        {
-            set_code = it.value();
-        }
-    }
+    QString setcode = setEdit->currentText();
     QString name = nameEdit->text();
-    bool expr = false;
-    QList<QStringList> exprs;
-    if(name.indexOf('|') >= 0 || name.indexOf('&') >= 0)
-    {
-        expr = true;
-        QStringList orExprs = name.split("|");
-        foreach(auto &orExpr, orExprs)
-        {
-            exprs.append(orExpr.split("&"));
-        }
-    }
 
+    ptr param = Smake_vector(15, Sfalse);
+    Slock_object(param);
 
-    auto predicate = [&](Card &card) {
+    Svector_set(param, 0, Sfixnum(type));
+    Svector_set(param, 1, Sfixnum(subtype));
+    Svector_set(param, 2, Sfixnum(race));
+    Svector_set(param, 3, Sfixnum(attr));
+    Svector_set(param, 4, engine->fromQString(pass));
+    Svector_set(param, 5, engine->fromQString(atk));
+    Svector_set(param, 6, engine->fromQString(def));
+    Svector_set(param, 7, engine->fromQString(level));
+    Svector_set(param, 8, engine->fromQString(rank));
+    Svector_set(param, 9, engine->fromQString(scale));
+    Svector_set(param, 10, Sunsigned(category));
+    Svector_set(param, 11, Sfixnum(limitC));
+    Svector_set(param, 12, Sfixnum(otC));
+    Svector_set(param, 13, engine->fromQString(setcode));
+    Svector_set(param, 14, engine->fromQString(name));
 
-        if(type != ~0U && !(type & card.type))
-        {
-            return false;
-        }
-
-        if(limitC != -1 && limitCards->getLimit(card.id) != limitC)
-        {
-            return false;
-        }
-
-        if(otC != 0 && (card.ot & 3) != otC)
-        {
-            return false;
-        }
-
-        if(!passPred(card.id))
-        {
-            return false;
-        }
-        if(type & Const::TYPE_MONSTER)
-        {
-            if(subtype != ~0U && !((subtype & card.type) == subtype))
-            {
-                return false;
-            }
-
-            if(race != ~0U && !(race & card.race))
-            {
-                return false;
-            }
-
-            if(attr != ~0U && !(attr & card.attribute))
-            {
-                return false;
-            }
-
-            if(!atkPred(card.atk))
-            {
-                return false;
-            }
-
-            if(!defPred(card.def))
-            {
-                return false;
-            }
-
-            if(levelPred.isValid())
-            {
-                if(!(card.type & Const::TYPE_MONSTER))
-                {
-                    return false;
-                }
-                if((card.type & Const::TYPE_XYZ) || !levelPred(card.level))
-                {
-                    return false;
-                }
-            }
-
-            if(rankPred.isValid())
-            {
-                if(!(card.type & Const::TYPE_MONSTER))
-                {
-                    return false;
-                }
-                if(!(card.type & Const::TYPE_XYZ) || !rankPred(card.level))
-                {
-                    return false;
-                }
-            }
-
-            if(scalePred.isValid())
-            {
-                if(!(card.type & Const::TYPE_MONSTER))
-                {
-                    return false;
-                }
-                if(!(card.type & Const::TYPE_PENDULUM) || !scalePred(card.scale))
-                {
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            if(subtype != ~0U && card.type != subtype)
-            {
-                return false;
-            }
-        }
-
-        if((category & card.category) != category)
-        {
-            return false;
-        }
-
-        if(set_code)
-        {
-            quint64 setcode = card.setcode;
-            quint64 settype = set_code & 0x0fff;
-            quint64 setsubtype = set_code & 0xf000;
-            bool found = false;
-            while(setcode)
-            {
-                if((setcode & 0x0fff) == settype &&
-                        (setsubtype == 0 || (setcode & 0xf000) == setsubtype))
-                {
-                    found = true;
-                    break;
-                }
-                setcode = setcode >> 16;
-            }
-            if(!found)
-            {
-                return false;
-            }
-        }
-        if(!name.isEmpty())
-        {
-            if(!expr)
-            {
-                if(card.name.indexOf(name) < 0 &&
-                        card.effect.indexOf(name) < 0)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                bool outer = false;
-                foreach(auto &andExprs, exprs)
-                {
-                    bool inner = true;
-                    foreach(auto &str, andExprs)
-                    {
-                        if(card.name.indexOf(str) < 0 &&
-                                card.effect.indexOf(str) < 0)
-                        {
-                            inner = false;
-                            break;
-                        }
-                    }
-                    if(inner)
-                    {
-                        outer = true;
-                        break;
-                    }
-                }
-                if(!outer)
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    };
-
-    if(inverseMode->isChecked())
-    {
-        ctx([&](Card &card) {return !predicate(card);});
-    }
-    else
-    {
-        ctx(std::move(predicate));
-    }
+    Sunlock_object(param);
+    ptr ret = engine->call("card-filter", param);
+    return ret;
 }
 
 template<typename T>
-void CardFilter::search(T &&begin, T &&end, Pred &&predicate)
+void CardFilter::search(T &&begin, T &&end)
 {
-    auto ls = Type::DeckP::create();
 
-
-    for(auto it = begin; it != end; ++it)
+    auto list = Type::DeckP::create();
+    with_scheme([&]()
     {
-        call_with_ref([&] (Card& card) {
-            if(card.type & Const::TYPE_TOKEN)
-            {
-                return;
-            }
-            if(predicate(card))
-            {
-                ls->append(card.id);
-            }
-        }, cardPool->getCard(*it));
-    }
+        ptr pred = make_pred();
+        Slock_object(pred);
+        ptr ls = Snil;
+        for(auto it = begin; it != end; ++it)
+        {
+            ls = Scons(Sunsigned(*it), ls);
+        }
+        ptr res = engine->call("search", ls, pred, Sboolean(inverseMode->isChecked()));
+
+        Sunlock_object(pred);
+        for(; res != Snil; res = Scdr(res))
+        {
+            list->append(Sunsigned_value(Scar(res)));
+        }
+    });
 
     if(!noSortMode->isChecked())
     {
-        qSort(ls->begin(), ls->end(), idCompare);
+        qSort(list->begin(), list->end(), idCompare);
     }
 
-    emit result(ls);
+    emit result(list);
 
     return;
-}
-
-CardFilter::Matcher CardFilter::rangeMatcher(QString str)
-{
-    static Matcher ignore([](int) {return true;}, false);
-    if(str.isNull() || str.isEmpty())
-    {
-        return ignore;
-    }
-    if(str.startsWith("?"))
-    {
-        return [](int num) {return num == -2;};
-    }
-    else if(str.startsWith(">="))
-    {
-        str = str.mid(2);
-        bool ok;
-        int n = str.toInt(&ok);
-        return ok ? [=](int num) {return num >= n;} : ignore;
-    }
-    else if(str.startsWith(">"))
-    {
-        str = str.mid(1);
-        bool ok;
-        int n = str.toInt(&ok);
-        return ok? [=](int num) {return num > n;} : ignore;
-    }
-    else if(str.startsWith("<="))
-    {
-        str = str.mid(2);
-        bool ok;
-        int n = str.toInt(&ok);
-        return ok? [=](int num) {return num <= n;} : ignore;
-    }
-    else if(str.startsWith("<"))
-    {
-        str = str.mid(1);
-        bool ok;
-        int n = str.toInt(&ok);
-        return ok? [=](int num) {return num < n;} : ignore;
-    }
-    else if(str.startsWith("!="))
-    {
-        str = str.mid(2);
-        bool ok;
-        int n = str.toInt(&ok);
-        return ok? [=](int num) {return num != n;} : ignore;
-    }
-    else
-    {
-        int pos = str.indexOf('-');
-        if(pos >= 0)
-        {
-            bool ok1, ok2;
-            int left = str.left(pos).toInt(&ok1);
-            int right = str.mid(pos + 1).toInt(&ok2);
-            return ok1 && ok2 ? [=](int num) {return num >= left && num <= right;} : ignore;
-        }
-        else
-        {
-            bool ok;
-            int n = str.toInt(&ok);
-            return ok? [=](int num) {return num == n;} : ignore;
-        }
-    }
 }
 
 void CardFilter::revert()

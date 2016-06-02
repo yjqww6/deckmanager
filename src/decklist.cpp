@@ -2,7 +2,9 @@
 #include "iconbutton.h"
 #include "config.h"
 #include "arrange.h"
+#include "engine.h"
 #include <QDebug>
+#include <QUrl>
 #include <QComboBox>
 #include <QCompleter>
 
@@ -84,8 +86,13 @@ void DeckList::openURL()
     if(item)
     {
         QString id = item->data(Qt::UserRole).toList()[0].toString();
-        QString openurl = config->getCurrentRemote().openurl;
-        QUrl url(openurl.replace("~0", id));
+
+        const std::string& url_str = with_scheme([&]()
+        {
+            ptr res = engine->call("build-url-open", Sfixnum(id.toUInt()));
+            return engine->getString(res);
+        });
+        QUrl url(QString::fromUtf8(url_str.c_str()));
         QDesktopServices::openUrl(url);
     }
 }
@@ -103,7 +110,7 @@ void DeckList::newTab()
 }
 
 DeckListView::DeckListView(QWidget *parent)
-    : QWidget(parent), lastConfig(0), lastPage(1)
+    : QWidget(parent), networking(make_networking()), lastConfig(0), lastPage(1)
 {
     auto vbox = new QVBoxLayout;
     auto grid = new QGridLayout;
@@ -167,8 +174,8 @@ DeckListView::DeckListView(QWidget *parent)
 
     connect(pageBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &DeckListView::goPage);
 
-    connect(&remote, &Remote::list, decklist, &DeckList::setList);
-    connect(&remote, &Remote::ready, [=] (bool e) {
+    connect(networking.get(), &NetWorking::list, decklist, &DeckList::setList, Qt::QueuedConnection);
+    connect(networking.get(), &NetWorking::ready, this, [=] (bool e) {
         pageBox->setEnabled(e);
         left->setEnabled(e);
         right->setEnabled(e);
@@ -180,15 +187,15 @@ DeckListView::DeckListView(QWidget *parent)
         {
             refreshOrAbortButton->setIcon(QIcon(":/icons/abort.png"));
         }
-    });
+    }, Qt::QueuedConnection);
 
     connect(decklist, &DeckList::selectDeck, this, &DeckListView::selectDeck);
 
     connect(refreshOrAbortButton, &IconButton::clicked, [=]()
     {
-        if(remote.is_waiting())
+        if(networking->getWaiting())
         {
-            remote.abort();
+            networking->abort();
             refreshOrAbortButton->setIcon(QIcon(":/icons/refresh.png"));
             pageBox->setEnabled(true);
             left->setEnabled(true);
@@ -248,7 +255,7 @@ void DeckListView::setList(Type::DeckL ls)
 void DeckListView::getList(int newPage)
 {
     pageBox->setValue(newPage);
-    remote.getList(newPage);
+    networking->getList(newPage);
 }
 
 void DeckListView::goPage(int newPage)

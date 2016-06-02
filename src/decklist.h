@@ -16,7 +16,7 @@
 #include <QInputDialog>
 #include <QCheckBox>
 #include <QMenu>
-#include "remote.h"
+#include "networking.h"
 
 class DeckList : public QListWidget
 {
@@ -57,7 +57,7 @@ private slots:
     void goPage(int);
 private:
     DeckList *decklist;
-    Remote remote;
+    std::shared_ptr<NetWorking> networking;
     QSpinBox *pageBox;
     int lastConfig;
     int lastPage;
