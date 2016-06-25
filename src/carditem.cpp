@@ -5,75 +5,76 @@
 #include <QFile>
 #include <QMutex>
 
-CardItem::Pool CardItem::pool;
-CardItem::Pool CardItem::spool;
-QString CardItem::bigPics = "pics/";
-QString CardItem::smallPics = "pics/thumbnail/";
-QString CardItem::unknown = "textures/unknown.jpg";
-static QMutex mutex;
+CardItem::Cache CardItem::m_large;
+CardItem::Cache CardItem::m_small;
+static QString bigPics = "pics/";
+static QString smallPics = "pics/thumbnail/";
+static QString unknown = "textures/unknown.jpg";
 
 static QSharedPointer<QPixmap> readPic(QString path)
 {
     auto p = QSharedPointer<QPixmap>::create(path, "1");
     if(!p || p->width() == 0)
     {
-        QByteArray arr = expansions->open(path);
+        QByteArray arr = Expansions::inst().open(path);
         p->loadFromData(arr, "1");
     }
     return p;
 }
 
 CardItem::CardItem(quint32 _id, bool small)
-    : id(_id)
+    : m_id(_id)
 {
-    //QMutexLocker locker(&mutex);
-    auto &thePool = small ? spool : pool;
-    auto it = thePool.find(id);
+    auto &thePool = small ? m_small : m_large;
+    auto it = thePool.find(m_id);
     if(it == thePool.end() || it.value().isNull())
     {
         if(small)
         {
-            QString path = smallPics + QString::number(id) + ".jpg";
+            QString path = smallPics + QString::number(m_id) + ".jpg";
 
-            pixmap = readPic(path);
+            m_pixmap = readPic(path);
 
-            if(pixmap->width() == 0)
+            if(m_pixmap->width() == 0)
             {
-                path = bigPics + QString::number(id) + ".jpg";
-                pixmap = readPic(path);
+                path = bigPics + QString::number(m_id) + ".jpg";
+                m_pixmap = readPic(path);
             }
         }
         else
         {
-            QString path = bigPics + QString::number(id) + ".jpg";
-            pixmap = readPic(path);
+            QString path = bigPics + QString::number(m_id) + ".jpg";
+            m_pixmap = readPic(path);
 
 
-            if(pixmap->width() == 0)
+            if(m_pixmap->width() == 0)
             {
-                path = smallPics + QString::number(id) + ".jpg";
-                pixmap = readPic(path);
+                path = smallPics + QString::number(m_id) + ".jpg";
+                m_pixmap = readPic(path);
             }
 
         }
 
-        if(pixmap->width() == 0)
+        if(m_pixmap->width() == 0)
         {
             QString path = unknown;
-            pixmap = readPic(path);
+            m_pixmap = readPic(path);
         }
 
-        thePool.insert(id, pixmap.toWeakRef());
+        thePool.insert(m_id, m_pixmap.toWeakRef());
     }
     else
     {
-        pixmap = it.value().toStrongRef();
+        m_pixmap = it.value().toStrongRef();
     }
 }
 
 bool idCompare(quint32 a, quint32 b)
 {
-    return call_with_def([&](Card &ca, Card &cb) {
+    auto ocard1 = CardManager::inst().getCard(a), ocard2 = CardManager::inst().getCard(b);
+    if(ocard1 && ocard2)
+    {
+        Card &ca = **ocard1, &cb = **ocard2;
         int ta = ca.type & 7, tb = cb.type & 7;
         if(ta != tb)
         {
@@ -104,7 +105,11 @@ bool idCompare(quint32 a, quint32 b)
         {
             return ca.id < cb.id;
         }
-    }, (a < b), cardPool->getCard(a), cardPool->getCard(b));
+    }
+    else
+    {
+        return a < b;
+    }
 }
 
 

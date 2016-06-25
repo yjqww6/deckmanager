@@ -12,21 +12,18 @@ class arrange
     {
         qint8 x, y, w, h;
     };
-
-    std::map<char, info> infos;
-    QGridLayout *layout;
 public:
-    arrange(const char* str, QGridLayout *grid) : layout(grid)
+    arrange(const char* str, QGridLayout *grid) : m_layout(grid)
     {
         qint8 x = 0, y = 0;
         for(; *str; str++)
         {
             if(isalnum(*str))
             {
-                auto it = infos.find(*str);
-                if(it == infos.end())
+                auto it = m_infos.find(*str);
+                if(it == m_infos.end())
                 {
-                    infos[*str] = info{x, y, 1, 1};
+                    m_infos[*str] = info{x, y, 1, 1};
                 }
                 else
                 {
@@ -51,21 +48,21 @@ public:
 
     void set(char c, QWidget *widget)
     {
-        auto it = infos.find(c);
-        if(it != infos.end())
+        auto it = m_infos.find(c);
+        if(it != m_infos.end())
         {
             info &i = it->second;
-            layout->addWidget(widget, i.y, i.x, i.h, i.w);
+            m_layout->addWidget(widget, i.y, i.x, i.h, i.w);
         }
     }
 
     void set(char c, QLayout *widget)
     {
-        auto it = infos.find(c);
-        if(it != infos.end())
+        auto it = m_infos.find(c);
+        if(it != m_infos.end())
         {
             info &i = it->second;
-            layout->addLayout(widget, i.y, i.x, i.h, i.w);
+            m_layout->addLayout(widget, i.y, i.x, i.h, i.w);
         }
     }
 
@@ -81,6 +78,10 @@ public:
         set(c, thing);
         set2(args...);
     }
+
+private:
+    std::map<char, info> m_infos;
+    QGridLayout *m_layout;
 };
 
 #endif // ARRANGE_H

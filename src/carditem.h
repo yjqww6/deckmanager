@@ -5,74 +5,44 @@
 #include <QWeakPointer>
 #include <QHash>
 #include <QPoint>
+#include "common.h"
 
 class CardItem
 {
 public:
     CardItem(quint32 _id, bool small = false);
 
-    CardItem() : id(0), pixmap(QSharedPointer<QPixmap>::create()) {}
+    CardItem() : m_id(0), m_pixmap(QSharedPointer<QPixmap>::create()) {}
 
-    CardItem(const CardItem &item) : id(item.getId()), pixmap(item.getPixmap()) {}
+    CardItem(const CardItem &item) : m_id(item.getId()), m_pixmap(item.getPixmap()) {}
 
     quint32 getId() const
     {
-        return id;
+        return m_id;
     }
 
     QSharedPointer<QPixmap> getPixmap() const
     {
-        return pixmap;
+        return m_pixmap;
     }
 
     QPoint getPos() const
     {
-        return pos;
+        return m_pos;
     }
 
     void setPos(const QPoint &p)
     {
-        pos = p;
-    }
-
-    static int poolSize()
-    {
-        int sum = 0;
-        foreach(auto it, spool)
-        {
-            if(!it.isNull())
-            {
-                sum++;
-            }
-        }
-        foreach(auto it, pool)
-        {
-            if(!it.isNull())
-            {
-                sum++;
-            }
-        }
-        return sum;
+        m_pos = p;
     }
 
 private:
-    class Pool : public QHash<quint32, QWeakPointer<QPixmap>>
-    {
-    public:
-        Pool()
-        {
-            reserve(10000);
-        }
-    };
-    static Pool pool;
-    static Pool spool;
-    static QString bigPics;
-    static QString smallPics;
-    static QString unknown;
+    using Cache = QHash<quint32, QWeakPointer<QPixmap>>;
+    static Cache m_large, m_small;
 
-    quint32 id;
-    QPoint pos;
-    QSharedPointer<QPixmap> pixmap;
+    quint32 m_id;
+    QPoint m_pos;
+    QSharedPointer<QPixmap> m_pixmap;
 };
 
 bool itemCompare(CardItem &a, CardItem &b);

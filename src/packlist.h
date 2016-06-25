@@ -5,7 +5,8 @@
 #include <QTreeWidget>
 #include <QDir>
 #include "card.h"
-#include "typing.h"
+#include "types.h"
+#include "networking.h"
 
 class PackList : public QTreeWidget
 {
@@ -18,26 +19,42 @@ signals:
     void readPackOk();
     void packName(QString);
 public slots:
-    void refresh();
+    virtual void refresh();
     void readPackEdit()
     {
-        edited = true;
+        m_edited = true;
         readPack(currentItem(), currentColumn());
         emit readPackOk();
     }
 
 private slots:
-    void readPack(QTreeWidgetItem *, int);
+    virtual void readPack(QTreeWidgetItem *, int);
     void readPackClk(QTreeWidgetItem *item, int i)
     {
-        edited = false;
+        m_edited = false;
         readPack(item, i);
     }
 
-private:
-    QTreeWidgetItem *myPack;
-    bool edited;
-    QString encoding;
+protected:
+    QTreeWidgetItem *m_myPack;
+    bool            m_edited;
+    QString         m_encoding;
+};
+
+class RemotePackList : public PackList
+{
+    Q_OBJECT
+public:
+    explicit RemotePackList(QWidget *parent = 0);
+public slots:
+    virtual void refresh();
+private slots:
+    virtual void readPack(QTreeWidgetItem *, int);
+
+    void pack(ptr ls);
+    void packList(ptr ls);
+public:
+    std::shared_ptr<NetWorking> m_net;
 };
 
 #endif // PACKLIST_H

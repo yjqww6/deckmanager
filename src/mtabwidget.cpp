@@ -6,23 +6,23 @@
 
 MTabWidget::MTabWidget(QWidget *parent) : QWidget(parent)
 {
-    stack = new QStackedWidget;
-    vbox = new QVBoxLayout;
-    vbox->addWidget(stack, 1);
-    vbox->setSpacing(0);
-    vbox->setMargin(0);
-    setLayout(vbox);
-    stack->setStyleSheet("QStackedWidget{background: rgba(255, 255, 255, 200)}");
-    current = qMakePair(-1, -1);
+    m_stack = new QStackedWidget;
+    m_vbox = new QVBoxLayout;
+    m_vbox->addWidget(m_stack, 1);
+    m_vbox->setSpacing(0);
+    m_vbox->setMargin(0);
+    setLayout(m_vbox);
+    m_stack->setStyleSheet("QStackedWidget{background: rgba(255, 255, 255, 200)}");
+    m_current = qMakePair(-1, -1);
 }
 
 void MTabWidget::addTabBar()
 {
     auto tab = new QTabBar(this);
-    vbox->insertWidget(tabs.size(), tab);
-    int tabIndex = tabs.size();
-    tabs.append(tab);
-    tabs.back()->setCurrentIndex(-1);
+    m_vbox->insertWidget(m_tabs.size(), tab);
+    int tabIndex = m_tabs.size();
+    m_tabs.append(tab);
+    m_tabs.back()->setCurrentIndex(-1);
     tab->setExpanding(false);
     tab->setStyleSheet("QTabBar::tab:first{max-width:0px; border-width:0px}"
                        "QTabBar{background: rgba(255, 255, 255, 200)}");
@@ -44,18 +44,18 @@ void MTabWidget::setCurrentIndexInner(int tab, int column)
     {
         return;
     }
-    int s = tabs[tab]->tabData(column).toInt();
-    stack->setCurrentIndex(s);
-    current = qMakePair(tab, column - 1);
-    for(int i: range(tabs.size()))
+    int s = m_tabs[tab]->tabData(column).toInt();
+    m_stack->setCurrentIndex(s);
+    m_current = qMakePair(tab, column - 1);
+    for(int i: range(m_tabs.size()))
     {
         if(i == tab)
         {
-            tabs[i]->setCurrentIndex(column);
+            m_tabs[i]->setCurrentIndex(column);
         }
         else
         {
-            tabs[i]->setCurrentIndex(0);
+            m_tabs[i]->setCurrentIndex(0);
         }
     }
 }
@@ -67,9 +67,9 @@ void MTabWidget::setCurrentIndex(QPair<int, int> rc)
 
 int MTabWidget::addTab(int i, QString text)
 {
-    if(i >= 0 && i < tabs.size())
+    if(i >= 0 && i < m_tabs.size())
     {
-        return tabs[i]->addTab(text);
+        return m_tabs[i]->addTab(text);
     }
     return -1;
 }
@@ -77,7 +77,7 @@ int MTabWidget::addTab(int i, QString text)
 void MTabWidget::changeSize()
 {
     int max = 220;
-    foreach(auto tabbar, tabs)
+    foreach(auto tabbar, m_tabs)
     {
         int cur = 0;
         for(int i : range(tabbar->count()))
@@ -94,9 +94,9 @@ void MTabWidget::changeSize()
 
 void MTabWidget::addWidget(int tab, QWidget *widget, QString text)
 {
-    if(tab >= 0 && tab < tabs.size())
+    if(tab >= 0 && tab < m_tabs.size())
     {
         int column = addTab(tab, text);
-        tabs[tab]->setTabData(column, stack->addWidget(widget));
+        m_tabs[tab]->setTabData(column, m_stack->addWidget(widget));
     }
 }

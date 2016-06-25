@@ -20,7 +20,7 @@ public slots:
     void setId(quint32, int);
 
 private:
-    CardItem item;
+    CardItem m_item;
 };
 
 #endif // CARDPICTURE_H

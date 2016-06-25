@@ -2,12 +2,13 @@
 #define SIGNALTOWER_H
 
 #include <QObject>
+#include "common.h"
 
-class SignalTower : public QObject
+class SignalTower : public QObject, public enable_singleton<SignalTower>
 {
     Q_OBJECT
 public:
-    explicit SignalTower(QObject *parent = 0) : QObject(parent)
+    explicit SignalTower(QObject *parent = 0) : QObject(parent), m_mainLoaded(false)
     {
 
     }
@@ -27,12 +28,20 @@ public:
         emit details(id);
     }
 
+    void schemeDebug(QString str)
+    {
+        emit debug(str);
+    }
+
 signals:
     void clickId(quint32);
     void currentIdChanged(quint32);
     void details(quint32);
+    void debug(QString str);
 public slots:
-};
 
-extern SignalTower *tower;
+public:
+    QString m_accumulated;
+    bool m_mainLoaded;
+};
 #endif // SIGNALTOWER_H

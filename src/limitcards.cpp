@@ -1,27 +1,30 @@
 #include "limitcards.h"
 #include "card.h"
-#include "config.h"
+#include "configmanager.h"
 #include <QDebug>
-
-LimitCards *limitCards = nullptr;
 
 LimitCards::LimitCards()
 {
+}
+
+void LimitCards::load()
+{
+
     QImage img;
     img.load("textures/lim.png", "1");
 
     int w = img.width() / 2, h = img.height() / 2;
 
-    for(auto &p : limits)
+    for(auto &p : m_limits)
     {
         p.reset(new QPixmap);
     }
 
     if(img.width() > 0)
     {
-        limits[0]->convertFromImage(img.copy(0, 0, w, h));
-        limits[1]->convertFromImage(img.copy(w, 0, w, h));
-        limits[2]->convertFromImage(img.copy(0, h, w, h));
+        m_limits[0]->convertFromImage(img.copy(0, 0, w, h));
+        m_limits[1]->convertFromImage(img.copy(w, 0, w, h));
+        m_limits[2]->convertFromImage(img.copy(0, h, w, h));
     }
 
     QFile lflist("lflist.conf");
@@ -46,7 +49,7 @@ LimitCards::LimitCards()
             {
                 Table newTable;
                 newTable.swap(table);
-                tables.append(qMakePair(name, std::move(newTable)));
+                m_tables.append(qMakePair(name, std::move(newTable)));
                 name = line.mid(1);
                 name.trimmed();
                 table.reserve(150);
@@ -59,7 +62,7 @@ LimitCards::LimitCards()
                 quint32 id = line.left(pos).toUInt();
                 int numPos = line.indexOf(QChar(' '), pos + 1);
                 int lim = line.mid(pos + 1, numPos - pos - 1).toInt();
-                if(!cardPool->getCard(id).isNull())
+                if(CardManager::inst().getCard(id))
                 {
                     table.insert(id, lim);
                 }
@@ -74,35 +77,36 @@ QPixmap* LimitCards::getPixmap(int i)
     static QPixmap nullPixmap;
     if(i >= 0 && i <= 2)
     {
-        return limits[i].data();
+        return m_limits[i].data();
     }
     return &nullPixmap;
 }
 
 int LimitCards::getLimit(quint32 id)
 {
-    if(config->limit < 0)
+    if(ConfigManager::inst().m_limit < 0)
     {
         return INT_MAX;
     }
-    else if(tables.size() <= config->limit)
+    else if(m_tables.size() <= ConfigManager::inst().m_limit)
     {
         return 3;
     }
-    auto &table = tables[config->limit].second;
+    auto &table = m_tables[ConfigManager::inst().m_limit].second;
 
-    if(cardPool->getCard(id).isNull())
+    if(!CardManager::inst().getCard(id))
     {
         return 0;
     }
 
-    call_with_ref([&](Card &card) {
+    if(auto ocard = CardManager::inst().getCard(id))
+    {
+        Card &card = **ocard;
         if(card.alias != 0)
         {
             id = card.alias;
         }
-    }, cardPool->getCard(id));
-
+    }
     auto it = table.find(id);
     if(it == table.end())
     {
@@ -117,9 +121,9 @@ int LimitCards::getLimit(quint32 id)
 Type::DeckP LimitCards::getCards(int index)
 {
     auto cards = Type::DeckP::create();
-    if(index >= 0 && index < tables.size())
+    if(index >= 0 && index < m_tables.size())
     {
-        auto &table = tables[index].second;
+        auto &table = m_tables[index].second;
         cards->reserve(table.size());
 
         for(auto it = table.begin(); it != table.end(); ++it)
@@ -133,11 +137,17 @@ Type::DeckP LimitCards::getCards(int index)
 
            if(it1.value() == it2.value())
            {
-               return call_with_def([](Card &card1, Card &card2) {
+               auto ocard1 = CardManager::inst().getCard(id1), ocard2 = CardManager::inst().getCard(id2);
+               if(ocard1 && ocard2)
+               {
+                   Card &card1 = **ocard1, &card2 = **ocard2;
                    return (card1.type & 7) < (card2.type & 7);
-               },
-               (it1.value() < it2.value()),
-               cardPool->getCard(id1), cardPool->getCard(id2));
+               }
+               else
+               {
+
+                   return it1.value() < it2.value();
+               }
            }
            return it1.value() < it2.value();
         });

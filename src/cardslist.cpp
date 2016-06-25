@@ -7,12 +7,12 @@
 #include <QDebug>
 
 CardsList::CardsList(QWidget *parent)
-    : QWidget(parent), pos(0), cardSize(177 / 3.5, 254 / 3.5), cardsPerColumn(0),
-      sb(nullptr), needRefreshId(false), current(-1)
+    : QWidget(parent), m_currentPos(0), m_cardSize(177 / 3.5, 254 / 3.5), m_cardsPerColumn(0),
+      m_sb(nullptr), m_needRefreshId(false), m_current(-1)
 {
     setMouseTracking(true);
     setAcceptDrops(true);
-    setMinimumWidth(cardSize.width() + fontMetrics().width("宽") * 10);
+    setMinimumWidth(m_cardSize.width() + fontMetrics().width("宽") * 10);
     auto family = font().family();
     setFont(QFont(family, 11));
 }
@@ -22,27 +22,27 @@ void CardsList::wheelEvent(QWheelEvent *event)
     int numDegrees = event->delta() / 8;
     int numSteps = numDegrees / 15;
 
-    needRefreshId = true;
-    point = event->pos();
+    m_needRefreshId = true;
+    m_point = event->pos();
 
-    setPos(pos - numSteps);
+    setPos(m_currentPos - numSteps);
     event->accept();
 }
 
 void CardsList::refresh()
 {
-    int max = ls.size() - cardsPerColumn;
-    if(sb)
+    int max = m_deck.size() - m_cardsPerColumn;
+    if(m_sb)
     {
-        sb->setMaximum(max > 0 ? max : 0);
+        m_sb->setMaximum(max > 0 ? max : 0);
     }
 }
 
 void CardsList::setScrollBar(QScrollBar *_sb)
 {
-    sb = _sb;
-    sb->setMaximum(ls.size());
-    connect(sb, &QScrollBar::valueChanged, this, &CardsList::setPos);
+    m_sb = _sb;
+    m_sb->setMaximum(m_deck.size());
+    connect(m_sb, &QScrollBar::valueChanged, this, &CardsList::setPos);
 }
 
 QString CardsList::adToString(int ad)
@@ -60,31 +60,31 @@ QString CardsList::adToString(int ad)
 void CardsList::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    if(!ls.empty())
+    if(!m_deck.empty())
     {
         int fmHeight = painter.fontMetrics().height();
-        int h = height(), cardHeight = cardSize.height(),
-                cardWidth = cardSize.width();
+        int h = height(), cardHeight = m_cardSize.height(),
+                cardWidth = m_cardSize.width();
 
-        cardsPerColumn = h / cardHeight;
+        m_cardsPerColumn = h / cardHeight;
 
-        decltype(items) newItems;
+        decltype(m_items) newItems;
 
         double varHeight = h - cardHeight * 1.0;
 
-        for(int i : range(std::min(cardsPerColumn, ls.size() - pos)))
+        for(int i : range(std::min(m_cardsPerColumn, m_deck.size() - m_currentPos)))
         {
-            quint32 id = ls[i + pos];
+            quint32 id = m_deck[i + m_currentPos];
 
-            auto it = newItems.insert(i + pos, CardItem(id));
+            auto it = newItems.insert(i + m_currentPos, CardItem(id));
 
             auto &item = it.value();
 
-            int y = varHeight * i / (cardsPerColumn - 1);
+            int y = varHeight * i / (m_cardsPerColumn - 1);
 
 
-            current = itemAt(mapFromGlobal(QCursor::pos()));
-            if(i + pos == current)
+            m_current = itemAt(mapFromGlobal(QCursor::pos()));
+            if(i + m_currentPos == m_current)
             {
                 QBrush brush = painter.brush(), newBrush(Qt::lightGray);
                 QPen pen = painter.pen();
@@ -93,7 +93,7 @@ void CardsList::paintEvent(QPaintEvent *)
                 color.setAlpha(160);
                 newBrush.setColor(color);
                 painter.setBrush(newBrush);
-                painter.drawRect(QRect(QPoint(0,  y), QSize(sb->geometry().x(), cardSize.height())));
+                painter.drawRect(QRect(QPoint(0,  y), QSize(m_sb->geometry().x(), m_cardSize.height())));
                 painter.setBrush(brush);
                 painter.setPen(pen);
             }
@@ -103,17 +103,19 @@ void CardsList::paintEvent(QPaintEvent *)
             painter.drawPixmap(0, y, cardWidth, cardHeight,
                                *item.getPixmap().data());
 
-            int lim = limitCards->getLimit(it->getId());
+            int lim = LimitCards::inst().getLimit(it->getId());
             if(lim < 3)
             {
-                auto data = limitCards->getPixmap(lim);
+                auto data = LimitCards::inst().getPixmap(lim);
                 if(data)
                 {
                     painter.drawPixmap(0, y, 16, 16, *data);
                 }
             }
 
-            call_with_ref([&](Card &card) {
+            if(auto ocard = CardManager::inst().getCard(id))
+            {
+                Card &card = **ocard;
 
                 painter.drawText(cardWidth + 5, y + fmHeight, card.name);
                 QString ot;
@@ -131,7 +133,8 @@ void CardsList::paintEvent(QPaintEvent *)
                 if(card.type & Const::TYPE_MONSTER)
                 {
                     painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
-                                     card.cardRace() + "/" + card.cardAttr() + level);
+                                     CardManager::inst().getRace(card.id) + "/"
+                                     + CardManager::inst().getAttr(card.id) + level);
 
                     painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3,
                                      adToString(card.atk) + "/" +
@@ -140,17 +143,17 @@ void CardsList::paintEvent(QPaintEvent *)
                 else if(card.type & (Const::TYPE_SPELL | Const::TYPE_TRAP))
                 {
                     painter.drawText(cardWidth + 5, y + 5 + fmHeight * 2,
-                                     card.cardType());
+                                     CardManager::inst().getType(card.id));
                     painter.drawText(cardWidth + 5, y + 10 + fmHeight * 3, ot);
                 }
-            }, cardPool->getCard(id));
+            }
         }
-        items.swap(newItems);
+        m_items.swap(newItems);
     }
-    if(needRefreshId)
+    if(m_needRefreshId)
     {
         refreshCurrentId();
-        needRefreshId = false;
+        m_needRefreshId = false;
     }
     refresh();
 }
@@ -159,14 +162,14 @@ void CardsList::mousePressEvent(QMouseEvent *event)
 {
     if(event->buttons() & Qt::LeftButton)
     {
-        startPos = event->pos();
+        m_startPos = event->pos();
     }
     else if(event->buttons() & Qt::MiddleButton)
     {
         int index = itemAt(event->pos());
         if(index >= 0)
         {
-            tower->cardDetails(ls[index]);
+            SignalTower::inst().cardDetails(m_deck[index]);
         }
     }
     QWidget::mousePressEvent(event);
@@ -174,18 +177,18 @@ void CardsList::mousePressEvent(QMouseEvent *event)
 
 int CardsList::itemAt(const QPoint &_pos)
 {
-    for(int i: range(cardsPerColumn))
+    for(int i: range(m_cardsPerColumn))
     {
-        if(i + pos >= ls.size())
+        if(i + m_currentPos >= m_deck.size())
         {
             break;
         }
-        int index = i +  pos;
+        int index = i +  m_currentPos;
 
-        auto &item = items.find(index).value();
+        auto &item = m_items.find(index).value();
 
         if(_pos.y() >= item.getPos().y() &&
-                _pos.y() <= item.getPos().y() + cardSize.height() &&
+                _pos.y() <= item.getPos().y() + m_cardSize.height() &&
                 _pos.x() >= 0 && _pos.x() < width())
         {
             return index;
@@ -196,14 +199,14 @@ int CardsList::itemAt(const QPoint &_pos)
 
 void CardsList::refreshCurrentId()
 {
-    int index = itemAt(point);
+    int index = itemAt(m_point);
     if(index != -1)
     {
-        quint32 id = ls[index];
-        if(currentCardId != id)
+        quint32 id = m_deck[index];
+        if(m_currentCardId != id)
         {
-            currentCardId = id;
-            tower->changeCurrentId(ls[index]);
+            m_currentCardId = id;
+            SignalTower::inst().changeCurrentId(m_deck[index]);
         }
     }
 }
@@ -213,27 +216,27 @@ void CardsList::mouseMoveEvent(QMouseEvent *event)
     int index = itemAt(event->pos());
     if(index != -1)
     {
-        quint32 id = ls[index];
-        if(currentCardId != id)
+        quint32 id = m_deck[index];
+        if(m_currentCardId != id)
         {
-            currentCardId = id;
-            tower->changeCurrentId(ls[index]);
+            m_currentCardId = id;
+            SignalTower::inst().changeCurrentId(m_deck[index]);
         }
-        needRefreshId = false;
+        m_needRefreshId = false;
     }
 
     if(event->buttons() & Qt::LeftButton)
     {
-        int dist = (event->pos() - startPos).manhattanLength();
+        int dist = (event->pos() - m_startPos).manhattanLength();
         if(dist >= QApplication::startDragDistance() && index != -1)
         {
-            current = -1;
+            m_current = -1;
             startDrag(index);
         }
     }
-    else if(current != index)
+    else if(m_current != index)
     {
-        current = index;
+        m_current = index;
         update();
     }
     QWidget::mouseMoveEvent(event);
@@ -241,22 +244,22 @@ void CardsList::mouseMoveEvent(QMouseEvent *event)
 
 void CardsList::startDrag(int index)
 {
-    if(index >= ls.size())
+    if(index >= m_deck.size())
     {
         return;
     }
     QMimeData *mimedata = new QMimeData;
-    quint32 id = ls[index];
+    quint32 id = m_deck[index];
     mimedata->setText(QString::number(id));
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimedata);
-    auto &item = items.find(index).value();
+    auto &item = m_items.find(index).value();
     if(item.getPixmap())
     {
-        drag->setPixmap(item.getPixmap()->scaled(cardSize));
+        drag->setPixmap(item.getPixmap()->scaled(m_cardSize));
         drag->setHotSpot(QPoint(drag->pixmap().width() / 2, drag->pixmap().height() / 2));
     }
-    dragHelper.moved = false;
+    DragHelper::inst().moved = false;
     drag->exec(Qt::MoveAction);
 }
 
@@ -281,46 +284,46 @@ void CardsList::dragMoveEvent(QDragMoveEvent *event)
 
 void CardsList::dropEvent(QDropEvent *event)
 {
-    dragHelper.moved = true;
+    DragHelper::inst().moved = true;
     event->accept();
 }
 
 void CardsList::setPos(int _pos)
 {
-    int max = ls.size() - cardsPerColumn;
+    int max = m_deck.size() - m_cardsPerColumn;
     max = max > 0 ? max : 0;
-    if(pos > max)
+    if(m_currentPos > max)
     {
-        pos = max;
+        m_currentPos = max;
     }
     if(_pos >= 0 && _pos <= max)
     {
-        pos = _pos;
+        m_currentPos = _pos;
         update();
     }
-    if(sb)
+    if(m_sb)
     {
-        sb->setValue(pos);
+        m_sb->setValue(m_currentPos);
     }
 }
 
 void CardsList::setCards(Type::DeckP cards)
 {
-    ls.swap(*cards.data());
-    ls.squeeze();
+    m_deck.swap(*cards.data());
+    m_deck.squeeze();
 
     setPos(0);
 
-    emit sizeChanged(ls.size());
+    emit sizeChanged(m_deck.size());
     refresh();
 }
 
 void CardsList::checkLeave()
 {
     int i = itemAt(mapFromGlobal(QCursor::pos()));
-    if(i != current)
+    if(i != m_current)
     {
-        current = i;
+        m_current = i;
         update();
     }
 }
@@ -331,7 +334,7 @@ void CardsList::mouseDoubleClickEvent(QMouseEvent *event)
     {
         if(itemAt(mapFromGlobal(QCursor::pos())) >= 0)
         {
-            tower->IdClick(currentCardId);
+            SignalTower::inst().IdClick(m_currentCardId);
         }
     }
     QWidget::mouseDoubleClickEvent(event);
@@ -353,16 +356,16 @@ CardsListView::CardsListView(QWidget *parent)
 
     auto toolbar = new QToolBar;
     undoAction = new QAction(this);
-    undoAction->setToolTip(config->getStr("action", "undo", ""));
+    undoAction->setToolTip(ConfigManager::inst().getStr("action", "undo", ""));
     undoAction->setIcon(QIcon(":/icons/left.png"));
     redoAction = new QAction(this);
-    redoAction->setToolTip(config->getStr("action", "redo", ""));
+    redoAction->setToolTip(ConfigManager::inst().getStr("action", "redo", ""));
     redoAction->setIcon(QIcon(":/icons/right.png"));
 
     toolbar->addAction(undoAction);
     toolbar->addAction(redoAction);
 
-    auto label = new DeckSizeLabel(config->getStr("label", "number", "数目"));
+    auto label = new DeckSizeLabel(ConfigManager::inst().getStr("label", "number", "数目"));
     label->setAlignment(Qt::AlignVCenter |  Qt::AlignRight);
 
     toolbar->addSeparator();
@@ -378,7 +381,7 @@ CardsListView::CardsListView(QWidget *parent)
     connect(redoAction, &QAction::triggered, this, &CardsListView::redo);
 
     toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
-    if(config->bg)
+    if(ConfigManager::inst().m_bg)
     {
         cl->setStyleSheet("QWidget{color: white; font-size: 15px}");
         label->setStyleSheet("QLabel{color: white; font-size: 15px}");
@@ -405,7 +408,7 @@ void CardsListView::makeSnapShot()
     {
         undoSnapShots.pop_front();
     }
-    undoSnapShots.append(cl->getList());
+    undoSnapShots.append(cl->m_deck);
 }
 
 void CardsListView::updateButtons()
@@ -428,7 +431,7 @@ void CardsListView::undo()
         return;
     }
     Type::Deck temp;
-    temp.swap(cl->getList());
+    temp.swap(cl->m_deck);
     redoSnapShots.append(std::move(temp));
 
     auto ptr = Type::DeckP::create();
@@ -446,7 +449,7 @@ void CardsListView::redo()
         return;
     }
     Type::Deck temp;
-    temp.swap(cl->getList());
+    temp.swap(cl->m_deck);
     undoSnapShots.append(std::move(temp));
 
     auto ptr = Type::DeckP::create();

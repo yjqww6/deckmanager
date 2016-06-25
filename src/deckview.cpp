@@ -1,8 +1,9 @@
 #include "deckview.h"
 #include "limitcards.h"
-#include "config.h"
+#include "configmanager.h"
 #include "range.h"
 #include "scriptview.h"
+#include "signaltower.h"
 #include <QDebug>
 #include <QApplication>
 #include <QDesktopServices>
@@ -12,13 +13,14 @@
 #include <QMenu>
 #include <QScreen>
 #include <QToolButton>
+#include <QDialogButtonBox>
 
 DeckModel& DeckView::addModel()
 {
-    models.append(QSharedPointer<DeckModel>::create());
-    auto &model = models.back();
-    int i = tabbar->addTab(model->deckStatus.name);
-    tabbar->setTabData(i, model->id);
+    m_models.append(QSharedPointer<DeckModel>::create());
+    auto &model = m_models.back();
+    int i = m_tabbar->addTab(model->m_deckStatus.name);
+    m_tabbar->setTabData(i, model->m_id);
     connect(model.data(), &DeckModel::refresh, this, &DeckView::modelRefresh);
     connect(model.data(), &DeckModel::ready, this, &DeckView::modelReady);
     return *model;
@@ -27,18 +29,18 @@ DeckModel& DeckView::addModel()
 
 void DeckView::modelRefresh(int modelId)
 {
-    if(currentModel)
+    if(m_currentModel)
     {
-        if(currentModel->id == modelId)
+        if(m_currentModel->m_id == modelId)
         {
             refresh();
         }
         else
         {
             QString stat;
-            foreach(auto it, models)
+            foreach(auto it, m_models)
             {
-                if(it->id == modelId)
+                if(it->m_id == modelId)
                 {
                     stat = it->status();
                     break;
@@ -48,7 +50,7 @@ void DeckView::modelRefresh(int modelId)
             int i = getTabIndexById(modelId);
             if(i != -1)
             {
-                tabbar->setTabText(i, stat);
+                m_tabbar->setTabText(i, stat);
             }
         }
     }
@@ -56,9 +58,9 @@ void DeckView::modelRefresh(int modelId)
 
 void DeckView::modelReady(int modelId, bool b)
 {
-    if(currentModel)
+    if(m_currentModel)
     {
-        if(currentModel->id == modelId)
+        if(m_currentModel->m_id == modelId)
         {
             setReady(b);
         }
@@ -67,9 +69,9 @@ void DeckView::modelReady(int modelId, bool b)
 
 DeckModel& DeckView::getCurrentModel()
 {
-    if(currentModel)
+    if(m_currentModel)
     {
-        return *currentModel;
+        return *m_currentModel;
     }
     else
     {
@@ -80,15 +82,15 @@ DeckModel& DeckView::getCurrentModel()
 
 void DeckView::switchTab(int i)
 {
-    int id = tabbar->tabData(i).toInt();
-    foreach(auto &p, models)
+    int id = m_tabbar->tabData(i).toInt();
+    foreach(auto &p, m_models)
     {
-        if(p->id == id)
+        if(p->m_id == id)
         {
-            currentModel = p;
-            mainDeck->setDeck(p->mainDeck);
-            extraDeck->setDeck(p->extraDeck);
-            sideDeck->setDeck(p->sideDeck);
+            m_currentModel = p;
+            m_mainDeck->setDeck(p->m_mainDeck);
+            m_extraDeck->setDeck(p->m_extraDeck);
+            m_sideDeck->setDeck(p->m_sideDeck);
         }
     }
     refresh();
@@ -96,9 +98,9 @@ void DeckView::switchTab(int i)
 
 int DeckView::getTabIndexById(int id)
 {
-    for(int i : range(tabbar->count()))
+    for(int i : range(m_tabbar->count()))
     {
-        int tabId = tabbar->tabData(i).toInt();
+        int tabId = m_tabbar->tabData(i).toInt();
         if(tabId == id)
         {
             return i;
@@ -110,180 +112,193 @@ int DeckView::getTabIndexById(int id)
 void DeckView::newTab()
 {
     auto &model = addModel();
-    int i = getTabIndexById(model.id);
+    int i = getTabIndexById(model.m_id);
     if(i == -1)
     {
         return;
     }
-    tabbar->setCurrentIndex(i);
+    m_tabbar->setCurrentIndex(i);
     refresh();
 }
 
 void DeckView::closeTab(int index)
 {
-    if(tabbar->count() <= 1)
+    if(m_tabbar->count() <= 1)
     {
         addModel();
     }
-    int id = tabbar->tabData(index).toInt();
+    int id = m_tabbar->tabData(index).toInt();
 
-    for(int i : range(models.size()))
+    for(int i : range(m_models.size()))
     {
-        if(models[i]->id == id)
+        if(m_models[i]->m_id == id)
         {
-            if(models[i]->deckStatus.modified)
+            if(m_models[i]->m_deckStatus.modified)
             {
                 if(QMessageBox::question(nullptr,
-                                        config->getStr("label", "warning", "警告"),
-                                        config->getStr("label", "close", "未保存,是否关闭?"),
+                                        ConfigManager::inst().getStr("label", "warning", "警告"),
+                                        ConfigManager::inst().getStr("label", "close", "未保存,是否关闭?"),
                                     QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes)
                         == QMessageBox::No)
                 {
                     return;
                 }
             }
-            models.removeAt(i);
+            m_models.removeAt(i);
             break;
         }
     }
 
-    tabbar->removeTab(index);
+    m_tabbar->removeTab(index);
 }
 
 DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
-    : QWidget(parent), sideHidden(false)
+    : QWidget(parent), m_sideHidden(false)
 {
-    tabbar = _tabbar;
+    m_tabbar = _tabbar;
 
-    int fh = tabbar->fontMetrics().height() + 5;
-    tabbar->setStyleSheet("QTabBar::tab{height: "
+    int fh = m_tabbar->fontMetrics().height() + 5;
+    m_tabbar->setStyleSheet("QTabBar::tab{height: "
                           + QString::number(fh) +
                           "px; color: black; font-size: 12px;"
                           "min-width: 120px; height: 24px}"
                           "QTabBar{background: rgba(255, 255, 255, 200)}");
-    tabbar->setElideMode(Qt::ElideMiddle);
-    tabbar->setMovable(true);
+    m_tabbar->setElideMode(Qt::ElideMiddle);
+    m_tabbar->setMovable(true);
 
-    toolbar = new QToolBar;
-    toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
+    m_toolbar = new QToolBar;
+    m_toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
 
     auto action = [&](const char* path, const char* name, const char* str)
     {
-        auto act = new QAction(toolbar);
+        auto act = new QAction(m_toolbar);
         act->setIcon(QIcon(path));
-        act->setToolTip(config->getStr("action", name, str));
-        toolbar->addAction(act);
+        act->setToolTip(ConfigManager::inst().getStr("action", name, str));
+        m_toolbar->addAction(act);
         return act;
     };
 
-    undoAction = action(":/icons/undo.png", "undo", "撤销");
-    redoAction = action(":/icons/redo.png", "redo", "重做");
+    m_undoAction = action(":/icons/undo.png", "undo", "撤销");
+    m_redoAction = action(":/icons/redo.png", "redo", "重做");
 
-    toolbar->addSeparator();
+    m_toolbar->addSeparator();
     auto saveAction = action(":/icons/save.png", "save", "保存");
     auto saveAsAction = action(":/icons/saveas.png", "saveas", "另存为");
 
     auto menu = new QMenu;
-    auto printAction = new QAction(config->getStr("action", "print", "截图"), menu);
+    auto printAction = new QAction(ConfigManager::inst().getStr("action", "print", "截图"), menu);
     menu->addAction(printAction);
-    auto textAction1 = new QAction(config->getStr("action", "text", "文字卡表") + " A", menu);
+    auto textAction1 = new QAction(ConfigManager::inst().getStr("action", "text", "文字卡表") + " A", menu);
     menu->addAction(textAction1);
-    auto textAction2 = new QAction(config->getStr("action", "text", "文字卡表") + " [A]", menu);
+    auto textAction2 = new QAction(ConfigManager::inst().getStr("action", "text", "文字卡表") + " [A]", menu);
     menu->addAction(textAction2);
-    auto textAction3 = new QAction(config->getStr("action", "text", "文字卡表") + " n A", menu);
+    auto textAction3 = new QAction(ConfigManager::inst().getStr("action", "text", "文字卡表") + " n A", menu);
     menu->addAction(textAction3);
 
     auto toolButton = new QToolButton();
     toolButton->setIcon(QIcon(":/icons/print.png"));
     toolButton->setMenu(menu);
     toolButton->setPopupMode(QToolButton::InstantPopup);
-    toolbar->addWidget(toolButton);
+    m_toolbar->addWidget(toolButton);
 
-    toolbar->addSeparator();
+    m_toolbar->addSeparator();
 
     auto deleteAction = action(":/icons/delete.png", "delete", "删除卡组");
 
-    toolbar->addSeparator();
+    m_toolbar->addSeparator();
 
-    abortAction = action(":/icons/abort.png", "abort", "中止");
-    abortAction->setEnabled(false);
+    m_abortAction = action(":/icons/abort.png", "abort", "中止");
+    m_abortAction->setEnabled(false);
 
     auto hideAction = action(":/icons/side.png", "hide", "隐藏副卡组");
     auto overlapAction = action(":/icons/overlap.png", "overlap", "垂直方向重叠");
 
     auto spacer = new QWidget;
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    toolbar->addWidget(spacer);
+    m_toolbar->addWidget(spacer);
 
-    toolbar->addSeparator();
+    m_toolbar->addSeparator();
 
     auto sortAction = action(":/icons/sort.png", "sort", "排序");
     auto shuffleAction = action(":/icons/shuffle.png", "shuffle", "打乱");
     auto clearAction = action(":/icons/clear.png", "clear", "清空");
 
-    toolbar->addSeparator();
+    m_toolbar->addSeparator();
+    auto scriptAction = action(":/icons/script.png", "Scheme", "Scheme");
 
     auto homeAction = action(":/icons/home.png", "home", "主页");
     auto helpAction = action(":/icons/help.png", "help", "帮助");
 
 
     auto &model = addModel();
-    currentModel = models.back();
+    m_currentModel = m_models.back();
 
-    mainDeck = new DeckWidget(nullptr, 4, 10, model.mainDeck);
-    mainDeck->overlapV = true;
+    m_mainDeck = new DeckWidget(nullptr, 4, 10, model.m_mainDeck);
+    m_mainDeck->m_overlapV = true;
     auto notExtraFilter = [](quint32 id)
     {
-        return call_with_def([](Card &card) {
+        if(auto ocard = CardManager::inst().getCard(id))
+        {
+            Card &card = **ocard;
             return !card.inExtra();
-        }, false, cardPool->getCard(id));
+        }
+        else
+        {
+            return false;
+        }
     };
 
-    mainDeck->filter = notExtraFilter;
-    auto t1 = new DeckSizeLabel(config->getStr("label", "main", "主卡组"));
+    m_mainDeck->m_filter = notExtraFilter;
+    auto t1 = new DeckSizeLabel(ConfigManager::inst().getStr("label", "main", "主卡组"));
     auto mt = new MainDeckLabel;
 
-    extraDeck = new DeckWidget(nullptr, 1, 10, model.extraDeck);
+    m_extraDeck = new DeckWidget(nullptr, 1, 10, model.m_extraDeck);
     auto extraFilter = [](quint32 id)
     {
-        return call_with_def([](Card &card) {
+        if(auto ocard = CardManager::inst().getCard(id))
+        {
+            Card &card = **ocard;
             return card.inExtra();
-        }, false, cardPool->getCard(id));
+        }
+        else
+        {
+            return false;
+        }
     };
-    extraDeck->filter = extraFilter;
-    sideDeck = new DeckWidget(nullptr, 1, 10, model.sideDeck);
+    m_extraDeck->m_filter = extraFilter;
+    m_sideDeck = new DeckWidget(nullptr, 1, 10, model.m_sideDeck);
 
-    auto t2 = new DeckSizeLabel(config->getStr("label", "extra", "额外卡组"));
+    auto t2 = new DeckSizeLabel(ConfigManager::inst().getStr("label", "extra", "额外卡组"));
     auto et = new ExtraDeckLabel;
 
-    st = new DeckSizeLabel(config->getStr("label", "side", "副卡组"));
+    st = new DeckSizeLabel(ConfigManager::inst().getStr("label", "side", "副卡组"));
 
     auto extFilter = [this](quint32 id) {
         int sum = 0;
-        sum += mainDeck->countCard(id);
-        sum += extraDeck->countCard(id);
-        sum += sideDeck->countCard(id);
-        return sum < limitCards->getLimit(id);
+        sum += m_mainDeck->countCard(id);
+        sum += m_extraDeck->countCard(id);
+        sum += m_sideDeck->countCard(id);
+        return sum < LimitCards::inst().getLimit(id);
     };
 
-    mainDeck->extFilter = extFilter;
-    extraDeck->extFilter = extFilter;
-    sideDeck->extFilter = extFilter;
+    m_mainDeck->m_extFilter = extFilter;
+    m_extraDeck->m_extFilter = extFilter;
+    m_sideDeck->m_extFilter = extFilter;
 
     auto snapshotMaker = [this]() {
         makeSnapShot();
     };
 
-    mainDeck->makeSnapShot = snapshotMaker;
-    extraDeck->makeSnapShot = snapshotMaker;
-    sideDeck->makeSnapShot = snapshotMaker;
+    m_mainDeck->m_makeSnapShot = snapshotMaker;
+    m_extraDeck->m_makeSnapShot = snapshotMaker;
+    m_sideDeck->m_makeSnapShot = snapshotMaker;
 
-    connect(mainDeck, &DeckWidget::sizeChanged, t1, &DeckSizeLabel::changeSize);
-    connect(mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
+    connect(m_mainDeck, &DeckWidget::sizeChanged, t1, &DeckSizeLabel::changeSize);
+    connect(m_mainDeck, &DeckWidget::deckChanged, mt, &MainDeckLabel::deckChanged);
 
-    connect(extraDeck, &DeckWidget::sizeChanged, t2, &DeckSizeLabel::changeSize);
-    connect(extraDeck, &DeckWidget::deckChanged, et, &ExtraDeckLabel::deckChanged);
-    connect(sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
+    connect(m_extraDeck, &DeckWidget::sizeChanged, t2, &DeckSizeLabel::changeSize);
+    connect(m_extraDeck, &DeckWidget::deckChanged, et, &ExtraDeckLabel::deckChanged);
+    connect(m_sideDeck, &DeckWidget::sizeChanged, st, &DeckSizeLabel::changeSize);
 
     connect(sortAction, &QAction::triggered, this, &DeckView::sort);
     connect(clearAction, &QAction::triggered, this, &DeckView::clearDeck);
@@ -291,40 +306,70 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
     connect(shuffleAction, &QAction::triggered, this, &DeckView::shuffle);
 
-    connect(undoAction, &QAction::triggered, this, &DeckView::undo);
-    connect(redoAction, &QAction::triggered, this, &DeckView::redo);
+    connect(m_undoAction, &QAction::triggered, this, &DeckView::undo);
+    connect(m_redoAction, &QAction::triggered, this, &DeckView::redo);
     connect(saveAction, &QAction::triggered, this, &DeckView::saveSlot);
     connect(saveAsAction, &QAction::triggered, [this]() {
-        emit save(getCurrentModel().deckStatus.name);
+        emit save(getCurrentModel().m_deckStatus.name);
     });
     connect(deleteAction, &QAction::triggered, this, &DeckView::deleteDeck);
-    connect(abortAction, &QAction::triggered, this, &DeckView::abort);
+    connect(m_abortAction, &QAction::triggered, this, &DeckView::abort);
     connect(homeAction, &QAction::triggered, this, &DeckView::home);
     connect(printAction, &QAction::triggered, this, &DeckView::print);
     connect(hideAction, &QAction::triggered, this, &DeckView::hideSide);
     connect(overlapAction, &QAction::triggered, [=]() {
-       mainDeck->overlapV = !mainDeck->overlapV;
-       mainDeck->update();
+        m_mainDeck->m_overlapV = !m_mainDeck->m_overlapV;
+        m_mainDeck->update();
     });
 
     connect(textAction1, &QAction::triggered, [=]() {
-       emit deckText(&getCurrentModel(), sideHidden, ScriptView::NORMAL);
+        emit deckText(&getCurrentModel(), m_sideHidden, ScriptView::NORMAL);
     });
 
     connect(textAction2, &QAction::triggered, [=]() {
-       emit deckText(&getCurrentModel(), sideHidden, ScriptView::BRACKET);
+        emit deckText(&getCurrentModel(), m_sideHidden, ScriptView::BRACKET);
     });
 
     connect(textAction3, &QAction::triggered, [=]() {
-       emit deckText(&getCurrentModel(), sideHidden, ScriptView::COUNT);
+        emit deckText(&getCurrentModel(), m_sideHidden, ScriptView::COUNT);
     });
 
-    connect(tabbar, &QTabBar::currentChanged, this, &DeckView::switchTab);
-    connect(tabbar, &QTabBar::tabCloseRequested, this, &DeckView::closeTab);
+    auto execDlg = new QDialog(this);
+    execDlg->setWindowTitle("Input Scheme Code:");
+    auto dlgBox = new QVBoxLayout(execDlg);
+    auto execInput = new QPlainTextEdit(execDlg);
+    auto buttonBox = new QDialogButtonBox (QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, execDlg);
+    dlgBox->addWidget(execInput);
+    dlgBox->addWidget(buttonBox);
+    execDlg->setLayout(dlgBox);
+    connect(buttonBox, &QDialogButtonBox::accepted, execDlg, &QDialog::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, execDlg, &QDialog::reject);
+    connect(scriptAction, &QAction::triggered, [=]()
+    {
+        if(execDlg->exec() != QDialog::Accepted)
+        {
+            return;
+        }
+        QString cmd = execInput->toPlainText();
+        with_scheme([&]()
+        {
+            ptr ret = engine->eval(cmd.toUtf8().data());
+            if(engine->isException(ret))
+            {
+                return;
+            }
+            ptr s = engine->call("format", Sfalse, Sstring("~s"), ret);
+            QString str = engine->getString(s);
+            SignalTower::inst().schemeDebug(str);
+        });
+    });
+
+    connect(m_tabbar, &QTabBar::currentChanged, this, &DeckView::switchTab);
+    connect(m_tabbar, &QTabBar::tabCloseRequested, this, &DeckView::closeTab);
 
     QString ss;
 
-    if(config->bg)
+    if(ConfigManager::inst().m_bg)
     {
 
         ss = "QWidget{color: white; font-size: 16px}";
@@ -334,9 +379,9 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
         ss = "QWidget{font-size: 16px}";
     }
 
-    mainDeck->setStyleSheet(ss);
-    extraDeck->setStyleSheet(ss);
-    sideDeck->setStyleSheet(ss);
+    m_mainDeck->setStyleSheet(ss);
+    m_extraDeck->setStyleSheet(ss);
+    m_sideDeck->setStyleSheet(ss);
     t1->setStyleSheet(ss);
     t2->setStyleSheet(ss);
     mt->setStyleSheet(ss);
@@ -348,21 +393,21 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     vbox->setContentsMargins(5, 0, 5, 5);
     vbox->setSpacing(2);
 
-    tabbar->setTabsClosable(true);
-    vbox->addWidget(toolbar);
+    m_tabbar->setTabsClosable(true);
+    vbox->addWidget(m_toolbar);
 
     hbox->addWidget(t1);
     hbox->addWidget(mt);
     vbox->addLayout(hbox);
-    vbox->addWidget(mainDeck, 4);
+    vbox->addWidget(m_mainDeck, 4);
 
     hbox = new QHBoxLayout;
     hbox->addWidget(t2);
     hbox->addWidget(et);
     vbox->addLayout(hbox);
-    vbox->addWidget(extraDeck, 1);
+    vbox->addWidget(m_extraDeck, 1);
     vbox->addWidget(st);
-    vbox->addWidget(sideDeck, 1);
+    vbox->addWidget(m_sideDeck, 1);
     setLayout(vbox);
 
     refresh();
@@ -370,20 +415,20 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
 
 void DeckView::loadRemoteDeck(QString id, QString name, bool newTab)
 {
-    if(newTab || (!getCurrentModel().fresh && config->newTab))
+    if(newTab || (!getCurrentModel().m_fresh && ConfigManager::inst().m_newTab))
     {
         addModel();
-        tabbar->setCurrentIndex(tabbar->count() - 1);
+        m_tabbar->setCurrentIndex(m_tabbar->count() - 1);
     }
     getCurrentModel().loadRemoteDeck(id, name);
 }
 
 void DeckView::loadDeck(QString lines, QString _name, bool local, bool newTab)
 {
-    if(newTab || (!getCurrentModel().fresh && config->newTab))
+    if(newTab || (!getCurrentModel().m_fresh && ConfigManager::inst().m_newTab))
     {
         addModel();
-        tabbar->setCurrentIndex(tabbar->count() - 1);
+        m_tabbar->setCurrentIndex(m_tabbar->count() - 1);
     }
     getCurrentModel().loadDeck(lines, _name, local);
 }
@@ -409,10 +454,10 @@ void DeckView::saveDeck(QString path)
 
 void DeckView::help()
 {
-    QString helpStr = config->getHelpStr();
+    QString helpStr = ConfigManager::inst().getHelpStr();
     QMessageBox msg;
     msg.setTextFormat(Qt::RichText);
-    msg.setWindowTitle(config->getStr("action", "help", "帮助"));
+    msg.setWindowTitle(ConfigManager::inst().getStr("action", "help", "帮助"));
     msg.setText(helpStr);
     msg.exec();
 }
@@ -424,7 +469,7 @@ void DeckView::home()
 
 void DeckView::print()
 {
-    int y = toolbar->mapToParent(QPoint(0, toolbar->height())).y();
+    int y = m_toolbar->mapToParent(QPoint(0, m_toolbar->height())).y();
     QPixmap pixmap = QApplication::primaryScreen()->grabWindow(this->winId(), 0, y, width(), height() - y);
     QString filename = QFileDialog::getSaveFileName(this, "Save", "", "*.png");
     if(!filename.isNull())
@@ -439,17 +484,17 @@ void DeckView::print()
 
 void DeckView::hideSide()
 {
-    if(sideHidden)
+    if(m_sideHidden)
     {
         st->show();
-        sideDeck->show();
-        sideHidden = false;
+        m_sideDeck->show();
+        m_sideHidden = false;
     }
     else
     {
         st->hide();
-        sideDeck->hide();
-        sideHidden = true;
+        m_sideDeck->hide();
+        m_sideHidden = true;
     }
 }
 
@@ -482,10 +527,10 @@ void DeckView::setStatus()
     auto &model = getCurrentModel();
     QString prefix = "deckmanager - by qww6 ";
     QString stat = model.status();
-    int i = getTabIndexById(model.id);
+    int i = getTabIndexById(model.m_id);
     if(i != -1)
     {
-        tabbar->setTabText(i, stat);
+        m_tabbar->setTabText(i, stat);
     }
 
     emit statusChanged(prefix + stat);
@@ -494,41 +539,41 @@ void DeckView::setStatus()
 void DeckView::refresh()
 {
     auto &model = getCurrentModel();
-    mainDeck->update();
-    extraDeck->update();
-    sideDeck->update();
+    m_mainDeck->update();
+    m_extraDeck->update();
+    m_sideDeck->update();
 
-    undoAction->setEnabled(model.snapshots.size() > 0);
-    redoAction->setEnabled(model.redoSnapshots.size() > 0);
-    setReady(!model.waiting);
+    m_undoAction->setEnabled(model.m_snapshots.size() > 0);
+    m_redoAction->setEnabled(model.m_redoSnapshots.size() > 0);
+    setReady(!model.m_waiting);
     setStatus();
 }
 
 void DeckView::saveSlot()
 {
     auto &model = getCurrentModel();
-    if(model.deckStatus.isLocal)
+    if(model.m_deckStatus.isLocal)
     {
-        saveDeck("deck/" + model.deckStatus.name + ".ydk");
-        model.deckStatus.modified = false;
+        saveDeck("deck/" + model.m_deckStatus.name + ".ydk");
+        model.m_deckStatus.modified = false;
     }
     else
     {
-        emit save(model.deckStatus.name);
+        emit save(model.m_deckStatus.name);
     }
 }
 
 void DeckView::deleteDeck()
 {
     auto &model = getCurrentModel();
-    if(model.deckStatus.isLocal)
+    if(model.m_deckStatus.isLocal)
     {
-        if(QMessageBox::question(nullptr, config->getStr("label", "warning", "警告"),
-                                 config->getStr("label", "delete_p", "是否要删除卡组:") + model.deckStatus.name + "?",
+        if(QMessageBox::question(nullptr, ConfigManager::inst().getStr("label", "warning", "警告"),
+                                 ConfigManager::inst().getStr("label", "delete_p", "是否要删除卡组:") + model.m_deckStatus.name + "?",
                 QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes)
             == QMessageBox::Yes)
         {
-            QFile file("deck/" + model.deckStatus.name + ".ydk");
+            QFile file("deck/" + model.m_deckStatus.name + ".ydk");
             if(file.remove())
             {
                 emit refreshLocals();

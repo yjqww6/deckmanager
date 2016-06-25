@@ -1,27 +1,26 @@
 #include "carddetails.h"
-#include "config.h"
-#include "wrapper.h"
+#include "configmanager.h"
 #include "engine.h"
 #include <QVBoxLayout>
 
 CardDetails::CardDetails(QWidget *parent)
-    : QWidget(parent), offset(3), currentId(0)
+    : QWidget(parent), m_offset(3), m_currentId(0)
 {
-    cp = new CardPicture;
-    effect = new QPlainTextEdit;
-    effect->setReadOnly(true);
+    m_cp = new CardPicture;
+    m_effect = new QPlainTextEdit;
+    m_effect->setReadOnly(true);
 
-    vbox = new QVBoxLayout;
-    vbox->addWidget(cp);
-    vbox->addWidget(effect, 1);
-    setLayout(vbox);
+    m_vbox = new QVBoxLayout;
+    m_vbox->addWidget(m_cp);
+    m_vbox->addWidget(m_effect, 1);
+    setLayout(m_vbox);
 }
 
 void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if(currentId != 0)
+    if(m_currentId != 0)
     {
-        emit clickId(currentId);
+        emit clickId(m_currentId);
     }
     QWidget::mouseDoubleClickEvent(event);
 }
@@ -29,24 +28,24 @@ void CardDetails::mouseDoubleClickEvent(QMouseEvent *event)
 void CardDetails::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
-    setId(currentId);
+    setId(m_currentId);
 }
 
 void CardDetails::setId(quint32 id)
 {
-    if(id != currentId)
+    if(id != m_currentId)
     {
-        currentId = id;
+        m_currentId = id;
 
         with_scheme([=]()
         {
             ptr str = engine->call("detail-string", Sunsigned32(id));
 
-            effect->clear();
-            effect->insertPlainText(QString::fromUtf8(engine->getString(str).c_str()));
+            m_effect->clear();
+            m_effect->insertPlainText(engine->getString(str));
         });
 
-        cp->setId(id, effect->width());
+        m_cp->setId(id, m_effect->width());
     }
     updateGeometry();
 }

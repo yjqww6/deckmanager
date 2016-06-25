@@ -21,38 +21,20 @@
 #include "card.h"
 #include "carditem.h"
 #include "decklabel.h"
-#include "typing.h"
+#include "types.h"
 
 class CardsList : public QWidget
 {
     Q_OBJECT
 protected:
-    int itemAt(const QPoint &pos);
+    int itemAt(const QPoint &m_currentPos);
 
     QString adToString(int);
     virtual void startDrag(int);
 
-    Type::Deck ls;
-    QHash<quint32, CardItem> items;
-
-    int pos;
-    QSize cardSize;
-    QPoint startPos;
-    int cardsPerColumn;
-    quint32 currentCardId;
-    QScrollBar *sb;
-    bool needRefreshId;
-    QPoint point;
-    int current;
-
 public:
     explicit CardsList(QWidget *parent);
     ~CardsList();
-
-    auto getList() -> decltype((ls))
-    {
-        return ls;
-    }
 
     void paintEvent(QPaintEvent *);
 
@@ -68,7 +50,7 @@ public:
     void setScrollBar(QScrollBar *);
     void setCurrentCardId(quint32 id)
     {
-        currentCardId = id;
+        m_currentCardId = id;
     }
 
     void refresh();
@@ -84,6 +66,23 @@ public slots:
 private slots:
     void refreshCurrentId();
     void setPos(int _pos);
+
+
+public:
+    Type::Deck m_deck;
+
+protected:
+    QHash<quint32, CardItem> m_items;
+
+    int m_currentPos;
+    QSize m_cardSize;
+    QPoint m_startPos;
+    int m_cardsPerColumn;
+    quint32 m_currentCardId;
+    QScrollBar *m_sb;
+    bool m_needRefreshId;
+    QPoint m_point;
+    int m_current;
 };
 
 class CardsListView : public QWidget
@@ -95,9 +94,9 @@ private:
     QList<Type::Deck> undoSnapShots, redoSnapShots;
 public:
     CardsListView(QWidget *parent);
-    auto getList() -> decltype((cl->getList()))
+    auto getList() -> decltype((cl->m_deck))
     {
-        return cl->getList();
+        return cl->m_deck;
     }
 
     void refresh()

@@ -6,19 +6,15 @@
 #include <QStringList>
 #include <QList>
 #include <QByteArray>
+#include "common.h"
 
-class Expansions
+class Expansions : public enable_singleton<Expansions>
 {
 public:
-    Expansions(QStringList zipFiles);
-
+    void loadZips(QStringList zipFiles);
     QByteArray open(QString path);
 private:
-    //QStringList zips;
-    QList<QSharedPointer<QuaZip> > zips;
+    QList<QSharedPointer<QuaZip> > m_zips;
 };
-
-
-extern Expansions *expansions;
 
 #endif // EXPANSIONS_H

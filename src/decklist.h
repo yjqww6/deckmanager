@@ -37,8 +37,8 @@ private slots:
     void newTab();
     void same();
 private:
-    QMenu *popup;
-    QListWidgetItem *menuItem;
+    QMenu *m_popup;
+    QListWidgetItem *m_menuItem;
 };
 
 class DeckListView : public QWidget
@@ -56,11 +56,11 @@ public slots:
 private slots:
     void goPage(int);
 private:
-    DeckList *decklist;
-    std::shared_ptr<NetWorking> networking;
-    QSpinBox *pageBox;
-    int lastConfig;
-    int lastPage;
+    DeckList *m_decklist;
+    std::shared_ptr<NetWorking> m_networking;
+    QSpinBox *m_pageBox;
+    int m_lastConfig;
+    int m_lastPage;
 };
 
 #endif // DECKLIST_H

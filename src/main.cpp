@@ -7,19 +7,16 @@
 #include "yrp.h"
 #include "expansions.h"
 #include "limitcards.h"
-#include "config.h"
+#include "configmanager.h"
 #include "card.h"
 #include "carditem.h"
-#include "wrapper.h"
 #include "draghelper.h"
 #include "signaltower.h"
 #include "engine.h"
 #include "curl/curl.h"
 #include <thread>
 
-Engine *engine;
-SignalTower *tower;
-DragHelper dragHelper;
+Engine *engine = nullptr;
 
 int main(int argc, char *argv[])
 {
@@ -32,8 +29,7 @@ int main(int argc, char *argv[])
         eng.init();
         Sdeactivate_thread();
 
-        Config configR;
-        config = &configR;
+        ConfigManager::inst().loadConfig();
 
         QDir base("."), ext("expansions");
         QStringList paths, filters;
@@ -54,32 +50,34 @@ int main(int argc, char *argv[])
             zipPaths << info.filePath();
         }
 
-        Expansions expansionsR(zipPaths);
-        expansions = &expansionsR;
+        Expansions::inst().loadZips(zipPaths);
 
-        CardPool cardPoolR(paths);
-        cardPool = &cardPoolR;
+        CardManager::inst().loadCardData(paths);
 
-        LimitCards limitCardsR;
-        limitCards = &limitCardsR;
-
-        SignalTower sig;
-        tower = &sig;
+        LimitCards::inst().load();
 
         curl_global_init(CURL_GLOBAL_ALL);
 
+        with_scheme([&]()
+        {
+            eng.call("load-setnames");
+        });
+
         MainWindow w;
+
+        SignalTower::inst().m_mainLoaded = true;
         w.show();
 
-        if(config->getStr("pref", "scanscript", "1") == "1")
+        if(ConfigManager::inst().getStr("pref", "scanscript", "1") == "1")
         {
             with_scheme([&]()
             {
-                eng.call("start-load-orig-names");
+                eng.call("load-setnames");
             });
         }
 
         ret =  a.exec();
+        ConfigManager::inst().saveConfig();
     }
     catch(...)
     {

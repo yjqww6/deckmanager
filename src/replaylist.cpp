@@ -1,5 +1,5 @@
 #include "replaylist.h"
-#include "config.h"
+#include "configmanager.h"
 
 ReplayList::ReplayList(QWidget *parent)
     : QTreeWidget(parent)
@@ -9,26 +9,26 @@ ReplayList::ReplayList(QWidget *parent)
     setHeaderHidden(true);
     connect(this, &ReplayList::itemClicked, this, &ReplayList::readYrp);
 
-    popup = new QMenu(this);
-    auto newTabAction = new QAction(popup);
-    newTabAction->setText(config->getStr("action", "newtab", "在新标签页打开"));
-    popup->addAction(newTabAction);
+    m_popup = new QMenu(this);
+    auto newTabAction = new QAction(m_popup);
+    newTabAction->setText(ConfigManager::inst().getStr("action", "newtab", "在新标签页打开"));
+    m_popup->addAction(newTabAction);
 
     connect(newTabAction, &QAction::triggered, [=]()
     {
-        if(menuItem && menuItem->parent())
+        if(m_menuItem && m_menuItem->parent())
         {
-            sendDeck(menuItem, true);
+            sendDeck(m_menuItem, true);
         }
     });
 }
 
 void ReplayList::contextMenuEvent(QContextMenuEvent *)
 {
-    menuItem = itemAt(mapFromGlobal(QCursor::pos()));
-    if(menuItem && menuItem->parent())
+    m_menuItem = itemAt(mapFromGlobal(QCursor::pos()));
+    if(m_menuItem && m_menuItem->parent())
     {
-        popup->exec(QCursor::pos());
+        m_popup->exec(QCursor::pos());
     }
 }
 
@@ -39,7 +39,7 @@ void ReplayList::refresh()
     filter << "*.yrp";
 
     clear();
-    decks.clear();
+    m_decks.clear();
 
     QList<QTreeWidgetItem*> items;
 
@@ -66,8 +66,8 @@ void ReplayList::readYrp(QTreeWidgetItem *item, int)
             foreach(const Yrp::Item &player, yrp.decks)
             {
                 auto it = new QTreeWidgetItem(item, QStringList(player.first));
-                it->setData(0, Qt::UserRole, decks.size());
-                decks.append(std::move(player.second));
+                it->setData(0, Qt::UserRole, m_decks.size());
+                m_decks.append(std::move(player.second));
                 item->addChild(it);
             }
             item->setData(1, Qt::UserRole, true);
@@ -86,7 +86,7 @@ void ReplayList::sendDeck(QTreeWidgetItem *item, bool newTab)
         return;
     }
     int index = item->data(0, Qt::UserRole).toInt();
-    auto &deck = decks[index];
+    auto &deck = m_decks[index];
     QStringList ls;
     foreach(quint32 id, deck)
     {

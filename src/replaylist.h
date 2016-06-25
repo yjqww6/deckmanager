@@ -10,7 +10,7 @@
 #include <QTextStream>
 #include <QMenu>
 #include "yrp.h"
-#include "typing.h"
+#include "types.h"
 
 class ReplayList : public QTreeWidget
 {
@@ -29,10 +29,10 @@ private slots:
 
 private:
 
-    QList<Type::Deck> decks;
+    QList<Type::Deck>   m_decks;
 
-    QMenu *popup;
-    QTreeWidgetItem *menuItem;
+    QMenu               *m_popup;
+    QTreeWidgetItem     *m_menuItem;
 };
 
 #endif // REPLAYLIST_H

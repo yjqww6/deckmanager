@@ -1,5 +1,4 @@
 #include "engine.h"
-#include <QRegExp>
 #include <QMutex>
 #include <QStringList>
 #include <QDebug>
@@ -10,6 +9,7 @@
 #include "curl/curl.h"
 #include "networking.h"
 #include "limitcards.h"
+#include "signaltower.h"
 
 static void custom_init() {}
 
@@ -31,14 +31,14 @@ static ptr download(ptr url, size_t timeout)
     {
         return Sfalse;
     }
-    std::string surl = engine->getString(url);
+    std::string surl = engine->getString(url).toStdString();
 
     Sdeactivate_thread();
 
-    CURL *curl = curl_easy_init();
 
     std::vector<char> data;
 
+    CURL *curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, surl.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
@@ -54,12 +54,21 @@ static ptr download(ptr url, size_t timeout)
 
 static void qdebug(ptr str)
 {
-    qDebug() << engine->getString(str).c_str();
+    QString qstr = engine->getString(str);
+    qDebug() << qstr;
+    if(SignalTower::inst().m_mainLoaded)
+    {
+        SignalTower::inst().schemeDebug(qstr);
+    }
+    else
+    {
+        SignalTower::inst().m_accumulated.append(qstr);
+    }
 }
 
 static ptr expansion_open(const char* path)
 {
-    return engine->bytevector(expansions->open(path));
+    return engine->bytevector(Expansions::inst().open(path));
 }
 
 static ptr readFile(const char* path)
@@ -77,10 +86,10 @@ static ptr readFile(const char* path)
 
 static ptr getAllCards()
 {
-    ptr vec = Smake_vector(cardPool->pool.size(), Sfalse);
+    ptr vec = Smake_vector(CardManager::inst().m_cards.size(), Sfalse);
 
     int i = 0;
-    for(auto it = cardPool->pool.begin(); it != cardPool->pool.end(); ++it, ++i)
+    for(auto it = CardManager::inst().m_cards.begin(); it != CardManager::inst().m_cards.end(); ++it, ++i)
     {
         Svector_set(vec, i, Sunsigned(it->first));
     }
@@ -89,7 +98,7 @@ static ptr getAllCards()
 
 static int cardLimit(size_t id)
 {
-    return limitCards->getLimit(id);
+    return LimitCards::inst().getLimit(id);
 }
 
 static ptr bytesConvert(ptr bytes, const char* from, const char* to)
@@ -102,54 +111,20 @@ static ptr bytesConvert(ptr bytes, const char* from, const char* to)
         return Sfalse;
     }
 
-    std::string b = engine->getBytes(bytes);
-    return engine->bytevector(codecTo->fromUnicode(codecFrom->toUnicode(QByteArray(b.data(), b.length()))));
-}
-
-static ptr regex(ptr pat, ptr str, size_t offset, int minimal)
-{
-    char *data = reinterpret_cast<char*>(Sbytevector_data(pat));
-    QRegExp reg(QString::fromUtf8(data, Sbytevector_length(pat)));
-    reg.setMinimal(minimal != 0);
-
-    data = reinterpret_cast<char*>(Sbytevector_data(str));
-
-    QString qstr = QString::fromUtf8(data + offset, Sbytevector_length(str) - offset);
-
-    int pos = reg.indexIn(qstr);
-
-    const QStringList& ls = reg.capturedTexts();
-
-    //qDebug() << pat << str << pos << len << ls;
-
-    if(pos == -1)
-    {
-        return Sfalse;
-    }
-
-    int actual_pos = qstr.left(pos).toUtf8().length();
-
-    ptr vec = Smake_vector(ls.length(), Sfalse);
-
-    for(int i = 0; i < ls.length(); ++i)
-    {
-        const auto& ba = ls[i].toUtf8();
-        Svector_set(vec, i, engine->bytevector(ba.data(), ba.length()));
-    }
-
-    return Scons(Sfixnum(actual_pos), vec);
+    QByteArray ba = engine->getBytes(bytes);
+    return engine->bytevector(codecTo->fromUnicode(codecFrom->toUnicode(ba)));
 }
 
 static ptr getCard(int id)
 {
-    auto card = cardPool->getCard(id);
-    if(card.isNull())
+    auto card = CardManager::inst().getCard(id);
+    if(!card)
     {
         return Sfalse;
     }
     else
     {
-        Card& c = card;
+        Card& c = **card;
         std::string exp = "(make-ftype-pointer card " + std::to_string(reinterpret_cast<size_t>(&c)) + ")";
         return engine->eval(exp.c_str());
     }
@@ -161,9 +136,7 @@ static ptr getCardName(Card *card)
     {
         return Sstring("");
     }
-
-    ptr b = engine->bytevector(card->name.toUtf8());
-    return engine->call("utf8->string", b);
+    return engine->fromQString(card->name);
 }
 
 static ptr getCardEffect(Card *card)
@@ -173,8 +146,7 @@ static ptr getCardEffect(Card *card)
         return Sstring("");
     }
 
-    ptr b = engine->bytevector(card->effect.toUtf8());
-    return engine->call("utf8->string", b);
+    return engine->fromQString(card->effect);
 }
 
 Engine::Engine(const char* argv0, const char* petite, const char* scheme)
@@ -242,29 +214,42 @@ bool Engine::isException(ptr val)
 
 ptr Engine::eval(const char *sexp)
 {
-    ptr p = Scall2(myeval, Sstring(sexp), except);
+    ptr cmd = Scall1(Stop_level_value(Sstring_to_symbol("utf8->string")), bytevector(sexp));
+    ptr p = Scall2(myeval, cmd, except);
     if(isException(p))
     {
-        qDebug() << getExceptStr().c_str();
+        QString str = getExceptStr();
+        qDebug() << str;
+        if(SignalTower::inst().m_mainLoaded)
+        {
+            SignalTower::inst().schemeDebug(str);
+        }
+        else
+        {
+            SignalTower::inst().m_accumulated.append(str);
+        }
     }
     return p;
 }
 
-std::string Engine::getString(ptr str)
+QString Engine::getString(ptr str)
 {
     if(!Sstringp(str))
     {
         return "";
     }
 
-    ptr bytes = Scall1(Stop_level_value(Sstring_to_symbol("string->utf8")), str);
+    int len = Sstring_length(str);
+    QString buf(len, QChar(0));
 
-    int len = Sbytevector_length(bytes);
-    std::string buf((char*)Sbytevector_data(bytes), len);
+    for(int i = 0; i < len; ++i)
+    {
+        buf[i] = Sstring_ref(str, i);
+    }
     return std::move(buf);
 }
 
-std::string Engine::getBytes(ptr str)
+QByteArray Engine::getBytes(ptr str)
 {
     if(!Sbytevectorp(str))
     {
@@ -272,7 +257,7 @@ std::string Engine::getBytes(ptr str)
     }
 
     int len = Sbytevector_length(str);
-    std::string buf((char*)Sbytevector_data(str), len);
+    QByteArray buf((char*)Sbytevector_data(str), len);
     return std::move(buf);
 }
 
@@ -299,12 +284,12 @@ ptr Engine::getExcept() const
     return except;
 }
 
-std::string Engine::getExceptStr(ptr e)
+QString Engine::getExceptStr(ptr e)
 {
     return getString(Scall1(except2str, e));
 }
 
-std::string Engine::getExceptStr()
+QString Engine::getExceptStr()
 {
     return getString(Scall1(except2str, Stop_level_value(except)));
 }
@@ -321,12 +306,16 @@ ptr Engine::bytevector(const char *data, size_t len)
 
 ptr Engine::fromQString(const QString &str)
 {
-    return engine->call("utf8->string", bytevector(str.toUtf8()));
+    ptr buf = Smake_string(str.length(), 0);
+    for(int i = 0; i < str.length(); ++i)
+    {
+        Sstring_set(buf, i, (uint32_t)str[i].unicode());
+    }
+    return buf;
 }
 
 void Engine::init()
 {
-    registerProc("regex", regex, "(ptr ptr size_t boolean) ptr");
     registerProc("bytes-convert", bytesConvert, "(ptr string string) ptr");
     registerProc("get-card", getCard, "(int) ptr");
     registerProc("expansion-open", expansion_open, "(string) ptr");

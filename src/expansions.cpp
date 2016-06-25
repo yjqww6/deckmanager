@@ -4,18 +4,16 @@
 #include <QMutex>
 #include <QMutexLocker>
 
-Expansions *expansions = nullptr;
-
 static QMutex mutex;
 
-Expansions::Expansions(QStringList zipFiles)
+void Expansions::loadZips(QStringList zipFiles)
 {
     foreach(QString fileName, zipFiles)
     {
         auto zipFile = QSharedPointer<QuaZip>::create(fileName);
         if(zipFile->open(QuaZip::mdUnzip))
         {
-            zips.append(zipFile);
+            m_zips.append(zipFile);
         }
     }
 }
@@ -23,8 +21,8 @@ Expansions::Expansions(QStringList zipFiles)
 QByteArray Expansions::open(QString path)
 {
     QByteArray arr;
-    //QMutexLocker locker(&mutex);
-    foreach(auto zipFile, zips)
+    QMutexLocker locker(&mutex);
+    foreach(auto zipFile, m_zips)
     {
         if(zipFile->setCurrentFile(path))
         {

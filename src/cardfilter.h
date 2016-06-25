@@ -12,7 +12,7 @@
 #include <QPushButton>
 #include <QVector>
 #include "card.h"
-#include "typing.h"
+#include "types.h"
 #include "engine.h"
 #include <functional>
 
@@ -22,9 +22,6 @@ class CardFilter : public QWidget
 public:
     explicit CardFilter(QWidget *parent = 0);
     ~CardFilter();
-
-    std::function<Type::Deck&()> getCurrent;
-    std::function<Type::DeckP()> getDeck;
 signals:
     void result(Type::DeckP);
 public slots:
@@ -42,6 +39,11 @@ private:
     template<typename T>
     void search(T &&begin, T &&end);
 
+public:
+    std::function<Type::Deck&()> m_getCurrent;
+    std::function<Type::DeckP()> m_getDeck;
+
+private:
     static const quint32 cardTypes[];
     static const quint32 monsterTypes[];
     static const quint32 spellTypes[];
@@ -49,28 +51,28 @@ private:
     static const quint32 monsterRaces[];
     static const quint32 monsterAttrs[];
 
-    QComboBox *cardType;
-    QComboBox *cardTypeSub;
+    QComboBox *m_cardType;
+    QComboBox *m_cardTypeSub;
 
-    QComboBox *limit, *ot;
+    QComboBox *m_limit, *m_ot;
 
-    QLineEdit *passEdit;
+    QLineEdit *m_passEdit;
 
-    QComboBox *cardRace;
-    QComboBox *cardAttr;
+    QComboBox *m_cardRace;
+    QComboBox *m_cardAttr;
 
-    QLineEdit *atkEdit;
-    QLineEdit *defEdit;
-    QLineEdit *levelEdit;
-    QLineEdit *rankEdit;
-    QLineEdit *scaleEdit;
+    QLineEdit *m_atkEdit;
+    QLineEdit *m_defEdit;
+    QLineEdit *m_levelEdit;
+    QLineEdit *m_rankEdit;
+    QLineEdit *m_scaleEdit;
 
-    QCheckBox *effects[32];
+    QCheckBox *m_effects[32];
 
-    QComboBox *setEdit;
-    QLineEdit *nameEdit;
-    QCheckBox *inverseMode;
-    QCheckBox *noSortMode;
+    QComboBox *m_setEdit;
+    QLineEdit *m_nameEdit;
+    QCheckBox *m_inverseMode;
+    QCheckBox *m_noSortMode;
 };
 
 #endif // CARDFILTER_H

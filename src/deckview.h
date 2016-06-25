@@ -18,7 +18,7 @@
 #include "deckmodel.h"
 #include "deckwidget.h"
 #include "card.h"
-#include "config.h"
+#include "configmanager.h"
 
 
 
@@ -32,33 +32,33 @@ public:
     DeckView(QWidget *parent, QTabBar *_tabbar);
     DeckWidget *getMain()
     {
-        return mainDeck;
+        return m_mainDeck;
     }
 
     DeckWidget *getExtra()
     {
-        return extraDeck;
+        return m_extraDeck;
     }
 
     DeckWidget *getSide()
     {
-        return sideDeck;
+        return m_sideDeck;
     }
 
     Type::DeckP getDeck()
     {
         auto deck = Type::DeckP::create();
-        foreach(auto &item, mainDeck->getDeck())
+        foreach(auto &item, m_mainDeck->getDeck())
         {
             deck->append(item.getId());
         }
-        foreach(auto &item, extraDeck->getDeck())
+        foreach(auto &item, m_extraDeck->getDeck())
         {
             deck->append(item.getId());
         }
-        if(!sideHidden)
+        if(!m_sideHidden)
         {
-            foreach(auto &item, sideDeck->getDeck())
+            foreach(auto &item, m_sideDeck->getDeck())
             {
                 deck->append(item.getId());
             }
@@ -82,9 +82,9 @@ public slots:
 
     void setCurrentCardId(quint32 id)
     {
-        mainDeck->setCurrentCardId(id);
-        extraDeck->setCurrentCardId(id);
-        sideDeck->setCurrentCardId(id);
+        m_mainDeck->setCurrentCardId(id);
+        m_extraDeck->setCurrentCardId(id);
+        m_sideDeck->setCurrentCardId(id);
     }
 
     void makeSnapShot(bool mod = true);
@@ -103,9 +103,9 @@ public slots:
 
     void checkLeave()
     {
-        mainDeck->checkLeave();
-        extraDeck->checkLeave();
-        sideDeck->checkLeave();
+        m_mainDeck->checkLeave();
+        m_extraDeck->checkLeave();
+        m_sideDeck->checkLeave();
     }
 
     void newTab();
@@ -113,7 +113,7 @@ private slots:
 
     void setReady(bool t)
     {
-        abortAction->setDisabled(t);
+        m_abortAction->setDisabled(t);
     }
 
     void help();
@@ -133,18 +133,18 @@ private:
     void switchTab(int);
 
     typedef QSharedPointer<DeckModel> ModelP;
-    QList<ModelP> models;
-    ModelP currentModel;
+    QList<ModelP> m_models;
+    ModelP m_currentModel;
 
-    DeckWidget *mainDeck;
-    DeckWidget *extraDeck;
-    DeckWidget *sideDeck;
+    DeckWidget *m_mainDeck;
+    DeckWidget *m_extraDeck;
+    DeckWidget *m_sideDeck;
     DeckSizeLabel *st;
-    QAction *undoAction, *redoAction;
-    QAction *abortAction;
-    QToolBar *toolbar;
-    QTabBar *tabbar;
-    bool sideHidden;
+    QAction *m_undoAction, *m_redoAction;
+    QAction *m_abortAction;
+    QToolBar *m_toolbar;
+    QTabBar *m_tabbar;
+    bool m_sideHidden;
 };
 
 #endif // DECKVIEW_H

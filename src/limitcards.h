@@ -9,28 +9,24 @@
 #include <QList>
 #include <QScopedPointer>
 #include <functional>
-#include "typing.h"
+#include "types.h"
+#include "common.h"
 
-class LimitCards
+class LimitCards : public enable_singleton<LimitCards>
 {
 public:
     LimitCards();
-    QScopedPointer<QPixmap> limits[3];
-
-    typedef QHash<quint32, int> Table;
-    QList<QPair<QString, Table> > tables;
+    void load();
 
     QPixmap *getPixmap(int);
-
-    auto getTables() -> decltype((tables))
-    {
-        return tables;
-    }
-
     int getLimit(quint32 id);
 
     Type::DeckP getCards(int);
-};
+public:
 
-extern LimitCards *limitCards;
+    QScopedPointer<QPixmap> m_limits[3];
+
+    typedef QHash<quint32, int> Table;
+    QList<QPair<QString, Table>> m_tables;
+};
 #endif // LIMITS_H

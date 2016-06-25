@@ -1,6 +1,6 @@
 #include "deckmodel.h"
 #include "range.h"
-#include "config.h"
+#include "configmanager.h"
 #include "engine.h"
 #include <algorithm>
 #include <QDebug>
@@ -8,12 +8,12 @@
 int DeckModel::counter = 0;
 
 DeckModel::DeckModel(QObject *parent)
-    : QObject(parent), timestamp(0), waiting(false), fresh(true), netwoking(make_networking())
+    : QObject(parent), m_timestamp(0), m_waiting(false), m_fresh(true), m_netwoking(make_networking())
 {
-    mainDeck = QSharedPointer<Type::DeckI>::create();
-    extraDeck = QSharedPointer<Type::DeckI>::create();
-    sideDeck = QSharedPointer<Type::DeckI>::create();
-    id = ++counter;
+    m_mainDeck = QSharedPointer<Type::DeckI>::create();
+    m_extraDeck = QSharedPointer<Type::DeckI>::create();
+    m_sideDeck = QSharedPointer<Type::DeckI>::create();
+    m_id = ++counter;
 }
 
 static void toShot(Type::Deck &shot, Type::DeckI& items)
@@ -38,127 +38,127 @@ static void toCards(Type::DeckI& items, Type::Deck &shot)
 
 void DeckModel::restoreSnapshot(SnapShot &snap)
 {
-    toCards(*mainDeck, snap.shot[0]);
-    toCards(*extraDeck, snap.shot[1]);
-    toCards(*sideDeck, snap.shot[2]);
-    deckStatus = snap.deckStatus;
+    toCards(*m_mainDeck, snap.shot[0]);
+    toCards(*m_extraDeck, snap.shot[1]);
+    toCards(*m_sideDeck, snap.shot[2]);
+    m_deckStatus = snap.deckStatus;
 }
 
 DeckModel::SnapShot DeckModel::currentSnapshot()
 {
     SnapShot snap;
-    toShot(snap.shot[0], *mainDeck);
-    toShot(snap.shot[1], *extraDeck);
-    toShot(snap.shot[2], *sideDeck);
-    snap.deckStatus = deckStatus;
+    toShot(snap.shot[0], *m_mainDeck);
+    toShot(snap.shot[1], *m_extraDeck);
+    toShot(snap.shot[2], *m_sideDeck);
+    snap.deckStatus = m_deckStatus;
     return std::move(snap);
 }
 
 void DeckModel::makeSnapShot(bool mod)
 {
-    if(snapshots.size() > 50)
+    if(m_snapshots.size() > 50)
     {
-        snapshots.pop_back();
+        m_snapshots.pop_back();
     }
-    redoSnapshots.clear();
-    snapshots.push_front(currentSnapshot());
+    m_redoSnapshots.clear();
+    m_snapshots.push_front(currentSnapshot());
 
-    fresh = false;
+    m_fresh = false;
     if(mod)
     {
-        deckStatus.modified = true;
+        m_deckStatus.modified = true;
     }
 }
 
 void DeckModel::undo()
 {
-    if(snapshots.size() >= 1)
+    if(m_snapshots.size() >= 1)
     {
-        if(redoSnapshots.size() > 50)
+        if(m_redoSnapshots.size() > 50)
         {
-            redoSnapshots.pop_back();
+            m_redoSnapshots.pop_back();
         }
 
-        redoSnapshots.push_front(currentSnapshot());
-        restoreSnapshot(snapshots.front());
-        snapshots.pop_front();
+        m_redoSnapshots.push_front(currentSnapshot());
+        restoreSnapshot(m_snapshots.front());
+        m_snapshots.pop_front();
     }
 }
 
 void DeckModel::redo()
 {
-    if(redoSnapshots.size() >= 1)
+    if(m_redoSnapshots.size() >= 1)
     {
-        if(snapshots.size() > 50)
+        if(m_snapshots.size() > 50)
         {
-            snapshots.pop_back();
+            m_snapshots.pop_back();
         }
-        snapshots.push_front(currentSnapshot());
-        restoreSnapshot(redoSnapshots.front());
-        redoSnapshots.pop_front();
+        m_snapshots.push_front(currentSnapshot());
+        restoreSnapshot(m_redoSnapshots.front());
+        m_redoSnapshots.pop_front();
     }
 }
 
 void DeckModel::clear()
 {
     makeSnapShot();
-    mainDeck->clear();
-    extraDeck->clear();
-    sideDeck->clear();
+    m_mainDeck->clear();
+    m_extraDeck->clear();
+    m_sideDeck->clear();
 }
 
 void DeckModel::sort()
 {
     makeSnapShot();
-    qSort(mainDeck->begin(), mainDeck->end(), itemCompare);
-    qSort(extraDeck->begin(), extraDeck->end(), itemCompare);
-    qSort(sideDeck->begin(), sideDeck->end(), itemCompare);
+    qSort(m_mainDeck->begin(), m_mainDeck->end(), itemCompare);
+    qSort(m_extraDeck->begin(), m_extraDeck->end(), itemCompare);
+    qSort(m_sideDeck->begin(), m_sideDeck->end(), itemCompare);
 }
 
 void DeckModel::shuffle()
 {
     makeSnapShot();
-    std::random_shuffle(mainDeck->begin(), mainDeck->end());
+    std::random_shuffle(m_mainDeck->begin(), m_mainDeck->end());
 }
 
 void DeckModel::abort()
 {
-    waiting = false;
-    netwoking->abort();
+    m_waiting = false;
+    m_netwoking->abort();
 }
 
 void DeckModel::loadRemoteDeck(QString _id, QString name)
 {
-    if(waiting)
+    if(m_waiting)
     {
         return;
     }
-    waiting = true;
-    emit ready(id, false);
+    m_waiting = true;
+    emit ready(m_id, false);
 
-    disconnect(netwoking.get());
-    connect(netwoking.get(), &NetWorking::deck, this, [this, name](QString deck)
+    disconnect(m_netwoking.get());
+    connect(m_netwoking.get(), &NetWorking::deck, this, [this, name](QString deck)
     {
         loadDeckInternal(deck, name, false);
     }, Qt::QueuedConnection);
 
-    netwoking->getDeck(_id);
+    m_netwoking->getDeck(_id);
 }
 
 QString DeckModel::status()
 {
 
     QString stat;
-    stat += "[" + (deckStatus.isLocal ? config->getStr("label", "local", "本地")
-                                      : config->getStr("label", "temp", "临时")) + "]";
-    stat += deckStatus.name;
-    stat += deckStatus.modified ? ("[" + config->getStr("label", "modified", "已修改") + "]") : "";
+    stat += "[" + (m_deckStatus.isLocal ? ConfigManager::inst().getStr("label", "local", "本地")
+                                      : ConfigManager::inst().getStr("label", "temp", "临时")) + "]";
+    stat += m_deckStatus.name;
+    stat += m_deckStatus.modified ? ("[" + ConfigManager::inst().getStr("label", "modified", "已修改") + "]") : "";
     return stat;
 }
 
 void DeckModel::loadDeck(QString lines, QString _name, bool local)
 {
-    if(waiting)
+    if(m_waiting)
     {
         return;
     }
@@ -168,20 +168,20 @@ void DeckModel::loadDeck(QString lines, QString _name, bool local)
 void DeckModel::loadDeckInternal(QString lines, QString _name, bool local)
 {
 
-    int ts = ++timestamp;
+    int ts = ++m_timestamp;
     makeSnapShot(false);
 
-    mainDeck->clear();
-    extraDeck->clear();
-    sideDeck->clear();
+    m_mainDeck->clear();
+    m_extraDeck->clear();
+    m_sideDeck->clear();
 
 
-    deckStatus.name = _name;
-    deckStatus.isLocal = local;
-    deckStatus.modified = false;
+    m_deckStatus.name = _name;
+    m_deckStatus.isLocal = local;
+    m_deckStatus.modified = false;
 
-    waiting = true;
-    emit ready(id, false);
+    m_waiting = true;
+    emit ready(m_id, false);
     auto thread = new ItemThread(ts, lines, this);
     connect(thread, &ItemThread::finishLoad, this, &DeckModel::loadFinished);
     connect(thread, &ItemThread::finished, thread, &ItemThread::deleteLater);
@@ -196,37 +196,37 @@ void DeckModel::saveDeck(QString path)
     {
         QTextStream out(&file);
         out << "#create by ...\n#main\n";
-        foreach(auto &item, *mainDeck)
+        foreach(auto &item, *m_mainDeck)
         {
             out << item.getId() << "\n";
         }
         out << "#extra\n";
-        foreach(auto &item, *extraDeck)
+        foreach(auto &item, *m_extraDeck)
         {
             out << item.getId() << "\n";
         }
         out << "!side\n";
-        foreach(auto &item, *sideDeck)
+        foreach(auto &item, *m_sideDeck)
         {
             out << item.getId() << "\n";
         }
         file.close();
-        deckStatus.modified = false;
-        deckStatus.isLocal = true;
-        deckStatus.name = QFileInfo(file).completeBaseName();
+        m_deckStatus.modified = false;
+        m_deckStatus.isLocal = true;
+        m_deckStatus.name = QFileInfo(file).completeBaseName();
     }
 }
 
 void DeckModel::loadFinished(int ts, ItemThread::Deck deck)
 {
-    waiting = false;
-    if(ts == timestamp)
+    m_waiting = false;
+    if(ts == m_timestamp)
     {
-        mainDeck->swap((*deck)[0]);
-        extraDeck->swap((*deck)[1]);
-        sideDeck->swap((*deck)[2]);
-        emit ready(id, true);
-        emit refresh(id);
+        m_mainDeck->swap((*deck)[0]);
+        m_extraDeck->swap((*deck)[1]);
+        m_sideDeck->swap((*deck)[2]);
+        emit ready(m_id, true);
+        emit refresh(m_id);
     }
 }
 
@@ -237,13 +237,13 @@ ItemThread::ItemThread(int _ts, QString _lines, DeckModel *_model)
     Q_UNUSED(t);
 }
 
-Wrapper<Card> ItemThread::loadNewCard(quint32 id)
+optional<Card*> ItemThread::loadNewCard(quint32 id)
 {
-    auto &map = cardPool->changedMap;
+    auto &map = CardManager::inst().m_changedMap;
     auto it = map.find(id);
     if(it != map.end())
     {
-       return cardPool->getCard(it.value());
+       return CardManager::inst().getCard(it.value());
     }
 
     QEventLoop loop;
@@ -264,19 +264,22 @@ Wrapper<Card> ItemThread::loadNewCard(quint32 id)
     networking->getName(id);
     loop.exec();
 
-    auto card = cardPool->getNewCard(name, config->waitForPass);
-    call_with_ref([&](Card &card) {
-        map.insert(id, card.id);
-    }, card.copy());
-    return card;
+
+    if(auto card = CardManager::inst().getNewCard(name, ConfigManager::inst().m_waitForPass))
+    {
+        map.insert(id, card.value()->id);
+        return card;
+    }
+    else
+    {
+        return nullopt;
+    }
 }
 
 void ItemThread::run()
 {
-    SchemeThreadActivator act;
     try
     {
-
         QTextStream in(&lines);
         bool side = false;
         for(auto i: range(3))
@@ -288,7 +291,7 @@ void ItemThread::run()
 
         for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
         {
-            if(ts != model->timestamp || !model->waiting)
+            if(ts != model->m_timestamp || !model->m_waiting)
             {
                 return;
             }
@@ -308,26 +311,28 @@ void ItemThread::run()
                     bool ok = true;
                     quint32 id = line.toUInt(&ok);
 
-                    Wrapper<Card> card;
+                    optional<Card*> ocard;
                     if(ok)
                     {
-                        card = cardPool->getCard(id);
-                        if(card.isNull() && config->convertPass && id >= 10000)
+                        ocard = CardManager::inst().getCard(id);
+                        if(!ocard && ConfigManager::inst().m_convertPass && id >= 10000)
                         {
-                            card = loadNewCard(id);
+                            ocard = loadNewCard(id);
                         }
                     }
                     else
                     {
-                        card = cardPool->getNewCard(line, config->waitForPass);
+                        ocard = CardManager::inst().getNewCard(line, ConfigManager::inst().m_waitForPass);
                     }
 
-                    if(ts != model->timestamp || !model->waiting)
+                    if(ts != model->m_timestamp || !model->m_waiting)
                     {
                         return;
                     }
 
-                    call_with_ref([&](Card &card) {
+                    if(ocard)
+                    {
+                        Card &card = **ocard;
                         id = card.id;
                         if(side)
                         {
@@ -344,7 +349,7 @@ void ItemThread::run()
                                 deck[0].append(CardItem(id));
                             }
                         }
-                    }, std::move(card));
+                    }
                 }
             }
         }
@@ -357,4 +362,5 @@ void ItemThread::run()
     {
 
     }
+    Sdestroy_thread();
 }

@@ -1,5 +1,5 @@
 #include "networking.h"
-#include "config.h"
+#include "configmanager.h"
 #include <QTextDocument>
 
 static std::unordered_map<size_t, std::weak_ptr<NetWorking>> mapping;
@@ -22,20 +22,20 @@ void NetWorking::notify(int type, size_t timestamp, ptr res)
     {
     case 0:
     {
-        QString decki = QString::fromUtf8(engine->getBytes(res).c_str());
+        QString decki = engine->getString(res);
         emit deck(decki);
         break;
     }
     case 1:
     {
         auto ls = Type::DeckL::create();
-        for(ptr i = res; i != Snil; i = Scdr(i))
+        for(ptr i = res; Spairp(i); i = Scdr(i))
         {
             ptr t = Scar(i);
-            QString name = QString::fromUtf8(engine->getBytes(Svector_ref(t, 1)).c_str());
-            QString id = QString::fromUtf8(engine->getBytes(Svector_ref(t, 0)).c_str());
-            QString type = QString::fromUtf8(engine->getBytes(Svector_ref(t, 2)).c_str());
-            QString tooltip = QString::fromUtf8(engine->getBytes(Svector_ref(t, 3)).c_str());
+            QString name = engine->getString(Svector_ref(t, 1));
+            QString id = engine->getString(Svector_ref(t, 0));
+            QString type = engine->getString(Svector_ref(t, 2));
+            QString tooltip = engine->getString(Svector_ref(t, 3));
             QTextDocument text;
             text.setHtml(name);
             name = text.toPlainText();
@@ -54,8 +54,20 @@ void NetWorking::notify(int type, size_t timestamp, ptr res)
     }
     case 2:
     {
-        QString cardName = QString::fromUtf8(engine->getBytes(res).c_str());
+        QString cardName = engine->getString(res);
         emit name(cardName);
+        break;
+    }
+    case 3:
+    {
+        Slock_object(res);
+        emit packList(res);
+        break;
+    }
+    case 4:
+    {
+        Slock_object(res);
+        emit pack(res);
         break;
     }
     default:
@@ -80,8 +92,8 @@ void NetWorking::getList(int page)
     with_scheme([&]()
     {
         engine->call("get-list", Sfixnum(m_id), Sfixnum(++m_timestamp),
-                     Sfixnum(config->deckType), Sfixnum(config->Flt),
-                     Sfixnum(page), engine->fromQString(config->tempConfig));
+                     Sfixnum(ConfigManager::inst().m_deckType), Sfixnum(ConfigManager::inst().m_Flt),
+                     Sfixnum(page), engine->fromQString(ConfigManager::inst().m_tempConfig));
     });
     m_waiting = true;
     emit ready(false);
@@ -92,6 +104,26 @@ void NetWorking::getName(quint32 id)
     with_scheme([&]()
     {
         engine->call("get-name", Sfixnum(m_id), Sfixnum(++m_timestamp), Sunsigned(id));
+    });
+    m_waiting = true;
+    emit ready(false);
+}
+
+void NetWorking::getPack(quint32 no)
+{
+    with_scheme([&]()
+    {
+        engine->call("get-pack", Sfixnum(m_id), Sfixnum(++m_timestamp), Sunsigned(no));
+    });
+    m_waiting = true;
+    emit ready(false);
+}
+
+void NetWorking::getPackList()
+{
+    with_scheme([&]()
+    {
+        engine->call("get-pack-list", Sfixnum(m_id), Sfixnum(++m_timestamp));
     });
     m_waiting = true;
     emit ready(false);
@@ -133,5 +165,21 @@ std::shared_ptr<NetWorking> make_networking()
     Q_UNUSED(t);
     auto ptr = std::make_shared<NetWorking>();
     mapping[ptr->getId()] = ptr;
+
+    if(ptr->getId() % 100 == 0)
+    {
+        for(auto it = mapping.begin(); it != mapping.end();)
+        {
+            if(it->second.expired())
+            {
+                it = mapping.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+
     return ptr;
 }

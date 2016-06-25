@@ -27,9 +27,9 @@ public slots:
     void refresh();
     void setPathFocus(QString name)
     {
-        pathEdit->setText(name);
-        pathEdit->setFocus();
-        pathEdit->selectAll();
+        m_pathEdit->setText(name);
+        m_pathEdit->setFocus();
+        m_pathEdit->selectAll();
     }
 
 private slots:
@@ -38,13 +38,13 @@ private slots:
     void itemName(QListWidgetItem *);
     void deleteDeck();
 private:
-    QListWidget *listWidget;
-    QLineEdit *pathEdit;
-    QPushButton *buttonSave;
-    QPushButton *buttonRefresh;
-    QListWidgetItem *menuItem;
-    QCheckBox *includeAI;
-    QMenu *popup;
+    QListWidget     *m_listWidget;
+    QLineEdit       *m_pathEdit;
+    QPushButton     *m_buttonSave;
+    QPushButton     *m_buttonRefresh;
+    QListWidgetItem *m_menuItem;
+    QCheckBox       *m_includeAI;
+    QMenu           *m_popup;
 };
 
 #endif // LOCALLIST_H

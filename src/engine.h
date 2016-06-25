@@ -1,6 +1,7 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#include <cstdint>
 #include "scheme.h"
 #include <string>
 #include <QString>
@@ -34,12 +35,12 @@ public:
     bool isException(ptr val);
     ptr eval(const char* sexp);
 
-    static std::string getString(ptr str);
-    static std::string getBytes(ptr str);
+    static QString getString(ptr str);
+    static QByteArray getBytes(ptr str);
 
     ptr getExcept() const;
-    std::string getExceptStr(ptr e);
-    std::string getExceptStr();
+    QString getExceptStr(ptr e);
+    QString getExceptStr();
 
     ptr bytevector(const char* data, size_t len);
     ptr bytevector(const QByteArray& ba)
@@ -78,7 +79,7 @@ public:
 
         if(isException(ret))
         {
-            qDebug() << getExceptStr().c_str();
+            qDebug() << getExceptStr();
         }
         return ret;
     }

@@ -4,7 +4,7 @@
 #include <QObject>
 #include <memory>
 #include <unordered_map>
-#include "typing.h"
+#include "types.h"
 #include "engine.h"
 
 class NetWorking : public QObject
@@ -21,11 +21,15 @@ signals:
     void deck(QString);
     void list(Type::DeckL);
     void name(QString);
+    void packList(ptr ls);
+    void pack(ptr ls);
     void ready(bool);
 public slots:
     void getDeck(QString id);
     void getList(int page = 1);
     void getName(quint32);
+    void getPack(quint32);
+    void getPackList();
     void abort();
 private:
     size_t m_timestamp;

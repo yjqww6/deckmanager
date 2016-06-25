@@ -2,26 +2,26 @@
 #define DECKLABEL
 
 #include <QLabel>
-#include "typing.h"
+#include "types.h"
 #include "card.h"
-#include "config.h"
+#include "configmanager.h"
 
 
 class DeckSizeLabel : public QLabel
 {
     Q_OBJECT
 public:
-    DeckSizeLabel(const QString &_name) : QLabel(), name(_name) {}
+    DeckSizeLabel(const QString &_name) : QLabel(), m_name(_name) {}
 public slots:
     void changeSize(int size)
     {
-        setText(name + " : " + QString::number(size));
+        setText(m_name + " : " + QString::number(size));
         adjustSize();
         updateGeometry();
     }
 
 private:
-    QString name;
+    QString m_name;
 };
 
 
@@ -40,7 +40,9 @@ public slots:
         int mSum = 0, sSum = 0, tSum = 0;
         foreach(auto &item, ls)
         {
-            call_with_ref([&](Card &card) {
+            if(auto ocard = CardManager::inst().getCard(item.getId()))
+            {
+                Card &card = **ocard;
                 if(card.type & Const::TYPE_MONSTER)
                 {
                     mSum++;
@@ -53,11 +55,11 @@ public slots:
                 {
                     tSum++;
                 }
-            }, cardPool->getCard(item.getId()));
+            }
         }
-        QString text = config->getStr("string", "TYPE_MONSTER", "怪兽") + ": " + QString::number(mSum);
-        text = text + " " + config->getStr("string", "TYPE_SPELL", "魔法") + ": " + QString::number(sSum);
-        text = text + " " + config->getStr("string", "TYPE_TRAP", "陷阱") + ": " + QString::number(tSum);
+        QString text = ConfigManager::inst().getStr("string", "TYPE_MONSTER", "怪兽") + ": " + QString::number(mSum);
+        text = text + " " + ConfigManager::inst().getStr("string", "TYPE_SPELL", "魔法") + ": " + QString::number(sSum);
+        text = text + " " + ConfigManager::inst().getStr("string", "TYPE_TRAP", "陷阱") + ": " + QString::number(tSum);
         setText(text);
     }
 };
@@ -77,7 +79,9 @@ public slots:
         int fSum = 0, sSum = 0, xSum = 0;
         foreach(auto &item, ls)
         {
-            call_with_ref([&](Card &card) {
+            if(auto ocard = CardManager::inst().getCard(item.getId()))
+            {
+                Card &card = **ocard;
 
                 if(card.type & Const::TYPE_FUSION)
                 {
@@ -91,11 +95,11 @@ public slots:
                 {
                     xSum++;
                 }
-            }, cardPool->getCard(item.getId()));
+            }
         }
-        QString text = config->getStr("string", "TYPE_FUSION", "融合") + ": " + QString::number(fSum);
-        text = text + " " + config->getStr("string", "TYPE_SYNCHRO", "同调") + ": " + QString::number(sSum);
-        text = text + " " + config->getStr("string", "TYPE_XYZ", "XYZ") + ": " + QString::number(xSum);
+        QString text = ConfigManager::inst().getStr("string", "TYPE_FUSION", "融合") + ": " + QString::number(fSum);
+        text = text + " " + ConfigManager::inst().getStr("string", "TYPE_SYNCHRO", "同调") + ": " + QString::number(sSum);
+        text = text + " " + ConfigManager::inst().getStr("string", "TYPE_XYZ", "XYZ") + ": " + QString::number(xSum);
 
         setText(text);
     }

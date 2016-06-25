@@ -1,23 +1,24 @@
 #include "packlist.h"
-#include "config.h"
+#include "configmanager.h"
+#include "engine.h"
 #include <quazip/quazip.h>
 #include <quazip/quazipfile.h>
 #include <quazip/quazipdir.h>
 #include <QTextDocument>
 
-PackList::PackList(QWidget *parent) : QTreeWidget(parent), myPack(nullptr)
+PackList::PackList(QWidget *parent) : QTreeWidget(parent), m_myPack(nullptr)
 {
     setColumnCount(2);
     setColumnHidden(1, true);
     setHeaderHidden(true);
-    encoding = config->getStr("pack", "zipencoding", "gbk");
+    m_encoding = ConfigManager::inst().getStr("pack", "zipencoding", "gbk");
     connect(this, &PackList::itemClicked, this, &PackList::readPackClk);
 }
 
 void PackList::refresh()
 {
     QuaZip zip("pack/pack.zip");
-    zip.setFileNameCodec(encoding.toLatin1().data());
+    zip.setFileNameCodec(m_encoding.toLatin1().data());
     QStringList filter;
     filter << "*.ypk";
 
@@ -70,18 +71,18 @@ void PackList::refresh()
         return a->text(0) < b->text(0);
     });
 
-    QDir dir("pack/" + config->getStr("pack", "mypackpath", "__我的卡包") + "/");
-    myPack = new QTreeWidgetItem;
-    myPack->setText(0, config->getStr("pack", "mypack", "我的卡包"));
+    QDir dir("pack/" + ConfigManager::inst().getStr("pack", "mypackpath", "__我的卡包") + "/");
+    m_myPack = new QTreeWidgetItem;
+    m_myPack->setText(0, ConfigManager::inst().getStr("pack", "mypack", "我的卡包"));
     foreach(QFileInfo info, dir.entryInfoList(filter))
     {
         auto item = new QTreeWidgetItem;
         item->setText(0, info.completeBaseName());
         item->setData(0, Qt::UserRole, info.filePath());
         item->setData(1, Qt::UserRole, false);
-        myPack->insertChild(myPack->childCount(), item);
+        m_myPack->insertChild(m_myPack->childCount(), item);
     }
-    items.prepend(myPack);
+    items.prepend(m_myPack);
     insertTopLevelItems(0, items);
 }
 
@@ -97,10 +98,10 @@ void PackList::readPack(QTreeWidgetItem *item, int)
 
     name = item->text(0);
 
-    if(item && item->parent() != myPack)
+    if(item && item->parent() != m_myPack)
     {
         QuaZip zip("pack/pack.zip");
-        zip.setFileNameCodec(encoding.toLatin1().data());
+        zip.setFileNameCodec(m_encoding.toLatin1().data());
         if(zip.open(QuaZip::mdUnzip))
         {
             QString path = item->data(0, Qt::UserRole).toString();
@@ -126,9 +127,6 @@ void PackList::readPack(QTreeWidgetItem *item, int)
 
     QTextStream stream(&data);
     auto vec = Type::DeckP::create();
-    auto appender = [&](Card &card) {
-        vec->append(card.id);
-    };
 
     for(QString line = stream.readLine(); !line.isNull();
         line = stream.readLine())
@@ -141,26 +139,45 @@ void PackList::readPack(QTreeWidgetItem *item, int)
         if(pos > 0)
         {
             quint32 id = line.left(pos).toUInt();
-            call_with_ref2(appender, [&]() {
+
+            if(auto ocard = CardManager::inst().getCard(id))
+            {
+                Card &card = **ocard;
+                vec->append(card.id);
+            }
+            else
+            {
                 line = line.mid(pos + 1);
                 line = line.trimmed();
-                call_with_ref(appender, cardPool->getNewCard(line, config->waitForPass));
-            }, cardPool->getCard(id));
+                if(auto ocard = CardManager::inst().getNewCard(line, ConfigManager::inst().m_waitForPass))
+                {
+                    Card &card = **ocard;
+                    vec->append(card.id);
+                }
+            }
         }
         else if(pos < 0)
         {
             quint32 id = line.toUInt();
-            call_with_ref(appender, cardPool->getCard(id));
+            if(auto ocard = CardManager::inst().getCard(id))
+            {
+                Card &card = **ocard;
+                vec->append(card.id);
+            }
         }
         else
         {
             line = line.mid(pos + 1);
             line = line.trimmed();
-            call_with_ref(appender, cardPool->getNewCard(line, config->waitForPass));
+            if(auto ocard = CardManager::inst().getNewCard(line, ConfigManager::inst().m_waitForPass))
+            {
+                Card &card = **ocard;
+                vec->append(card.id);
+            }
         }
     }
 
-    if(edited)
+    if(m_edited)
     {
         emit editCards(vec);
         emit packName(name);
@@ -171,3 +188,81 @@ void PackList::readPack(QTreeWidgetItem *item, int)
     }
 }
 
+
+RemotePackList::RemotePackList(QWidget *parent) : PackList(parent), m_net(make_networking())
+{
+    connect(m_net.get(), &NetWorking::packList, this, &RemotePackList::packList, Qt::QueuedConnection);
+    connect(m_net.get(), &NetWorking::pack, this, &RemotePackList::pack, Qt::QueuedConnection);
+}
+
+void RemotePackList::refresh()
+{
+    m_net->getPackList();
+}
+
+void RemotePackList::readPack(QTreeWidgetItem *item, int)
+{
+
+    if(!item || item->parent() == nullptr)
+    {
+        return;
+    }
+
+    int no = item->data(0, Qt::UserRole).toInt();
+    m_net->getPack(no);
+
+    if(m_edited)
+    {
+        emit packName(item->text(0));
+    }
+}
+
+void RemotePackList::packList(ptr ls)
+{
+
+    QList<QTreeWidgetItem*> items;
+    with_scheme([&]()
+    {
+        Sunlock_object(ls);
+        for(ptr i = ls; Spairp(i); i = Scdr(i))
+        {
+            auto pack = new QTreeWidgetItem;
+            pack->setText(0, engine->getString(Scar(Scar(i))));
+            items.append(pack);
+
+            for(ptr l = Scdr(Scar(i)); Spairp(l); l = Scdr(l))
+            {
+                auto item = new QTreeWidgetItem;
+                item->setText(0, engine->getString(Scar(Scar(l))));
+                item->setData(0, Qt::UserRole, Sfixnum_value(Scdr(Scar(l))));
+                pack->insertChild(pack->childCount(), item);
+                Sunlock_object(l);
+            }
+            Sunlock_object(i);
+        }
+    });
+    clear();
+    insertTopLevelItems(0, items);
+}
+
+void RemotePackList::pack(ptr ls)
+{
+    auto vec = Type::DeckP::create();
+    with_scheme([&]()
+    {
+        Sunlock_object(ls);
+        for(; Spairp(ls); ls = Scdr(ls))
+        {
+            vec->append(Sunsigned32_value(Scar(ls)));
+        }
+    });
+
+    if(m_edited)
+    {
+        emit editCards(vec);
+    }
+    else
+    {
+        emit cards(vec);
+    }
+}

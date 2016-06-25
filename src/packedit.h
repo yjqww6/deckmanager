@@ -23,7 +23,7 @@ public slots:
     void saveList(QString);
     void clearList()
     {
-        ls.clear();
+        m_deck.clear();
         emit sizeChanged(0);
         update();
     }
@@ -37,19 +37,16 @@ private:
 class PackEditView : public QWidget
 {
     Q_OBJECT
-private:
-    PackEdit *pe;
-    QLineEdit *nameEdit;
 public:
     PackEditView(QWidget *parent);
-    auto getList() -> decltype(pe->getList())
+    Type::Deck& getList()
     {
-        return pe->getList();
+        return m_pe->m_deck;
     }
 
     void refresh()
     {
-        pe->refresh();
+        m_pe->refresh();
     }
 signals:
     void refreshPack();
@@ -58,30 +55,34 @@ public slots:
 
     void setCards(Type::DeckP cards)
     {
-        pe->setCards(cards);
+        m_pe->setCards(cards);
     }
 
     void setCurrentCardId(quint32 id)
     {
-        pe->setCurrentCardId(id);
+        m_pe->setCurrentCardId(id);
     }
 
     void checkLeave()
     {
-        pe->checkLeave();
+        m_pe->checkLeave();
     }
 
 
     void setName(QString name)
     {
-        nameEdit->setText(name);
+        m_nameEdit->setText(name);
     }
 private slots:
     void saveList()
     {
-        pe->saveList(nameEdit->text());
+        m_pe->saveList(m_nameEdit->text());
         emit refreshPack();
     }
+
+private:
+    PackEdit *m_pe;
+    QLineEdit *m_nameEdit;
 };
 
 #endif // PACKEDIT_H

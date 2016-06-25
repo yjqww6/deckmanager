@@ -10,15 +10,15 @@ PackEdit::PackEdit(QWidget *parent)
 
 int PackEdit::itemAt2(const QPoint _pos)
 {
-    for(int i = cardsPerColumn - 1; i >= 0; i--)
+    for(int i = m_cardsPerColumn - 1; i >= 0; i--)
     {
-        if(i + pos >= ls.size())
+        if(i + m_currentPos >= m_deck.size())
         {
             continue;
         }
-        int index = i +  pos;
+        int index = i +  m_currentPos;
 
-        auto &item = items.find(index).value();
+        auto &item = m_items.find(index).value();
 
         if(_pos.y() >= item.getPos().y())
         {
@@ -35,10 +35,10 @@ int PackEdit::posIndex(QPoint point)
     {
         return -1;
     }
-    auto it = items.find(index);
+    auto it = m_items.find(index);
     int y = it->getPos().y();
 
-    if(point.y() > y + cardSize.height() / 2)
+    if(point.y() > y + m_cardSize.height() / 2)
     {
         index += 1;
     }
@@ -48,7 +48,7 @@ int PackEdit::posIndex(QPoint point)
 
 bool PackEdit::filter(quint32 id)
 {
-    foreach(auto it, ls)
+    foreach(auto it, m_deck)
     {
         if(it == id)
         {
@@ -63,7 +63,7 @@ void PackEdit::mousePressEvent(QMouseEvent *event)
     if(event->buttons() & Qt::RightButton)
     {
         int index = itemAt(event->pos());
-        ls.removeAt(index);
+        m_deck.removeAt(index);
         update();
     }
     CardsList::mousePressEvent(event);
@@ -71,19 +71,19 @@ void PackEdit::mousePressEvent(QMouseEvent *event)
 
 void PackEdit::startDrag(int index)
 {
-    if(index >= ls.size())
+    if(index >= m_deck.size())
     {
         return;
     }
     QMimeData *mimedata = new QMimeData;
-    quint32 id = ls[index];
+    quint32 id = m_deck[index];
     mimedata->setText(QString::number(id));
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimedata);
-    auto &item = items.find(index).value();
+    auto &item = m_items.find(index).value();
     if(item.getPixmap())
     {
-        drag->setPixmap(item.getPixmap()->scaled(cardSize));
+        drag->setPixmap(item.getPixmap()->scaled(m_cardSize));
         drag->setHotSpot(QPoint(drag->pixmap().width() / 2,
                                 drag->pixmap().height() / 2));
     }
@@ -91,19 +91,19 @@ void PackEdit::startDrag(int index)
     bool copy = true;
     if((QApplication::keyboardModifiers() & Qt::ControlModifier) == 0)
     {
-        ls.removeAt(index);
+        m_deck.removeAt(index);
         copy = false;
     }
-    current = -1;
+    m_current = -1;
     update();
-    dragHelper.moved = false;
+    DragHelper::inst().moved = false;
     drag->exec(Qt::MoveAction);
-    if(!dragHelper.moved && !copy)
+    if(!DragHelper::inst().moved && !copy)
     {
-        ls.append(id);
+        m_deck.append(id);
     }
     update();
-    emit sizeChanged(ls.size());
+    emit sizeChanged(m_deck.size());
 }
 
 void PackEdit::dragEnterEvent(QDragEnterEvent *event)
@@ -135,29 +135,29 @@ void PackEdit::dropEvent(QDropEvent *event)
             int index = posIndex(event->pos());
             if(index == -1)
             {
-                ls.append(id);
+                m_deck.append(id);
             }
             else
             {
-                ls.insert(index, id);
+                m_deck.insert(index, id);
             }
-            dragHelper.moved = true;
+            DragHelper::inst().moved = true;
             update();
         }
         event->accept();
     }
-    emit sizeChanged(ls.size());
+    emit sizeChanged(m_deck.size());
 }
 
 void PackEdit::saveList(QString name)
 {
     QDir dir;
-    dir.mkpath("pack/" + config->getStr("pack", "mypackpath", "__我的卡包") + "/");
-    QFile file("pack/" + config->getStr("pack", "mypackpath", "__我的卡包") + "/" + name + ".ypk");
+    dir.mkpath("pack/" + ConfigManager::inst().getStr("pack", "mypackpath", "__我的卡包") + "/");
+    QFile file("pack/" + ConfigManager::inst().getStr("pack", "mypackpath", "__我的卡包") + "/" + name + ".ypk");
     if(file.open(QFile::WriteOnly | QFile::Text))
     {
         QTextStream out(&file);
-        foreach(auto id, ls)
+        foreach(auto id, m_deck)
         {
             out << id << '\n';
         }
@@ -169,34 +169,34 @@ PackEditView::PackEditView(QWidget *parent)
     : QWidget(parent)
 {
 
-    pe = new PackEdit(nullptr);
+    m_pe = new PackEdit(nullptr);
     auto sb = new QScrollBar;
-    pe->setScrollBar(sb);
+    m_pe->setScrollBar(sb);
 
-    auto label = new DeckSizeLabel(config->getStr("label", "number", "数目"));
+    auto label = new DeckSizeLabel(ConfigManager::inst().getStr("label", "number", "数目"));
     label->setAlignment(Qt::AlignRight);
     label->changeSize(0);
 
-    nameEdit = new QLineEdit;
+    m_nameEdit = new QLineEdit;
 
-    auto saveButton = new IconButton(":/icons/saveas.png", config->getStr("action", "saveas", "另存为"));
-    auto sortButton = new IconButton(":/icons/sort.png", config->getStr("action", "sort", "排序"));
-    auto clearButton = new IconButton(":/icons/clear.png", config->getStr("action", "clear", "清空"));
+    auto saveButton = new IconButton(":/icons/saveas.png", ConfigManager::inst().getStr("action", "saveas", "另存为"));
+    auto sortButton = new IconButton(":/icons/sort.png", ConfigManager::inst().getStr("action", "sort", "排序"));
+    auto clearButton = new IconButton(":/icons/clear.png", ConfigManager::inst().getStr("action", "clear", "清空"));
 
-    connect(pe, &PackEdit::sizeChanged, label, &DeckSizeLabel::changeSize);
+    connect(m_pe, &PackEdit::sizeChanged, label, &DeckSizeLabel::changeSize);
     connect(saveButton, &IconButton::clicked, this, &PackEditView::saveList);
-    connect(clearButton, &IconButton::clicked, pe, &PackEdit::clearList);
-    connect(sortButton, &IconButton::clicked, pe, &PackEdit::sort);
-    connect(pe, &PackEdit::saved, this, &PackEditView::saved);
+    connect(clearButton, &IconButton::clicked, m_pe, &PackEdit::clearList);
+    connect(sortButton, &IconButton::clicked, m_pe, &PackEdit::sort);
+    connect(m_pe, &PackEdit::saved, this, &PackEditView::saved);
 
     auto hbox = new QHBoxLayout;
     auto vbox = new QVBoxLayout;
-    hbox->addWidget(pe);
+    hbox->addWidget(m_pe);
     hbox->addWidget(sb);
     vbox->addWidget(label);
     vbox->addLayout(hbox, 1);
     hbox = new QHBoxLayout;
-    hbox->addWidget(nameEdit);
+    hbox->addWidget(m_nameEdit);
     hbox->addWidget(saveButton);
     vbox->addLayout(hbox);
     hbox = new QHBoxLayout;
@@ -209,6 +209,6 @@ PackEditView::PackEditView(QWidget *parent)
 }
 void PackEdit::sort()
 {
-    qSort(ls.begin(), ls.end(), idCompare);
+    qSort(m_deck.begin(), m_deck.end(), idCompare);
     update();
 }

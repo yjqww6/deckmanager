@@ -1,49 +1,49 @@
 #include "pref.h"
 #include "limitcards.h"
-#include "config.h"
+#include "configmanager.h"
 #include "iconbutton.h"
 #include <QCheckBox>
 
 Pref::Pref(QWidget *parent) : QWidget(parent)
 {
-    auto lf = new QLabel(config->getStr("label", "limit", "禁卡表"));
+    auto lf = new QLabel(ConfigManager::inst().getStr("label", "limit", "禁卡表"));
     auto getButton = new IconButton(":/icons/right.png");
-    lfcombo = new QComboBox();
-    auto tables = limitCards->getTables();
+    m_lfcombo = new QComboBox();
+    auto tables = LimitCards::inst().m_tables;
     auto it = tables.begin();
     int index = 0;
     for(; it != tables.end(); ++it, ++index)
     {
-        lfcombo->addItem(it->first, index);
+        m_lfcombo->addItem(it->first, index);
     }
-    lfcombo->addItem(config->getStr("label", "noupperbound", "无上限"), -1);
+    m_lfcombo->addItem(ConfigManager::inst().getStr("label", "noupperbound", "无上限"), -1);
 
-    auto waitC = new QCheckBox(config->getStr("label", "passwait", "卡密缺失等待"));
-    auto convertC = new QCheckBox(config->getStr("label", "passconvert", "先行/正式卡密转换"));
-    auto newTabC = new QCheckBox(config->getStr("label", "newtab", "总是在新标签打开"));
-    auto setnameC = new QCheckBox(config->getStr("label", "usesetname", "使用字段名"));
+    auto waitC = new QCheckBox(ConfigManager::inst().getStr("label", "passwait", "卡密缺失等待"));
+    auto convertC = new QCheckBox(ConfigManager::inst().getStr("label", "passconvert", "先行/正式卡密转换"));
+    auto newTabC = new QCheckBox(ConfigManager::inst().getStr("label", "newtab", "总是在新标签打开"));
+    auto setnameC = new QCheckBox(ConfigManager::inst().getStr("label", "usesetname", "使用字段名"));
 
-    waitC->setChecked(config->waitForPass);
-    convertC->setChecked(config->convertPass);
-    lfcombo->setCurrentIndex(lfcombo->count() >= config->limit ? config->limit : 0);
-    config->setLimit(lfcombo->currentData().toInt());
-    newTabC->setChecked(config->newTab);
-    setnameC->setChecked(config->usesetname);
+    waitC->setChecked(ConfigManager::inst().m_waitForPass);
+    convertC->setChecked(ConfigManager::inst().m_convertPass);
+    m_lfcombo->setCurrentIndex(m_lfcombo->count() >= ConfigManager::inst().m_limit ? ConfigManager::inst().m_limit : 0);
+    ConfigManager::inst().setLimit(m_lfcombo->currentData().toInt());
+    newTabC->setChecked(ConfigManager::inst().m_newTab);
+    setnameC->setChecked(ConfigManager::inst().m_usesetname);
 
-    connect(lfcombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+    connect(m_lfcombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &Pref::setLflist);
     connect(getButton, &IconButton::clicked, this, &Pref::openLfList);
-    connect(waitC, &QCheckBox::toggled, config, &Config::setWaitForPass);
-    connect(convertC, &QCheckBox::toggled, config, &Config::setConvertPass);
-    connect(newTabC, &QCheckBox::toggled, config, &Config::setNewTab);
-    connect(setnameC, &QCheckBox::toggled, config, &Config::setUseSetName);
+    connect(waitC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setWaitForPass);
+    connect(convertC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setConvertPass);
+    connect(newTabC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setNewTab);
+    connect(setnameC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setUseSetName);
 
     auto vbox = new QVBoxLayout;
     auto lfbox = new QHBoxLayout;
 
 
     lfbox->addWidget(lf);
-    lfbox->addWidget(lfcombo);
+    lfbox->addWidget(m_lfcombo);
     lfbox->addWidget(getButton);
     vbox->addLayout(lfbox);
     vbox->addWidget(waitC);
@@ -56,11 +56,11 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
 
 void Pref::setLflist(int index)
 {
-    config->setLimit(lfcombo->itemData(index).toInt());
+    ConfigManager::inst().setLimit(m_lfcombo->itemData(index).toInt());
     emit lflistChanged();
 }
 
 void Pref::openLfList()
 {
-    emit lfList(limitCards->getCards(lfcombo->currentIndex()));
+    emit lfList(LimitCards::inst().getCards(m_lfcombo->currentIndex()));
 }

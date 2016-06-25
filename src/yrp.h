@@ -7,7 +7,7 @@
 #include <QPair>
 #include <QScopedArrayPointer>
 #include "lzma/LzmaDec.h"
-#include "typing.h"
+#include "types.h"
 
 struct ReplayHeader
 {

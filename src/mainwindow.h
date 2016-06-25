@@ -20,9 +20,9 @@ private slots:
     void changeId(quint32);
     void toDetails(quint32);
 private:
-    MTabWidget *tab;
-    ScriptView *dialog;
-    quint32 currentId;
+    MTabWidget *m_tab;
+    ScriptView *m_dialog;
+    quint32     m_currentId;
 };
 
 #endif // MAINWINDOW_H

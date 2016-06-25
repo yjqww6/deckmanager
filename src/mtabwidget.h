@@ -12,10 +12,9 @@ class MTabWidget : public QWidget
     Q_OBJECT
 public:
     explicit MTabWidget(QWidget *parent = 0);
-    QList<QTabBar*> tabs;
     QPair<int, int> currentIndex()
     {
-        return current;
+        return m_current;
     }
 
 signals:
@@ -29,9 +28,11 @@ public slots:
     void changeSize();
 private:
     void setCurrentIndexInner(int tab, int column);
-    QPair<int, int> current;
-    QStackedWidget *stack;
-    QVBoxLayout *vbox;
+
+    QList<QTabBar*> m_tabs;
+    QPair<int, int> m_current;
+    QStackedWidget  *m_stack;
+    QVBoxLayout     *m_vbox;
 };
 
 #endif // MTABWIDGET_H

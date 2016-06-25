@@ -1,65 +1,65 @@
 #include "locallist.h"
 #include "iconbutton.h"
-#include "config.h"
+#include "configmanager.h"
 #include <QMessageBox>
 #include <QDebug>
 
 LocalList::LocalList(QWidget *parent)
     : QWidget(parent)
 {
-    listWidget = new QListWidget;
+    m_listWidget = new QListWidget;
     auto vbox = new QVBoxLayout;
     auto hbox = new QHBoxLayout;
 
-    pathEdit = new QLineEdit;
-    buttonSave = new IconButton(":/icons/saveas.png", config->getStr("action", "saveas", "另存为"));
-    buttonRefresh = new IconButton(":/icons/refresh.png", config->getStr("action", "refresh", "刷新"));
-    includeAI = new QCheckBox("AI");
-    includeAI->setChecked(false);
+    m_pathEdit = new QLineEdit;
+    m_buttonSave = new IconButton(":/icons/saveas.png", ConfigManager::inst().getStr("action", "saveas", "另存为"));
+    m_buttonRefresh = new IconButton(":/icons/refresh.png", ConfigManager::inst().getStr("action", "refresh", "刷新"));
+    m_includeAI = new QCheckBox("AI");
+    m_includeAI->setChecked(false);
 
-    popup = new QMenu(this);
-    auto newTabAction = new QAction(popup);
-    newTabAction->setText(config->getStr("action", "newtab", "在新标签页打开"));
-    auto deleteAction = new QAction(popup);
-    deleteAction->setText(config->getStr("action", "delete", "删除卡组"));
-    popup->addAction(newTabAction);
-    popup->addAction(deleteAction);
+    m_popup = new QMenu(this);
+    auto newTabAction = new QAction(m_popup);
+    newTabAction->setText(ConfigManager::inst().getStr("action", "newtab", "在新标签页打开"));
+    auto deleteAction = new QAction(m_popup);
+    deleteAction->setText(ConfigManager::inst().getStr("action", "delete", "删除卡组"));
+    m_popup->addAction(newTabAction);
+    m_popup->addAction(deleteAction);
 
-    vbox->addWidget(listWidget);
-    hbox->addWidget(pathEdit);
-    hbox->addWidget(buttonSave);
+    vbox->addWidget(m_listWidget);
+    hbox->addWidget(m_pathEdit);
+    hbox->addWidget(m_buttonSave);
     vbox->addLayout(hbox);
 
     hbox = new QHBoxLayout;
-    hbox->addWidget(includeAI);
-    hbox->addWidget(buttonRefresh, 1);
+    hbox->addWidget(m_includeAI);
+    hbox->addWidget(m_buttonRefresh, 1);
     vbox->addLayout(hbox);
     setLayout(vbox);
 
-    connect(buttonRefresh, &IconButton::clicked, this, &LocalList::refresh);
-    connect(listWidget, &QListWidget::itemClicked, [=](QListWidgetItem *item) {
+    connect(m_buttonRefresh, &IconButton::clicked, this, &LocalList::refresh);
+    connect(m_listWidget, &QListWidget::itemClicked, [=](QListWidgetItem *item) {
         sendDeck(item, false);
     });
-    connect(listWidget, &QListWidget::itemClicked, this, &LocalList::itemName);
-    connect(buttonSave, &IconButton::clicked, this, &LocalList::saveDeckTrans);
+    connect(m_listWidget, &QListWidget::itemClicked, this, &LocalList::itemName);
+    connect(m_buttonSave, &IconButton::clicked, this, &LocalList::saveDeckTrans);
     connect(newTabAction, &QAction::triggered, [=]() {
-        if(menuItem)
+        if(m_menuItem)
         {
-            sendDeck(menuItem, true);
+            sendDeck(m_menuItem, true);
         }
     });
     connect(deleteAction, &QAction::triggered, this, &LocalList::deleteDeck);
-    connect(includeAI, &QCheckBox::toggled, [=](bool) {
+    connect(m_includeAI, &QCheckBox::toggled, [=](bool) {
         refresh();
     });
 }
 
 void LocalList::contextMenuEvent(QContextMenuEvent *)
 {
-    menuItem = listWidget->itemAt(listWidget->mapFromGlobal(QCursor::pos()));
-    if(menuItem)
+    m_menuItem = m_listWidget->itemAt(m_listWidget->mapFromGlobal(QCursor::pos()));
+    if(m_menuItem)
     {
-        popup->exec(QCursor::pos());
+        m_popup->exec(QCursor::pos());
     }
 }
 
@@ -69,25 +69,25 @@ void LocalList::refresh()
     QDir qdir("deck/");
     QStringList filter;
     filter << "*.ydk";
-    listWidget->clear();
+    m_listWidget->clear();
     foreach(QFileInfo info, qdir.entryInfoList(filter))
     {
         QString name = info.completeBaseName();
-        if(!includeAI->isChecked() && name.startsWith("AI"))
+        if(!m_includeAI->isChecked() && name.startsWith("AI"))
         {
             continue;
         }
         auto item = new QListWidgetItem;
         item->setText(name);
         item->setData(Qt::UserRole, info.filePath());
-        listWidget->addItem(item);
+        m_listWidget->addItem(item);
     }
 }
 
 void LocalList::itemName(QListWidgetItem *item)
 {
     QString path = item->text();
-    pathEdit->setText(path);
+    m_pathEdit->setText(path);
 }
 
 void LocalList::sendDeck(QListWidgetItem *item, bool newTab)
@@ -104,12 +104,12 @@ void LocalList::sendDeck(QListWidgetItem *item, bool newTab)
 
 void LocalList::deleteDeck()
 {
-    if(menuItem)
+    if(m_menuItem)
     {
-        QString path = menuItem->data(Qt::UserRole).toString();
+        QString path = m_menuItem->data(Qt::UserRole).toString();
         QFile file(path);
-        if(QMessageBox::question(nullptr, config->getStr("label", "warning", "警告"),
-                                 config->getStr("label", "delete_p", "是否要删除卡组:")
+        if(QMessageBox::question(nullptr, ConfigManager::inst().getStr("label", "warning", "警告"),
+                                 ConfigManager::inst().getStr("label", "delete_p", "是否要删除卡组:")
                                  + QFileInfo(file).completeBaseName() + "?",
                                  QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes)
                 == QMessageBox::Yes)
@@ -124,7 +124,7 @@ void LocalList::deleteDeck()
 
 void LocalList::saveDeckTrans()
 {
-    emit saveDeck("deck/" + pathEdit->text() + ".ydk");
+    emit saveDeck("deck/" + m_pathEdit->text() + ".ydk");
     refresh();
 }
 

@@ -6,7 +6,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include "typing.h"
+#include "types.h"
 
 class Pref : public QWidget
 {
@@ -21,7 +21,7 @@ public slots:
     void setLflist(int index);
     void openLfList();
 private:
-    QComboBox *lfcombo;
+    QComboBox *m_lfcombo;
 };
 
 #endif // PREF_H

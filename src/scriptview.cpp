@@ -1,54 +1,58 @@
 #include "scriptview.h"
 #include "expansions.h"
-#include "config.h"
+#include "configmanager.h"
 
 ScriptView::ScriptView(QWidget *parent)
     : QDialog(parent)
 {
-    textEdit = new QPlainTextEdit;
+    m_textEdit = new QPlainTextEdit;
 
-    textEdit->setReadOnly(true);
+    m_textEdit->setReadOnly(true);
     auto layout = new QVBoxLayout;
-    layout->addWidget(textEdit, 1);
-    textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    layout->addWidget(m_textEdit, 1);
+    m_textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setLayout(layout);
     resize(640, 480);
 }
 
 void ScriptView::setId(quint32 id)
 {
-    call_with_ref([&](Card &card) {
+    if(auto ocard = CardManager::inst().getCard(id))
+    {
+        Card &card = **ocard;
         setWindowTitle(card.name);
         QFile file("script/c" + QString::number(id) + ".lua");
         QString scriptText;
-        textEdit->clear();
+        m_textEdit->clear();
         if(file.open(QFile::ReadOnly))
         {
             scriptText = file.readAll();
         }
         else
         {
-            scriptText = expansions->open("script/c" + QString::number(id) + ".lua");
+            scriptText = Expansions::inst().open("script/c" + QString::number(id) + ".lua");
         }
 
-        textEdit->insertPlainText(scriptText);
-        textEdit->setReadOnly(true);
+        m_textEdit->insertPlainText(scriptText);
+        m_textEdit->setReadOnly(true);
         if(isHidden())
         {
             show();
         }
-    }, cardPool->getCard(id));
+    }
 }
 
 static void printTo(QStringList &ls, Type::DeckI &deck, QString key, QString name, int mode)
 {
     if(deck.size() > 0)
     {
-        ls << config->getStr("label", key, name) + " " + QString:: number(deck.size());
+        ls << ConfigManager::inst().getStr("label", key, name) + " " + QString:: number(deck.size());
         ls << "";
         foreach(auto &item, deck)
         {
-            call_with_ref([&](Card &card) {
+            if(auto ocard = CardManager::inst().getCard(item.getId()))
+            {
+                Card &card = **ocard;
                 if(mode == ScriptView::NORMAL)
                 {
                     ls << card.name;
@@ -57,7 +61,7 @@ static void printTo(QStringList &ls, Type::DeckI &deck, QString key, QString nam
                 {
                     ls << '[' + card.name + ']';
                 }
-            }, cardPool->getCard(item.getId()));
+            }
         }
     }
     ls << "";
@@ -67,7 +71,7 @@ static void printCount(QStringList &ls, Type::DeckI &deck, QString key, QString 
 {
     if(deck.size() > 0)
     {
-        ls << config->getStr("label", key, name) + " " + QString:: number(deck.size());
+        ls << ConfigManager::inst().getStr("label", key, name) + " " + QString:: number(deck.size());
         ls << "";
         QHash<quint32, int> map;
         foreach(auto &item, deck)
@@ -86,9 +90,11 @@ static void printCount(QStringList &ls, Type::DeckI &deck, QString key, QString 
         qSort(list.begin(), list.end(), idCompare);
         foreach(auto id, list)
         {
-            call_with_ref([&](Card &card) {
+            if(auto ocard = CardManager::inst().getCard(id))
+            {
+                Card &card = **ocard;
                 ls << QString::number(map.find(id).value()) + ' ' + card.name;
-            }, cardPool->getCard(id));
+            }
         }
     }
     ls << "";
@@ -96,31 +102,31 @@ static void printCount(QStringList &ls, Type::DeckI &deck, QString key, QString 
 
 void ScriptView::setDeck(DeckModel *model, bool hideSide, int mode)
 {
-    textEdit->clear();
+    m_textEdit->clear();
     QStringList ls;
     if(mode == NORMAL || mode == BRACKET)
     {
-        printTo(ls, *model->mainDeck, "main", "主卡组", mode);
-        printTo(ls, *model->extraDeck, "extra", "额外卡组", mode);
+        printTo(ls, *model->m_mainDeck, "main", "主卡组", mode);
+        printTo(ls, *model->m_extraDeck, "extra", "额外卡组", mode);
         if(!hideSide)
         {
-            printTo(ls, *model->sideDeck, "side", "副卡组", mode);
+            printTo(ls, *model->m_sideDeck, "side", "副卡组", mode);
         }
     }
     else if(mode == COUNT)
     {
-        printCount(ls, *model->mainDeck, "main", "主卡组");
-        printCount(ls, *model->extraDeck, "extra", "额外卡组");
+        printCount(ls, *model->m_mainDeck, "main", "主卡组");
+        printCount(ls, *model->m_extraDeck, "extra", "额外卡组");
         if(!hideSide)
         {
-            printCount(ls, *model->sideDeck, "side", "副卡组");
+            printCount(ls, *model->m_sideDeck, "side", "副卡组");
         }
     }
-    textEdit->insertPlainText(ls.join('\n'));
-    textEdit->setReadOnly(false);
-    auto cursor = textEdit->textCursor();
+    m_textEdit->insertPlainText(ls.join('\n'));
+    m_textEdit->setReadOnly(false);
+    auto cursor = m_textEdit->textCursor();
     cursor.setPosition(0);
-    textEdit->setTextCursor(cursor);
+    m_textEdit->setTextCursor(cursor);
     if(isHidden())
     {
         show();

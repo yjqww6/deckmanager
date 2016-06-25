@@ -16,7 +16,7 @@ public:
     ScriptView(QWidget *parent = nullptr);
     void showEvent(QShowEvent *event)
     {
-        textEdit->updateGeometry();
+        m_textEdit->updateGeometry();
         QDialog::showEvent(event);
     }
 
@@ -27,7 +27,7 @@ public slots:
     void setId(quint32 id);
     void setDeck(DeckModel *model, bool hideSide, int mode);
 private:
-    QPlainTextEdit *textEdit;
+    QPlainTextEdit *m_textEdit;
 };
 
 #endif // SCRIPTVIEW_H

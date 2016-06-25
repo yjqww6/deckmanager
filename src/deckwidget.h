@@ -13,7 +13,7 @@
 #include <functional>
 #include "carditem.h"
 #include "card.h"
-#include "limitcards.h"
+#include "types.h"
 
 class DeckWidget : public QWidget
 {
@@ -23,18 +23,6 @@ protected:
     int posIndex(const QPoint &pos);
 
     void startDrag(int);
-
-    QSharedPointer<Type::DeckI> deck;
-    QPoint startPos;
-    QSize cardSize;
-    int row;
-    int column;
-    QSize offset;
-    QSize spacing;
-    quint32 currentCardId;
-
-    int deckSize;
-    int current;
 public:
     explicit DeckWidget(QWidget *parent, int _row, int _column, QSharedPointer<Type::DeckI> _deck);
     ~DeckWidget();
@@ -42,32 +30,32 @@ public:
 
     Type::DeckI& getDeck()
     {
-        return *deck;
+        return *m_deck;
     }
 
     QSize getCardSize()
     {
-        return cardSize;
+        return m_cardSize;
     }
 
     void setCardSize(const QSize &_size)
     {
-        cardSize = _size;
+        m_cardSize = _size;
     }
 
     void addCard(quint32 id)
     {
-        deck->append(CardItem(id));
+        m_deck->append(CardItem(id));
     }
 
     void insertCard(int index, quint32 id)
     {
-        deck->insert(index, CardItem(id));
+        m_deck->insert(index, CardItem(id));
     }
 
     void clearDeck()
     {
-        deck->clear();
+        m_deck->clear();
     }
 
     int countCard(quint32 id);
@@ -85,13 +73,8 @@ public:
 
     void setCurrentCardId(quint32 id)
     {
-        currentCardId = id;
+        m_currentCardId = id;
     }
-
-    std::function<bool(quint32)> filter;
-    std::function<bool(quint32)> extFilter;
-    std::function<void()> makeSnapShot;
-    bool overlapV;
     void setDeck(const QSharedPointer<Type::DeckI> value);
 
 signals:
@@ -99,6 +82,26 @@ signals:
     void deckChanged(Type::DeckI&);
 public slots:
     void checkLeave();
+
+protected:
+    QSharedPointer<Type::DeckI> m_deck;
+    QPoint m_startPos;
+    QSize m_cardSize;
+    int m_row;
+    int m_column;
+    QSize m_offset;
+    QSize m_spacing;
+    quint32 m_currentCardId;
+
+    int m_deckSize;
+    int m_current;
+public:
+
+
+    std::function<bool(quint32)> m_filter;
+    std::function<bool(quint32)> m_extFilter;
+    std::function<void()> m_makeSnapShot;
+    bool m_overlapV;
 };
 
 #endif // DECKWIDGET_H

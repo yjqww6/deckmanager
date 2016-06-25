@@ -1,21 +1,19 @@
 #include "card.h"
 #include "expansions.h"
-#include "config.h"
+#include "configmanager.h"
 #include "range.h"
 #include "engine.h"
 #include <QDebug>
 #include "sqlite3/sqlite3.h"
 
-CardPool *cardPool = nullptr;
-
-Wrapper<Card> CardPool::getCard(quint32 id)
+optional<Card*> CardManager::getCard(quint32 id)
 {
-    auto it = pool.find(id);
-    if(it == pool.end())
+    auto it = m_cards.find(id);
+    if(it == m_cards.end())
     {
-        return Wrapper<Card>();
+        return nullopt;
     }
-    return Wrapper<Card>(it->second.get());
+    return it->second.get();
 }
 
 
@@ -78,95 +76,19 @@ static bool loadDataBase(const QString &fileName, std::unordered_map<quint32, st
     return true;
 }
 
-CardPool::CardPool(QStringList paths)
-{
-#define INSERT(container, field, str) \
-    do { \
-        auto &cont = container;\
-        auto name = config->getStr("string", #field, str);\
-        cont.insert(Const::field, name);\
-    } while(false)
-
-    INSERT(types, TYPE_MONSTER, "怪兽");
-    INSERT(types, TYPE_SPELL, "魔法");
-    INSERT(types, TYPE_TRAP, "陷阱");
-    INSERT(types, TYPE_NORMAL, "通常");
-    INSERT(types, TYPE_EFFECT, "效果");
-    INSERT(types, TYPE_FUSION, "融合");
-    INSERT(types, TYPE_RITUAL, "仪式");
-    INSERT(types, TYPE_TRAPMONSTER, "陷阱怪兽");
-    INSERT(types, TYPE_SPIRIT, "灵魂");
-    INSERT(types, TYPE_UNION, "同盟");
-    INSERT(types, TYPE_DUAL, "二重");
-    INSERT(types, TYPE_TUNER, "调整");
-    INSERT(types, TYPE_SYNCHRO, "同调");
-    INSERT(types, TYPE_TOKEN, "衍生物");
-    INSERT(types, TYPE_QUICKPLAY, "速攻");
-    INSERT(types, TYPE_CONTINUOUS, "永续");
-    INSERT(types, TYPE_EQUIP, "装备");
-    INSERT(types, TYPE_FIELD, "场地");
-    INSERT(types, TYPE_COUNTER, "反击");
-    INSERT(types, TYPE_FLIP, "反转");
-    INSERT(types, TYPE_TOON, "卡通");
-    INSERT(types, TYPE_XYZ, "XYZ");
-    INSERT(types, TYPE_PENDULUM, "灵摆");
-    INSERT(races, RACE_WARRIOR, "战士");
-    INSERT(races, RACE_SPELLCASTER, "魔法师");
-    INSERT(races, RACE_FAIRY, "天使");
-    INSERT(races, RACE_FIEND, "恶魔");
-    INSERT(races, RACE_ZOMBIE, "不死");
-    INSERT(races, RACE_MACHINE, "机械");
-    INSERT(races, RACE_AQUA, "水");
-    INSERT(races, RACE_PYRO, "炎");
-    INSERT(races, RACE_ROCK, "岩石");
-    INSERT(races, RACE_WINDBEAST, "鸟兽");
-    INSERT(races, RACE_PLANT, "植物");
-    INSERT(races, RACE_INSECT, "昆虫");
-    INSERT(races, RACE_THUNDER, "雷");
-    INSERT(races, RACE_DRAGON, "龙");
-    INSERT(races, RACE_BEAST, "兽");
-    INSERT(races, RACE_BEASTWARRIOR, "兽战士");
-    INSERT(races, RACE_DINOSAUR, "恐龙");
-    INSERT(races, RACE_FISH, "鱼");
-    INSERT(races, RACE_SEASERPENT, "海龙");
-    INSERT(races, RACE_REPTILE, "爬虫");
-    INSERT(races, RACE_PSYCHO, "念动力");
-    INSERT(races, RACE_DEVINE, "幻神兽");
-    INSERT(races, RACE_CREATORGOD, "创造神");
-    INSERT(races, RACE_PHANTOMDRAGON, "幻龙");
-
-
-    INSERT(attrs, ATTRIBUTE_DARK, "暗");
-    INSERT(attrs, ATTRIBUTE_LIGHT, "光");
-    INSERT(attrs, ATTRIBUTE_WATER, "水");
-    INSERT(attrs, ATTRIBUTE_FIRE, "火");
-    INSERT(attrs, ATTRIBUTE_EARTH, "地");
-    INSERT(attrs, ATTRIBUTE_WIND, "风");
-    INSERT(attrs, ATTRIBUTE_DEVINE, "神");
-
-    loadSetNames();
-
-    cdbPath = paths;
-    newPool.reserve(10000);
-    foreach(auto &path, cdbPath)
-    {
-        loadDataBase(path, pool);
-    }
-}
-
-QString CardPool::getType(quint32 type)
+QString CardManager::getType(quint32 type)
 {
     return with_scheme([type]()
     {
 
         ptr str = engine->call("type-string", Sfixnum(type));
-        return QString::fromUtf8(engine->getString(str).c_str());
+        return engine->getString(str);
     });
 }
 
-QString CardPool::getRace(quint32 race)
+QString CardManager::getRace(quint32 race)
 {
-    for(auto it = races.begin(); it != races.end(); ++it)
+    for(auto it = m_races.begin(); it != m_races.end(); ++it)
     {
         if(race & it.key())
         {
@@ -176,9 +98,9 @@ QString CardPool::getRace(quint32 race)
     return "?";
 }
 
-QString CardPool::getAttr(quint32 attribute)
+QString CardManager::getAttr(quint32 attribute)
 {
-    for(auto it = attrs.begin(); it != attrs.end(); ++it)
+    for(auto it = m_attrs.begin(); it != m_attrs.end(); ++it)
     {
         if(attribute & it.key())
         {
@@ -189,35 +111,88 @@ QString CardPool::getAttr(quint32 attribute)
 }
 
 
-Wrapper<Card> CardPool::getNewCard(QString name, bool wait)
+optional<Card*> CardManager::getNewCard(QString name, bool wait)
 {
     return with_scheme([&]()
     {
         ptr str = engine->call("utf8->string", engine->bytevector(name.toUtf8()));
         ptr id = engine->call("orig->id", str, Sboolean(wait));
-        return Wrapper<Card>(getCard(Sfixnum_value(id)));
+        return getCard(Sfixnum_value(id));
     });
 }
 
-void CardPool::loadSetNames()
+
+
+void CardManager::loadCardData(QStringList paths)
 {
-    with_scheme([&]()
+
+#define INSERT(container, field, str) \
+    do { \
+        auto &cont = container;\
+        auto name = ConfigManager::inst().getStr("string", #field, str);\
+        cont.insert(Const::field, name);\
+    } while(false)
+
+    INSERT(m_types, TYPE_MONSTER, "怪兽");
+    INSERT(m_types, TYPE_SPELL, "魔法");
+    INSERT(m_types, TYPE_TRAP, "陷阱");
+    INSERT(m_types, TYPE_NORMAL, "通常");
+    INSERT(m_types, TYPE_EFFECT, "效果");
+    INSERT(m_types, TYPE_FUSION, "融合");
+    INSERT(m_types, TYPE_RITUAL, "仪式");
+    INSERT(m_types, TYPE_TRAPMONSTER, "陷阱怪兽");
+    INSERT(m_types, TYPE_SPIRIT, "灵魂");
+    INSERT(m_types, TYPE_UNION, "同盟");
+    INSERT(m_types, TYPE_DUAL, "二重");
+    INSERT(m_types, TYPE_TUNER, "调整");
+    INSERT(m_types, TYPE_SYNCHRO, "同调");
+    INSERT(m_types, TYPE_TOKEN, "衍生物");
+    INSERT(m_types, TYPE_QUICKPLAY, "速攻");
+    INSERT(m_types, TYPE_CONTINUOUS, "永续");
+    INSERT(m_types, TYPE_EQUIP, "装备");
+    INSERT(m_types, TYPE_FIELD, "场地");
+    INSERT(m_types, TYPE_COUNTER, "反击");
+    INSERT(m_types, TYPE_FLIP, "反转");
+    INSERT(m_types, TYPE_TOON, "卡通");
+    INSERT(m_types, TYPE_XYZ, "XYZ");
+    INSERT(m_types, TYPE_PENDULUM, "灵摆");
+    INSERT(m_races, RACE_WARRIOR, "战士");
+    INSERT(m_races, RACE_SPELLCASTER, "魔法师");
+    INSERT(m_races, RACE_FAIRY, "天使");
+    INSERT(m_races, RACE_FIEND, "恶魔");
+    INSERT(m_races, RACE_ZOMBIE, "不死");
+    INSERT(m_races, RACE_MACHINE, "机械");
+    INSERT(m_races, RACE_AQUA, "水");
+    INSERT(m_races, RACE_PYRO, "炎");
+    INSERT(m_races, RACE_ROCK, "岩石");
+    INSERT(m_races, RACE_WINDBEAST, "鸟兽");
+    INSERT(m_races, RACE_PLANT, "植物");
+    INSERT(m_races, RACE_INSECT, "昆虫");
+    INSERT(m_races, RACE_THUNDER, "雷");
+    INSERT(m_races, RACE_DRAGON, "龙");
+    INSERT(m_races, RACE_BEAST, "兽");
+    INSERT(m_races, RACE_BEASTWARRIOR, "兽战士");
+    INSERT(m_races, RACE_DINOSAUR, "恐龙");
+    INSERT(m_races, RACE_FISH, "鱼");
+    INSERT(m_races, RACE_SEASERPENT, "海龙");
+    INSERT(m_races, RACE_REPTILE, "爬虫");
+    INSERT(m_races, RACE_PSYCHO, "念动力");
+    INSERT(m_races, RACE_DEVINE, "幻神兽");
+    INSERT(m_races, RACE_CREATORGOD, "创造神");
+    INSERT(m_races, RACE_PHANTOMDRAGON, "幻龙");
+
+
+    INSERT(m_attrs, ATTRIBUTE_DARK, "暗");
+    INSERT(m_attrs, ATTRIBUTE_LIGHT, "光");
+    INSERT(m_attrs, ATTRIBUTE_WATER, "水");
+    INSERT(m_attrs, ATTRIBUTE_FIRE, "火");
+    INSERT(m_attrs, ATTRIBUTE_EARTH, "地");
+    INSERT(m_attrs, ATTRIBUTE_WIND, "风");
+    INSERT(m_attrs, ATTRIBUTE_DEVINE, "神");
+
+    m_newPool.reserve(10000);
+    foreach(auto &path, paths)
     {
-        engine->call("load-setnames");
-    });
-}
-
-QString Card::cardType()
-{
-    return cardPool->getType(type);
-}
-
-QString Card::cardRace()
-{
-    return cardPool->getRace(race);
-}
-
-QString Card::cardAttr()
-{
-    return cardPool->getAttr(attribute);
+        loadDataBase(path, m_cards);
+    }
 }
