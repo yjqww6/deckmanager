@@ -45,26 +45,7 @@ public:
         return m_sideDeck;
     }
 
-    Type::DeckP getDeck()
-    {
-        auto deck = Type::DeckP::create();
-        foreach(auto &item, m_mainDeck->getDeck())
-        {
-            deck->append(item.getId());
-        }
-        foreach(auto &item, m_extraDeck->getDeck())
-        {
-            deck->append(item.getId());
-        }
-        if(!m_sideHidden)
-        {
-            foreach(auto &item, m_sideDeck->getDeck())
-            {
-                deck->append(item.getId());
-            }
-        }
-        return deck;
-    }
+    Type::DeckP getDeck();
 signals:
     void save(QString);
     void statusChanged(QString);
@@ -99,13 +80,6 @@ public slots:
     {
         getCurrentModel().abort();
         setReady(true);
-    }
-
-    void checkLeave()
-    {
-        m_mainDeck->checkLeave();
-        m_extraDeck->checkLeave();
-        m_sideDeck->checkLeave();
     }
 
     void newTab();

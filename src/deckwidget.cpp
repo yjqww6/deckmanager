@@ -1,13 +1,13 @@
 #include "deckwidget.h"
-#include "draghelper.h"
+#include "deckmodel.h"
 #include "signaltower.h"
 #include "limitcards.h"
 #include <QDebug>
 #include <QApplication>
 
-DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, QSharedPointer<Type::DeckI> _deck)
+DeckWidget::DeckWidget(QWidget *parent, int _row, int _column, QSharedPointer<Type::DeckI> _deck, QSharedPointer<DeckModel> _model)
     : QWidget(parent), m_deck(_deck), m_row(_row), m_column(_column), m_currentCardId(0),
-      m_deckSize(-1), m_current(-1), m_overlapV(false)
+      m_deckSize(-1), m_current(-1), m_overlapV(false), m_currentModel(_model)
 {
     m_offset = QSize(3, 3);
     m_spacing = QSize(3, 3);
@@ -128,17 +128,6 @@ int DeckWidget::itemAt(const QPoint &pos)
     return -1;
 }
 
-void DeckWidget::checkLeave()
-{
-
-    int i = itemAt(mapFromGlobal(QCursor::pos()));
-    if(i != m_current)
-    {
-        m_current = i;
-        update();
-    }
-}
-
 int DeckWidget::posIndex(const QPoint &pos)
 {
     int i = m_deck->size();
@@ -231,9 +220,10 @@ void DeckWidget::mouseMoveEvent(QMouseEvent *event)
 void DeckWidget::startDrag(int index)
 {
     auto *mimedata = new QMimeData;
-    CardItem card(m_deck->at(index));
+    auto deck = m_deck;
+    CardItem card(deck->at(index));
     mimedata->setText(QString::number(card.getId()));
-    auto *drag = new QDrag(this);
+    auto *drag = new QDrag(m_currentModel.data());
     drag->setMimeData(mimedata);
     if(card.getPixmap())
     {
@@ -243,22 +233,19 @@ void DeckWidget::startDrag(int index)
     }
     m_makeSnapShot();
     bool copy = true;
-    DragHelper::inst().atomic = true;
     if((QApplication::keyboardModifiers() & Qt::ControlModifier) == 0)
     {
-        m_deck->removeAt(index);
+        deck->removeAt(index);
         copy = false;
     }
-    emit sizeChanged(m_deck->size());
-    emit deckChanged(*m_deck);
+    emit sizeChanged(deck->size());
+    emit deckChanged(*deck);
     update();
-    DragHelper::inst().moved = false;
-    drag->exec(Qt::MoveAction);
-    if(!DragHelper::inst().moved && !copy)
+    auto da = drag->exec(Qt::MoveAction);
+    if(da == Qt::IgnoreAction && !copy)
     {
-        m_deck->append(card);
+        deck->append(card);
     }
-    DragHelper::inst().atomic = false;
     update();
 }
 void DeckWidget::setDeck(const QSharedPointer<Type::DeckI> value)
@@ -287,6 +274,13 @@ void DeckWidget::dragEnterEvent(QDragEnterEvent *event)
 
 void DeckWidget::dragMoveEvent(QDragMoveEvent *event)
 {
+    int i = itemAt(mapFromGlobal(QCursor::pos()));
+    if(i != m_current)
+    {
+        m_current = i;
+        update();
+    }
+
     auto src = event->source();
     if(src)
     {
@@ -302,7 +296,7 @@ void DeckWidget::dropEvent(QDropEvent *event)
         quint32 id = event->mimeData()->text().toUInt();
         if(m_filter(id) && m_extFilter(id))
         {
-            if(!DragHelper::inst().atomic)
+            if(src != m_currentModel.data())
             {
                 m_makeSnapShot();
             }
@@ -315,7 +309,6 @@ void DeckWidget::dropEvent(QDropEvent *event)
             {
                 insertCard(index, id);
             }
-            DragHelper::inst().moved = true;
             update();
         }
         event->accept();

@@ -77,7 +77,6 @@ HEADERS  += mainwindow.h \
     limitcards.h \
     pref.h \
     iconbutton.h \
-    draghelper.h \
     mtabwidget.h \
     decklabel.h \
     deckmodel.h \

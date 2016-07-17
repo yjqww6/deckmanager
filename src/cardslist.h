@@ -61,7 +61,6 @@ signals:
     void sizeChanged(int);
 public slots:
     void setCards(Type::DeckP);
-    void checkLeave();
 
 private slots:
     void refreshCurrentId();
@@ -113,12 +112,6 @@ public slots:
     {
         cl->setCurrentCardId(id);
     }
-
-    void checkLeave()
-    {
-        cl->checkLeave();
-    }
-
 private slots:
     void updateButtons();
     void makeSnapShot();

@@ -63,11 +63,6 @@ public slots:
         m_pe->setCurrentCardId(id);
     }
 
-    void checkLeave()
-    {
-        m_pe->checkLeave();
-    }
-
 
     void setName(QString name)
     {

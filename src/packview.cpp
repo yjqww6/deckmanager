@@ -54,7 +54,6 @@ PackView::PackView(QWidget *parent)
     connect(refreshButton2, &IconButton::clicked, m_remotePackList, &RemotePackList::refresh);
     connect(abortButton, &IconButton::clicked, m_remotePackList->m_net.get(), &NetWorking::abort);
     connect(editButton2, &IconButton::clicked, m_remotePackList, &RemotePackList::readPackEdit);
-    connect(this, &PackView::checkLeave, packEdit, &PackEditView::checkLeave);
 
     m_tab->addTab(widget, ConfigManager::inst().getStr("tab", "list", "列表"));
     m_tab->addTab(widget2, ConfigManager::inst().getStr("tab", "remotep", "在线"));

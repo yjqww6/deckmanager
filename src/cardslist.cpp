@@ -1,6 +1,5 @@
 #include "cardslist.h"
 #include "limitcards.h"
-#include "draghelper.h"
 #include "range.h"
 #include "signaltower.h"
 #include <QToolBar>
@@ -259,7 +258,6 @@ void CardsList::startDrag(int index)
         drag->setPixmap(item.getPixmap()->scaled(m_cardSize));
         drag->setHotSpot(QPoint(drag->pixmap().width() / 2, drag->pixmap().height() / 2));
     }
-    DragHelper::inst().moved = false;
     drag->exec(Qt::MoveAction);
 }
 
@@ -275,6 +273,13 @@ void CardsList::dragEnterEvent(QDragEnterEvent *event)
 
 void CardsList::dragMoveEvent(QDragMoveEvent *event)
 {
+    int i = itemAt(mapFromGlobal(QCursor::pos()));
+    if(i != m_current)
+    {
+        m_current = i;
+        update();
+    }
+
     QObject *src = event->source();
     if(src)
     {
@@ -284,7 +289,6 @@ void CardsList::dragMoveEvent(QDragMoveEvent *event)
 
 void CardsList::dropEvent(QDropEvent *event)
 {
-    DragHelper::inst().moved = true;
     event->accept();
 }
 
@@ -316,16 +320,6 @@ void CardsList::setCards(Type::DeckP cards)
 
     emit sizeChanged(m_deck.size());
     refresh();
-}
-
-void CardsList::checkLeave()
-{
-    int i = itemAt(mapFromGlobal(QCursor::pos()));
-    if(i != m_current)
-    {
-        m_current = i;
-        update();
-    }
 }
 
 void CardsList::mouseDoubleClickEvent(QMouseEvent *event)

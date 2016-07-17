@@ -18,14 +18,6 @@ public:
 
 signals:
 
-public slots:
-    void setWaitForPass(bool);
-    void setConvertPass(bool);
-    void setLimit(int);
-    void setAutoSwitch(bool);
-    void setNewTab(bool value);
-    void setUseSetName(bool);
-
 public:
 
     bool m_waitForPass;

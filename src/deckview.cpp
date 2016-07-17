@@ -89,8 +89,11 @@ void DeckView::switchTab(int i)
         {
             m_currentModel = p;
             m_mainDeck->setDeck(p->m_mainDeck);
+            m_mainDeck->m_currentModel = p;
             m_extraDeck->setDeck(p->m_extraDeck);
+            m_extraDeck->m_currentModel = p;
             m_sideDeck->setDeck(p->m_sideDeck);
+            m_sideDeck->m_currentModel = p;
         }
     }
     refresh();
@@ -165,6 +168,8 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
                           "QTabBar{background: rgba(255, 255, 255, 200)}");
     m_tabbar->setElideMode(Qt::ElideMiddle);
     m_tabbar->setMovable(true);
+    m_tabbar->setChangeCurrentOnDrag(true);
+    m_tabbar->setAcceptDrops(true);
 
     m_toolbar = new QToolBar;
     m_toolbar->setStyleSheet("QToolTip{color: black; font-size: 12px}");
@@ -233,7 +238,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     auto &model = addModel();
     m_currentModel = m_models.back();
 
-    m_mainDeck = new DeckWidget(nullptr, 4, 10, model.m_mainDeck);
+    m_mainDeck = new DeckWidget(nullptr, 4, 10, model.m_mainDeck, m_currentModel);
     m_mainDeck->m_overlapV = true;
     auto notExtraFilter = [](quint32 id)
     {
@@ -252,7 +257,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     auto t1 = new DeckSizeLabel(ConfigManager::inst().getStr("label", "main", "主卡组"));
     auto mt = new MainDeckLabel;
 
-    m_extraDeck = new DeckWidget(nullptr, 1, 10, model.m_extraDeck);
+    m_extraDeck = new DeckWidget(nullptr, 1, 10, model.m_extraDeck, m_currentModel);
     auto extraFilter = [](quint32 id)
     {
         if(auto ocard = CardManager::inst().getCard(id))
@@ -266,7 +271,7 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
         }
     };
     m_extraDeck->m_filter = extraFilter;
-    m_sideDeck = new DeckWidget(nullptr, 1, 10, model.m_sideDeck);
+    m_sideDeck = new DeckWidget(nullptr, 1, 10, model.m_sideDeck, m_currentModel);
 
     auto t2 = new DeckSizeLabel(ConfigManager::inst().getStr("label", "extra", "额外卡组"));
     auto et = new ExtraDeckLabel;
@@ -411,6 +416,27 @@ DeckView::DeckView(QWidget *parent, QTabBar *_tabbar)
     setLayout(vbox);
 
     refresh();
+}
+
+Type::DeckP DeckView::getDeck()
+{
+    auto deck = Type::DeckP::create();
+    foreach(auto &item, *getCurrentModel().m_mainDeck)
+    {
+        deck->append(item.getId());
+    }
+    foreach(auto &item, *getCurrentModel().m_extraDeck)
+    {
+        deck->append(item.getId());
+    }
+    if(!m_sideHidden)
+    {
+        foreach(auto &item, *getCurrentModel().m_sideDeck)
+        {
+            deck->append(item.getId());
+        }
+    }
+    return deck;
 }
 
 void DeckView::loadRemoteDeck(QString id, QString name, bool newTab)

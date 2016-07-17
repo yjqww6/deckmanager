@@ -2,6 +2,7 @@
 #include "limitcards.h"
 #include "configmanager.h"
 #include "iconbutton.h"
+#include "engine.h"
 #include <QCheckBox>
 
 Pref::Pref(QWidget *parent) : QWidget(parent)
@@ -26,17 +27,33 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
     waitC->setChecked(ConfigManager::inst().m_waitForPass);
     convertC->setChecked(ConfigManager::inst().m_convertPass);
     m_lfcombo->setCurrentIndex(m_lfcombo->count() >= ConfigManager::inst().m_limit ? ConfigManager::inst().m_limit : 0);
-    ConfigManager::inst().setLimit(m_lfcombo->currentData().toInt());
+    ConfigManager::inst().m_limit = m_lfcombo->currentData().toInt();
     newTabC->setChecked(ConfigManager::inst().m_newTab);
     setnameC->setChecked(ConfigManager::inst().m_usesetname);
 
     connect(m_lfcombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &Pref::setLflist);
     connect(getButton, &IconButton::clicked, this, &Pref::openLfList);
-    connect(waitC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setWaitForPass);
-    connect(convertC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setConvertPass);
-    connect(newTabC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setNewTab);
-    connect(setnameC, &QCheckBox::toggled, &ConfigManager::inst(), &ConfigManager::setUseSetName);
+    connect(waitC, &QCheckBox::toggled, [](bool b)
+    {
+        ConfigManager::inst().m_waitForPass = b;
+    });
+    connect(convertC, &QCheckBox::toggled, [](bool b)
+    {
+        ConfigManager::inst().m_convertPass = b;
+    });
+    connect(newTabC, &QCheckBox::toggled, [](bool b)
+    {
+        ConfigManager::inst().m_newTab = b;
+    });
+    connect(setnameC, &QCheckBox::toggled, [](bool b)
+    {
+        ConfigManager::inst().m_usesetname = b;
+        with_scheme([&]()
+        {
+           Sset_top_level_value(Sstring_to_symbol("use-setname?"), Sboolean(b));
+        });
+    });
 
     auto vbox = new QVBoxLayout;
     auto lfbox = new QHBoxLayout;
@@ -56,7 +73,7 @@ Pref::Pref(QWidget *parent) : QWidget(parent)
 
 void Pref::setLflist(int index)
 {
-    ConfigManager::inst().setLimit(m_lfcombo->itemData(index).toInt());
+    ConfigManager::inst().m_limit = m_lfcombo->itemData(index).toInt();
     emit lflistChanged();
 }
 

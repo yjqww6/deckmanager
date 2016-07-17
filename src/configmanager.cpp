@@ -93,27 +93,6 @@ void ConfigManager::saveConfig()
     settings.setValue("pref/usesetname", m_usesetname ? 1 : 0);
 }
 
-void ConfigManager::setWaitForPass(bool t)
-{
-    m_waitForPass = t;
-}
-
-void ConfigManager::setConvertPass(bool t)
-{
-    m_convertPass = t;
-}
-
-
-void ConfigManager::setLimit(int i)
-{
-    m_limit = i;
-}
-
-void ConfigManager::setAutoSwitch(bool t)
-{
-    m_autoSwitch = t;
-}
-
 ConfigManager::ConfigManager(QObject *parent) : QObject(parent)
 {
 
@@ -122,18 +101,3 @@ ConfigManager::ConfigManager(QObject *parent) : QObject(parent)
 ConfigManager::~ConfigManager()
 {
 }
-
-void ConfigManager::setNewTab(bool value)
-{
-    m_newTab = value;
-}
-
-void ConfigManager::setUseSetName(bool val)
-{
-    m_usesetname = val;
-    with_scheme([&]()
-    {
-       Sset_top_level_value(Sstring_to_symbol("use-setname?"), Sboolean(val));
-    });
-}
-

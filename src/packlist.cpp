@@ -253,7 +253,11 @@ void RemotePackList::pack(ptr ls)
         Sunlock_object(ls);
         for(; Spairp(ls); ls = Scdr(ls))
         {
-            vec->append(Sunsigned32_value(Scar(ls)));
+            quint32 id = Sunsigned32_value(Scar(ls));
+            if(CardManager::inst().getCard(id))
+            {
+                vec->append(id);
+            }
         }
     });
 

@@ -131,14 +131,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(deckView, &DeckView::statusChanged, this, &MainWindow::setWindowTitle);
     connect(deckView, &DeckView::refreshLocals, localList, &LocalList::refresh);
 
-    auto timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, [=]() {
-       deckView->checkLeave();
-       cardListView->checkLeave();
-       packView->checkLeave();
-    });
-    timer->start(200);
-
     connect(&SignalTower::inst(), &SignalTower::debug, logEdit, &QPlainTextEdit::appendPlainText);
     logEdit->setPlainText(SignalTower::inst().m_accumulated);
 

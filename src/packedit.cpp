@@ -1,6 +1,5 @@
 #include "packedit.h"
 #include "iconbutton.h"
-#include "draghelper.h"
 
 PackEdit::PackEdit(QWidget *parent)
     : CardsList(parent)
@@ -96,9 +95,8 @@ void PackEdit::startDrag(int index)
     }
     m_current = -1;
     update();
-    DragHelper::inst().moved = false;
-    drag->exec(Qt::MoveAction);
-    if(!DragHelper::inst().moved && !copy)
+    auto da = drag->exec(Qt::MoveAction);
+    if(da == Qt::IgnoreAction && !copy)
     {
         m_deck.append(id);
     }
@@ -141,7 +139,6 @@ void PackEdit::dropEvent(QDropEvent *event)
             {
                 m_deck.insert(index, id);
             }
-            DragHelper::inst().moved = true;
             update();
         }
         event->accept();

@@ -10,7 +10,6 @@
 #include "configmanager.h"
 #include "card.h"
 #include "carditem.h"
-#include "draghelper.h"
 #include "signaltower.h"
 #include "engine.h"
 #include "curl/curl.h"

@@ -15,6 +15,8 @@
 #include "card.h"
 #include "types.h"
 
+class DeckModel;
+
 class DeckWidget : public QWidget
 {
     Q_OBJECT
@@ -24,7 +26,8 @@ protected:
 
     void startDrag(int);
 public:
-    explicit DeckWidget(QWidget *parent, int _row, int _column, QSharedPointer<Type::DeckI> _deck);
+    explicit DeckWidget(QWidget *parent, int _row, int _column,
+                        QSharedPointer<Type::DeckI> _deck,  QSharedPointer<DeckModel> _model);
     ~DeckWidget();
     void paintEvent(QPaintEvent *event);
 
@@ -80,8 +83,6 @@ public:
 signals:
     void sizeChanged(int size);
     void deckChanged(Type::DeckI&);
-public slots:
-    void checkLeave();
 
 protected:
     QSharedPointer<Type::DeckI> m_deck;
@@ -102,6 +103,8 @@ public:
     std::function<bool(quint32)> m_extFilter;
     std::function<void()> m_makeSnapShot;
     bool m_overlapV;
+    QSharedPointer<DeckModel> m_currentModel;
+
 };
 
 #endif // DECKWIDGET_H
