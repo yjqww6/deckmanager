@@ -30,6 +30,8 @@ const quint32 CardFilter::monsterTypes[] =
     Const::TYPE_TOON,
     Const::TYPE_XYZ,
     Const::TYPE_PENDULUM,
+    Const::TYPE_SPSUMMON,
+    Const::TYPE_LINK,
     Const::TYPE_SYNCHRO | Const::TYPE_TUNER
 };
 
@@ -73,8 +75,10 @@ const quint32 CardFilter::monsterRaces[] =
     Const::RACE_PSYCHO,
     Const::RACE_DEVINE,
     Const::RACE_CREATORGOD,
-    Const::RACE_PHANTOMDRAGON
+    Const::RACE_WYRM,
+    Const::RACE_CYBERS
 };
+
 const quint32 CardFilter::monsterAttrs[] =
 {
     Const::ATTRIBUTE_DARK,
@@ -118,6 +122,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     auto levelL = new QLabel(ConfigManager::inst().getStr("label", "level", "等级"));
     auto rankL = new QLabel(ConfigManager::inst().getStr("label", "rank", "阶级"));
     auto scaleL = new QLabel(ConfigManager::inst().getStr("label", "scale", "刻度"));
+    auto linkL = new QLabel(ConfigManager::inst().getStr("label", "link", "LINK"));
 
 
     auto setL = new QLabel(ConfigManager::inst().getStr("label", "setcode", "系列"));
@@ -136,6 +141,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     m_levelEdit = new QLineEdit;
     m_rankEdit = new QLineEdit;
     m_scaleEdit = new QLineEdit;
+    m_linkEdit = new QLineEdit;
 
     m_setEdit = new QComboBox;
     m_setEdit->setEditable(true);
@@ -186,7 +192,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
 
     arr.set('e', hbox1);
 
-    arrange arrM("ab|cd|ef|gh|ij|kl|mn", gridM);
+    arrange arrM("ab|cd|ef|gh|ij|kl|mn|op", gridM);
 
     arrM.set2('a', raceL, 'b', m_cardRace);
     arrM.set2('c', attrL, 'd', m_cardAttr);
@@ -195,6 +201,7 @@ CardFilter::CardFilter(QWidget *parent) : QWidget(parent)
     arrM.set2('i', levelL, 'j', m_levelEdit);
     arrM.set2('k', rankL, 'l', m_rankEdit);
     arrM.set2('m', scaleL, 'n', m_scaleEdit);
+    arrM.set2('o', linkL, 'p', m_linkEdit);
 
     auto wM = new QWidget;
     wM->setLayout(gridM);
@@ -363,6 +370,7 @@ ptr CardFilter::make_pred()
     QString level = m_levelEdit->text();
     QString rank = m_rankEdit->text();
     QString scale = m_scaleEdit->text();
+    QString link = m_linkEdit->text();
 
     quint32 category = 0;
 
@@ -387,7 +395,7 @@ ptr CardFilter::make_pred()
     QString setcode = m_setEdit->currentText();
     QString name = m_nameEdit->text();
 
-    ptr param = Smake_vector(15, Sfalse);
+    ptr param = Smake_vector(16, Sfalse);
     Slock_object(param);
 
     Svector_set(param, 0, Sfixnum(type));
@@ -405,6 +413,7 @@ ptr CardFilter::make_pred()
     Svector_set(param, 12, Sfixnum(otC));
     Svector_set(param, 13, engine->fromQString(setcode));
     Svector_set(param, 14, engine->fromQString(name));
+    Svector_set(param, 15, engine->fromQString(link));
 
     Sunlock_object(param);
     ptr ret = engine->call("card-filter", param);

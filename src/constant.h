@@ -27,6 +27,8 @@ static const quint32 TYPE_FLIP = 0x200000;
 static const quint32 TYPE_TOON = 0x400000;
 static const quint32 TYPE_XYZ = 0x800000;
 static const quint32 TYPE_PENDULUM =0x1000000;
+static const quint32 TYPE_SPSUMMON =0x2000000;
+static const quint32 TYPE_LINK =0x4000000;
 
 static const quint32 RACE_WARRIOR = 0x1;
 static const quint32 RACE_SPELLCASTER = 0x2;
@@ -51,7 +53,8 @@ static const quint32 RACE_REPTILE = 0x80000;
 static const quint32 RACE_PSYCHO = 0x100000;
 static const quint32 RACE_DEVINE = 0x200000;
 static const quint32 RACE_CREATORGOD = 0x400000;
-static const quint32 RACE_PHANTOMDRAGON = 0x800000;
+static const quint32 RACE_WYRM = 0x800000;
+static const quint32 RACE_CYBERS = 0x1000000;
 
 static const quint32 ATTRIBUTE_EARTH = 0x01;
 static const quint32 ATTRIBUTE_WATER = 0x02;

@@ -156,6 +156,8 @@ void CardManager::loadCardData(QStringList paths)
     INSERT(m_types, TYPE_TOON, "卡通");
     INSERT(m_types, TYPE_XYZ, "XYZ");
     INSERT(m_types, TYPE_PENDULUM, "灵摆");
+    INSERT(m_types, TYPE_SPSUMMON, "特殊召唤");
+    INSERT(m_types, TYPE_LINK, "LINK");
     INSERT(m_races, RACE_WARRIOR, "战士");
     INSERT(m_races, RACE_SPELLCASTER, "魔法师");
     INSERT(m_races, RACE_FAIRY, "天使");
@@ -179,7 +181,8 @@ void CardManager::loadCardData(QStringList paths)
     INSERT(m_races, RACE_PSYCHO, "念动力");
     INSERT(m_races, RACE_DEVINE, "幻神兽");
     INSERT(m_races, RACE_CREATORGOD, "创造神");
-    INSERT(m_races, RACE_PHANTOMDRAGON, "幻龙");
+    INSERT(m_races, RACE_WYRM, "幻龙");
+    INSERT(m_races, RACE_CYBERS, "电子界");
 
 
     INSERT(m_attrs, ATTRIBUTE_DARK, "暗");

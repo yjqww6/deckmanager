@@ -30,10 +30,14 @@ int main(int argc, char *argv[])
 
         ConfigManager::inst().loadConfig();
 
-        QDir base("."), ext("expansions");
+        QDir base("."), cdb("cdb"), ext("expansions");
         QStringList paths, filters;
         filters << "*.cdb";
         foreach(auto info, ext.entryInfoList(filters))
+        {
+            paths << info.filePath();
+        }
+        foreach(auto info, cdb.entryInfoList(filters))
         {
             paths << info.filePath();
         }

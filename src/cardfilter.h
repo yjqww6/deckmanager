@@ -66,6 +66,7 @@ private:
     QLineEdit *m_levelEdit;
     QLineEdit *m_rankEdit;
     QLineEdit *m_scaleEdit;
+    QLineEdit *m_linkEdit;
 
     QCheckBox *m_effects[32];
 

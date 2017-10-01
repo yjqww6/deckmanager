@@ -11,60 +11,77 @@ void LimitCards::load()
 {
 
     QImage img;
-    img.load("textures/lim.png", "1");
-
-    int w = img.width() / 2, h = img.height() / 2;
 
     for(auto &p : m_limits)
     {
         p.reset(new QPixmap);
     }
 
+    img.load("textures/lim.png", "1");
     if(img.width() > 0)
     {
-        m_limits[0]->convertFromImage(img.copy(0, 0, w, h));
-        m_limits[1]->convertFromImage(img.copy(w, 0, w, h));
-        m_limits[2]->convertFromImage(img.copy(0, h, w, h));
+        int w = img.width() / 2, h = img.height() / 2;
+
+        if(img.width() > 0)
+        {
+            m_limits[0]->convertFromImage(img.copy(0, 0, w, h));
+            m_limits[1]->convertFromImage(img.copy(w, 0, w, h));
+            m_limits[2]->convertFromImage(img.copy(0, h, w, h));
+        }
+    }
+    else
+    {
+        QImage ban[3];
+        ban[0].load("texture/ui/ban_0.png", "1");
+        ban[1].load("texture/ui/ban_1.png", "1");
+        ban[2].load("texture/ui/ban_2.png", "1");
+        m_limits[0]->convertFromImage(ban[0]);
+        m_limits[1]->convertFromImage(ban[1]);
+        m_limits[2]->convertFromImage(ban[2]);
     }
 
-    QFile lflist("lflist.conf");
-    if(lflist.open(QFile::Text | QFile::ReadOnly))
+    QStringList lfs{"lflist.conf", "config/lflist.conf"};
+    foreach(auto lf, lfs)
     {
-        QTextStream in(&lflist);
-        in.setCodec("utf-8");
-        QString name("N/A");
-        Table table;
-
-        for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
+        QFile lflist(lf);
+        if(lflist.open(QFile::Text | QFile::ReadOnly))
         {
-            if(line.length() < 1)
-            {
-                continue;
-            }
-            if(line[0] == '#')
-            {
-                continue;
-            }
-            if(line[0] == '!')
-            {
-                Table newTable;
-                newTable.swap(table);
-                m_tables.append(qMakePair(name, std::move(newTable)));
-                name = line.mid(1);
-                name.trimmed();
-                table.reserve(150);
-                continue;
-            }
+            QTextStream in(&lflist);
+            in.setCodec("utf-8");
+            QString name("N/A");
+            Table table;
 
-            int pos = line.indexOf(QChar(' '));
-            if(pos > 0)
+            for(QString line = in.readLine(); !line.isNull(); line = in.readLine())
             {
-                quint32 id = line.left(pos).toUInt();
-                int numPos = line.indexOf(QChar(' '), pos + 1);
-                int lim = line.mid(pos + 1, numPos - pos - 1).toInt();
-                if(CardManager::inst().getCard(id))
+                if(line.length() < 1)
                 {
-                    table.insert(id, lim);
+                    continue;
+                }
+                if(line[0] == '#')
+                {
+                    continue;
+                }
+                if(line[0] == '!')
+                {
+                    Table newTable;
+                    newTable.swap(table);
+                    m_tables.append(qMakePair(name, std::move(newTable)));
+                    name = line.mid(1);
+                    name.trimmed();
+                    table.reserve(150);
+                    continue;
+                }
+
+                int pos = line.indexOf(QChar(' '));
+                if(pos > 0)
+                {
+                    quint32 id = line.left(pos).toUInt();
+                    int numPos = line.indexOf(QChar(' '), pos + 1);
+                    int lim = line.mid(pos + 1, numPos - pos - 1).toInt();
+                    if(CardManager::inst().getCard(id))
+                    {
+                        table.insert(id, lim);
+                    }
                 }
             }
         }

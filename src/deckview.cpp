@@ -490,7 +490,7 @@ void DeckView::help()
 
 void DeckView::home()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/yjqww6/deckmanager"));
+    QDesktopServices::openUrl(QUrl("https://github.com/yjqww6/deckmanager/tree/CS"));
 }
 
 void DeckView::print()

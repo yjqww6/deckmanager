@@ -7,19 +7,28 @@
 
 CardItem::Cache CardItem::m_large;
 CardItem::Cache CardItem::m_small;
-static QString bigPics = "pics/";
-static QString smallPics = "pics/thumbnail/";
-static QString unknown = "textures/unknown.jpg";
+static QStringList bigPics {"pics/", "picture/cardIn8thEdition/", "picture/card/"};
+static QStringList smallPics {"pics/thumbnail/"};
+static QStringList unknown {"textures/", "texture/duel/"};
 
-static QSharedPointer<QPixmap> readPic(QString path)
+static QSharedPointer<QPixmap> readPic(QStringList paths, QString suffix)
 {
-    auto p = QSharedPointer<QPixmap>::create(path, "1");
-    if(!p || p->width() == 0)
+    foreach(auto dir, paths)
     {
-        QByteArray arr = Expansions::inst().open(path);
-        p->loadFromData(arr, "1");
+        auto path = dir + suffix;
+        auto p = QSharedPointer<QPixmap>::create(path, "1");
+        if(!p || p->width() == 0)
+        {
+            QByteArray arr = Expansions::inst().open(path);
+            p->loadFromData(arr, "1");
+        }
+
+        if(p && p->width() > 0)
+        {
+            return p;
+        }
     }
-    return p;
+    return QSharedPointer<QPixmap>::create();
 }
 
 CardItem::CardItem(quint32 _id, bool small)
@@ -31,34 +40,31 @@ CardItem::CardItem(quint32 _id, bool small)
     {
         if(small)
         {
-            QString path = smallPics + QString::number(m_id) + ".jpg";
+            QString suffix = QString::number(m_id) + ".jpg";
 
-            m_pixmap = readPic(path);
+            m_pixmap = readPic(smallPics, suffix);
 
             if(m_pixmap->width() == 0)
             {
-                path = bigPics + QString::number(m_id) + ".jpg";
-                m_pixmap = readPic(path);
+                m_pixmap = readPic(bigPics, suffix);
             }
         }
         else
         {
-            QString path = bigPics + QString::number(m_id) + ".jpg";
-            m_pixmap = readPic(path);
+            QString suffix = QString::number(m_id) + ".jpg";
 
+            m_pixmap = readPic(bigPics, suffix);
 
             if(m_pixmap->width() == 0)
             {
-                path = smallPics + QString::number(m_id) + ".jpg";
-                m_pixmap = readPic(path);
+                m_pixmap = readPic(smallPics, suffix);
             }
 
         }
 
         if(m_pixmap->width() == 0)
         {
-            QString path = unknown;
-            m_pixmap = readPic(path);
+            m_pixmap = readPic(unknown, "uknown.jpg");
         }
 
         thePool.insert(m_id, m_pixmap.toWeakRef());

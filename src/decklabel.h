@@ -76,7 +76,7 @@ public:
 public slots:
     void deckChanged(Type::DeckI &ls)
     {
-        int fSum = 0, sSum = 0, xSum = 0;
+        int fSum = 0, sSum = 0, xSum = 0, lSum = 0;
         foreach(auto &item, ls)
         {
             if(auto ocard = CardManager::inst().getCard(item.getId()))
@@ -95,11 +95,16 @@ public slots:
                 {
                     xSum++;
                 }
+                else if(card.type & Const::TYPE_LINK)
+                {
+                    lSum++;
+                }
             }
         }
         QString text = ConfigManager::inst().getStr("string", "TYPE_FUSION", "融合") + ": " + QString::number(fSum);
         text = text + " " + ConfigManager::inst().getStr("string", "TYPE_SYNCHRO", "同调") + ": " + QString::number(sSum);
         text = text + " " + ConfigManager::inst().getStr("string", "TYPE_XYZ", "XYZ") + ": " + QString::number(xSum);
+        text = text + " " + ConfigManager::inst().getStr("string", "TYPE_LINK", "LINK") + ": " + QString::number(lSum);
 
         setText(text);
     }

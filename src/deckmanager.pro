@@ -15,13 +15,15 @@ TEMPLATE = app
 DEFINES   += QUAZIP_STATIC
 
 win32:{
-INCLUDEPATH += D:\Qt\quazip-static\include
-INCLUDEPATH += D:\C\curl\include
-INCLUDEPATH += D:\C\ti3nt\boot\ti3nt
-LIBS += D:\C\ti3nt\bin\csv941.dll
-LIBS += -LD:\C\curl\lib -lcurl -lssh2 -lrtmp -lssl -lcrypto -lidn -lws2_32 -lwldap32 -lwinmm
-LIBS += -LD:\Qt\build-quazip-Desktop_Qt_5_6_0_MinGW_32bit_1e8aa2-Release\quazip\release -lquazip
-LIBS += -LD:\Qt\zlib-1.2.8\build -lzlibstatic
+INCLUDEPATH += D:\dev\quazip-0.7.3\quazip-static\include
+INCLUDEPATH += D:\dev\curl\include
+INCLUDEPATH += D:\dev\ChezScheme-master\ti3nt\boot\ti3nt
+LIBS += D:\dev\ChezScheme-master\ti3nt\bin\ti3nt\csv941.dll
+#LIBS += -LD:\dev\curl  -LD:\dev\openssl-0.9.8h-1-lib\lib -lcurl -lssh2 -lrtmp -lssl -lcrypto -lidn -lws2_32 -lwldap32 -lwinmm
+LIBS += -LD:\dev\curl  -LD:\dev\openssl-1.0.2l\dist\lib -lcurl -lssl -lcrypto -lws2_32 -lwldap32 -lwinmm -lcrypt32
+LIBS += -LD:\dev\build-quazip-static-Release\quazip\release -lquazip
+LIBS += -LD:\dev\zlib-1.2.11 -lz
+QMAKE_LFLAGS += -static
 DEFINES += CURL_STATICLIB
 }
 

@@ -20,7 +20,7 @@ struct Card
 {
     bool inExtra()
     {
-        return (type & (Const::TYPE_XYZ | Const::TYPE_SYNCHRO | Const::TYPE_FUSION)) != 0;
+        return (type & (Const::TYPE_XYZ | Const::TYPE_SYNCHRO | Const::TYPE_FUSION | Const::TYPE_LINK)) != 0;
     }
 
     quint32 id;
@@ -35,6 +35,7 @@ struct Card
     quint32 race;
     quint32 attribute;
     quint32 category;
+    quint32 link;
     QString name;
     QString effect;
 };
